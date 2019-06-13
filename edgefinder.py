@@ -15,10 +15,11 @@ from skimage.filters import threshold_minimum
 import skimage.morphology as morph
 
 from scipy.optimize import curve_fit
+from scipy.misc import derivative
 #%%
 
 background=ndi.imread('background.png',flatten=True)
-im = ndi.imread('Images/moveseq063.png',flatten=True)
+im = ndi.imread('Images/moveseq103.png',flatten=True)
 
 imsub=background-im
 
@@ -69,21 +70,33 @@ def circle(x,a,b,r):
 minLoc=np.argmin(leftdat[:,1])
 minx=leftdat[minLoc,1]
 miny=leftdat[minLoc,0]
-pixelbuff=20
-conds=np.logical_and(leftdat[:,1]<minVal+pixelbuff,leftdat[:,0]>miny)
+pixelbuff=30
+conds=np.logical_and(leftdat[:,1]<minx+pixelbuff,leftdat[:,0]>miny)
 trimDat=leftdat[conds]-[miny,minx]
 plt.plot(trimDat[:,1],trimDat[:,0])
 #%%
 minLoc2=np.argmin(trimDat)
 sigma = np.ones(len(trimDat[:,0]))
-sigma[minLoc2] = .1
-popt, pcov = curve_fit(circle, trimDat[:,1], trimDat[:,0],p0=[5,5,30], sigma=sigma)
+sigma[minLoc2] = 1
+popt, pcov = curve_fit(circle, trimDat[:,1], trimDat[:,0],p0=[2,10,30], sigma=sigma)
 
 maxtrimVal=np.max(trimDat)
-x=np.linspace(0,maxtrimVal,100)
+x=np.linspace(0,maxtrimVal+50,100)
 plt.plot(x,circle(x,*popt))
-plt.scatter(trimDat[:,1],trimDat[:,0])
+plt.plot(leftdat[:,1]-minx,leftdat[:,0]-miny)
 
+def paramcirc(x):
+    return circle(x,*popt)
+mcirc=derivative(paramcirc,0)
+thet=np.arctan(mcirc)
+def slopeptline(x,m,x0,y0):
+    return m*(x-x0)+y0
+
+x2=np.linspace(-10,15,100)
+plt.plot(x2,slopeptline(x2,mcirc,0,0))
+plt.axes().set_aspect('equal')
+
+print(thet*180/np.pi)
 
 #%%
 
