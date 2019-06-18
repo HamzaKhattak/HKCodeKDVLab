@@ -94,6 +94,7 @@ def slopeptline(x,m,x0,y0):
 
 x2=np.linspace(-10,15,100)
 plt.plot(x2,slopeptline(x2,mcirc,0,0))
+plt.ylim(-50,50)
 plt.axes().set_aspect('equal')
 
 print(thet*180/np.pi)
