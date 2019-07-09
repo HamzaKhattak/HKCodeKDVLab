@@ -103,8 +103,6 @@ print(thet*180/np.pi)
 
 plt.plot(leftdat[:,1],leftdat[:,0],'.',markersize=2)
 plt.plot(leftdat[minLoc,1],leftdat[minLoc,0],'o',markersize=3)
-#%%
-fitreg=    
 
 #%%
 def endfind(main,back,imthresh,obsize,yminval,ymaxval):
@@ -148,7 +146,11 @@ numFiles=len(imfilenames)
 timeLocArray=np.zeros([numFiles,2])
 for i in range(numFiles):
     timeLocArray[i]=endfind(imfilenames[i],"background.png",10,100,460,690)
+    
 
+
+#%%
+im = ndi.imread('Translate1ums5xob.tif')
 #%%
 plt.subplots(1,2, figsize=(6,4))
 rejig=(-timeLocArray[4:]+1000)
