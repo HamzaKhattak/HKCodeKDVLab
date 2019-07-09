@@ -16,6 +16,70 @@ import skimage.morphology as morph
 
 from scipy.optimize import curve_fit
 from scipy.misc import derivative
+from skimage import io
+import scipy.ndimage.morphology as morph2
+#%%
+'''
+Read in sequence and background if necessary 
+'''
+imsequence=io.imread('Translate1ums5xob.tif')
+#background=io.imread('imagename.tif')
+background=np.zeros(imsequence[0].shape)
+#%%
+#display sample for cropping, movement is expected in the x axis
+plt.figure()
+plt.imshow(imsequence[0])
+plt.show()
+plt.figure()
+plt.imshow(imsequence[-1])
+#%%
+#Check crop
+def cropper(seq,x1,x2,y1,y2,singleimage=False):
+    if singleimage:
+        return seq[y1:y2, x1:x2]
+    else:
+        return seq[:, y1:y2, x1:x2]
+
+imsequence2=cropper(imsequence[-2:],15,791,701,920)
+#subtract off background and invert
+plt.imshow(imsequence2[0])
+
+#%%
+#Crop
+imsequence=cropper(imsequence,15,791,701,920)
+#%%
+background=cropper(background,15,791,701,920,True)
+#%%
+#Check thresholding parameters
+imsub=background-imsequence[0]
+
+threshimage=imsub>-25
+
+plt.imshow(threshimage,cmap=plt.cm.gray)
+#%%
+threshimage2=morph2.binary_fill_holes(threshimage)
+threshimage3=morph2.binary_closing(threshimage2,iterations=2)
+edgedetect=feature.canny(threshimage3, sigma=.05)
+
+locs=np.argwhere(edgedetect)
+
+import matplotlib.colors as mcolors
+colors = [(0,0,1,c) for c in np.linspace(0,1,100)]
+
+cmapblue = mcolors.LinearSegmentedColormap.from_list('mycmap', colors, N=5)
+
+plt.imshow(imsub,cmap=plt.cm.gray)
+plt.imshow(edgedetect, cmap=cmapblue)
+#%%
+
+oRem=morph.remove_small_objects(threshimage,100)
+hRem=morph.remove_small_holes(oRem,100)
+plt.imshow(hRem,cmap=plt.cm.gray)
+
+edgedetect=feature.canny(hRem, sigma=.05)
+plt.imshow(edgedetect, cmap=plt.cm.gray)
+locs=np.argwhere(edgedetect)
+
 #%%
 
 background=ndi.imread('background.png',flatten=True)
@@ -138,6 +202,36 @@ def endfind(main,back,imthresh,obsize,yminval,ymaxval):
     trailedge=np.min(impDat[:,1])
     return [trailedge,leadedge]
 
+def endfind2(im,imthresh,obsize,xminval,xmaxval):
+    '''
+    This function will return the start and end of a droplet
+    main is the string indicating the location of the main file and back
+    is the string for the background
+    imthresh is the threshold value applied
+    #ymin and ymax are used to select the portion of the image to include
+    '''
+    #Subtract the background and apply the threshold
+    imsub=-im
+    threshimage=imsub>imthresh
+    
+    #Remove dust specs
+    oRem=morph.remove_small_objects(threshimage,obsize)
+    hRem=morph.remove_small_holes(oRem,obsize)
+    
+    #Find the edges
+    edgedetect=feature.canny(hRem, sigma=.05)
+    #Convert to xy values
+    locs=np.argwhere(edgedetect)
+    
+    #Select the correct region
+    interval=np.logical_and(locs[:,1]>xminval,locs[:,1]<xmaxval)
+    impDat=locs[interval]
+
+    
+    leadedge=np.max(impDat[:,0])
+    trailedge=np.min(impDat[:,0])
+    return [trailedge,leadedge]
+
 #%%
 import glob
 imfilenames=glob.glob("Images/*.png")
@@ -150,7 +244,15 @@ for i in range(numFiles):
 
 
 #%%
-im = ndi.imread('Translate1ums5xob.tif')
+
+
+#%%
+plt.imshow(im[0])
+#%%
+numIm=im[:,0,0].size
+timeLocArray=np.zeros([numIm,2])
+for i in range(numIm):
+    timeLocArray[i]=endfind2(im[i],-5,100,700,933)
 #%%
 plt.subplots(1,2, figsize=(6,4))
 rejig=(-timeLocArray[4:]+1000)
