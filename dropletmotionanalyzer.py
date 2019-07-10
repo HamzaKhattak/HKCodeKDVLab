@@ -35,7 +35,7 @@ plt.imshow(imsequence[-1])
 #%%
 #Check crop and image edge detection
 def cropper(seq,x1,x2,y1,y2,singleimage=False):
-    if singleimage:
+    if seq.ndim==2:
         return seq[y1:y2, x1:x2]
     else:
         return seq[:, y1:y2, x1:x2]
@@ -53,6 +53,8 @@ import matplotlib.colors as mcolors
 colors = [(0,1,0,c) for c in np.linspace(0,1,100)]
 cmapg = mcolors.LinearSegmentedColormap.from_list('mycmap', colors, N=5)
 
+testimage=cropper(imsequence[800],15,791,701,920)
+testback=cropper(background,15,791,701,920)
 
 def edgedetector(inimage,background,threshval,obsSize,cannysigma):
     '''
@@ -74,14 +76,14 @@ def edgedetector(inimage,background,threshval,obsSize,cannysigma):
     #Fill holes
     threshimage=morph2.binary_fill_holes(threshimage)
     #Remove specs
-    threshimage=morph.remove_small_objects(threshimage,5)
+    threshimage=morph.remove_small_objects(threshimage,obsSize)
     #Find the edges
-    edgedetect=feature.canny(threshimage, sigma=.05)
+    edgedetect=feature.canny(threshimage, sigma=cannysigma)
     return edgedetect
 
-edgedetect=edgedetector(imsequence[705],background,-100,5,.05)
+edgedetect=edgedetector(testimage,testback,-100,20,.05)
 #Plot to see
-plt.imshow(imsequence[705],cmap=plt.cm.gray)
+plt.imshow(testimage,cmap=plt.cm.gray)
 plt.imshow(edgedetect, cmap=cmapg)
 plt.tight_layout()
 
@@ -91,6 +93,7 @@ edgearray=np.argwhere(edgedetect)
 
 def circle(x,a,b,r):
     return np.sqrt(r**2-(x-a)**2)+b
+
 
 
 

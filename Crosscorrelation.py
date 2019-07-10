@@ -14,6 +14,14 @@ xrang=np.linspace(-10,10,num=100)
 
 g1=np.ga
 
+def crosscorrelator(veca,vecb):
+	a = (a - np.mean(a)) / (np.std(a) * len(a))
+	b = (b - np.mean(b)) / (np.std(b))
+	c = np.correlate(a, b, 'full')
+
+def centerfinder(a):
+	
+#%%
 cresult=np.correlate(a1,a3)
 print(cresult)
 spresult=signal.correlate(a4,a5,"full")  
