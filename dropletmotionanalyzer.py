@@ -271,7 +271,7 @@ plt.ylabel('velocity')
 plt.plot(smoothed[100:],vel[100:])
 plt.ylabel("velocity")
 plt.xlabel("position")
-"#%%
+#%%
 
 plt.subplots(1,2, figsize=(6,4))
 rejig=(-timeLocArray[4:]+1000)
