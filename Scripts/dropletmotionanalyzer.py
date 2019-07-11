@@ -96,7 +96,6 @@ def circle(x,a,b,r):
 
 
 
-
 def slopeptline(x,m,x0,y0):
     return m*(x-x0)+y0
 
