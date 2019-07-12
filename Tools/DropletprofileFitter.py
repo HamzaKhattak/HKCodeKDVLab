@@ -49,27 +49,27 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 
 	#Get the min or max position
 	if left==True:
-	    contactloc=np.argmin(locs[:,1])
+	    contactloc=np.argmin(locs[:,0])
 	else:
-	    contactloc=np.argmax(locs[:,1])
+	    contactloc=np.argmax(locs[:,0])
 
-	contactx=locs[contactloc,1]
-	contacty=locs[contactloc,0]
+	contactx=locs[contactloc,0]
+	contacty=locs[contactloc,1]
 
 	#Set up trimmed Data set for fit using buffered area and only positive values
 	#Will need to change to also include data from reflection
 	if left==True:
-	    conds=np.logical_and(locs[:,1]<contactx+pixelbuff,locs[:,0]>contacty)
+	    conds=np.logical_and(locs[:,0]<contactx+pixelbuff,locs[:,1]>contacty)
 	else:
-	    conds=np.logical_and(locs[:,1]>contactx-pixelbuff,locs[:,0]>contacty)
+	    conds=np.logical_and(locs[:,0]>contactx-pixelbuff,locs[:,1]>contacty)
 	    
-	trimDat=locs[conds]-[contacty,contactx]
+	trimDat=locs[conds]-[contactx,contacty]
 
 	#Set up weighting
-	sigma = np.ones(len(trimDat[:,0]))
-	sigma[np.argmin(trimDat[:,0])] = zweight
+	sigma = np.ones(len(trimDat[:,1]))
+	sigma[np.argmin(trimDat[:,1])] = zweight
 	#The fitter is annoyingly dependant on being close to the actual parameters values to get a good guess
-	popt, pcov = curve_fit(fitfunction, trimDat[:,1], trimDat[:,0],p0=fitguess, sigma=sigma,maxfev=5000)
+	popt, pcov = curve_fit(fitfunction, trimDat[:,0], trimDat[:,1],p0=fitguess, sigma=sigma,maxfev=5000)
 	def paramfunc(x):
 	    return fitfunction(x,*popt)
 	m0=derivative(paramfunc,0)
@@ -100,16 +100,17 @@ def rotator(torotate,angle,ox,oy):
 	qy = oy + np.sin(angle) * (px - ox) + np.cos(angle) * (py - oy)
 	'''
 	#shift array to origin
-	rotatedarray=torotate-[ox,oy]
+	shiftedarray=torotate-[ox,oy]
+	rotatedarray=np.zeros(shiftedarray.shape)
 	#Apply rotation transform
-	rotatedarray[:,0] = ox + np.cos(angle) * shiftarray[:,0] - np.sin(angle) * shiftarray[:,1]
-	rotatedarray[:,1] = ox + np.sin(angle) * shiftarray[:,0] - np.cos(angle) * shiftarray[:,1]
-	return rotatedarray
+	rotatedarray[:,0] = np.cos(angle) * shiftedarray[:,0] - np.sin(angle) * shiftedarray[:,1]
+	rotatedarray[:,1] = np.sin(angle) * shiftedarray[:,0] + np.cos(angle) * shiftedarray[:,1]
+	return rotatedarray+[ox,oy]
 
 def angledet(x1,y1,x2,y2):
 	'''
 	determine angle needed to rotate to get line horizontal
 	'''
-	dx=x2-x2
+	dx=x2-x1
 	dy=y2-y1
-	return np.arctan(dy,dx)
+	return np.arctan(dy/dx)

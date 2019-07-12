@@ -125,26 +125,26 @@ def edgeinfofinder(locs,left,pixelbuff,circfitguess,zweight):
     
     #Get the min or max position
     if left==True:
-        contactloc=np.argmin(locs[:,1])
+        contactloc=np.argmin(locs[:,0])
     else:
-        contactloc=np.argmax(locs[:,1])
+        contactloc=np.argmax(locs[:,0])
     
-    contactx=locs[contactloc,1]
-    contacty=locs[contactloc,0]
+    contactx=locs[contactloc,0]
+    contacty=locs[contactloc,1]
     
     #Set up trimmed Data set for fit using buffered area and only positive values
     #Will need to change to also include data from reflection
     if left==True:
-        conds=np.logical_and(locs[:,1]<contactx+pixelbuff,locs[:,0]>contacty)
+        conds=np.logical_and(locs[:,0]<contactx+pixelbuff,locs[:,1]>contacty)
     else:
-        conds=np.logical_and(locs[:,1]>contactx-pixelbuff,locs[:,0]>contacty)
+        conds=np.logical_and(locs[:,0]>contactx-pixelbuff,locs[:,1]>contacty)
         
-    trimDat=locs[conds]-[contacty,contactx]
+    trimDat=locs[conds]-[contactx,contacty]
     
     #Set up weighting
-    sigma = np.ones(len(trimDat[:,0]))
-    sigma[np.argmin(trimDat[:,0])] = zweight
-    #The fitter is annoyingly dependant on being close to the actual parameters values to get a good guess
+    sigma = np.ones(len(trimDat[:,1]))
+    sigma[np.argmin(trimDat[:,1])] = zweight
+    #The fitter for circles is annoyingly dependant on being close to the actual parameters values to get a good guess
     popt, pcov = curve_fit(circle, trimDat[:,1], trimDat[:,0],p0=circfitguess, sigma=sigma,maxfev=5000)
     def paramcirc(x):
         return circle(x,*popt)
