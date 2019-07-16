@@ -23,6 +23,46 @@ def crosscorrelator(a,b):
 def gaussfunc(x,a,mu,sig):
 	return a*np.exp((-(x-mu)**2)/(2*sig))
 
+def ccorrf(x, y, unbiased=True, demean=True, sym = True):
+   ''' JC's crosscoorrelation function for 1D
+
+   Parameters
+   ----------
+   x, y : arrays
+      time series data
+   unbiased : boolean
+      if True, then denominators is n-k, otherwise n
+   sym : boolean
+       if True, the outpur is symmetrical (lag in both positive and negative)
+   Returns
+   -------
+   ccorrf : array
+      cross-correlation array
+
+   Notes
+   -----
+   This uses np.correlate which does full convolution. For very long time
+   series it is recommended to use fft convolution instead.
+   '''
+   n = len(x)
+   if demean:
+       xo = x - x.mean()
+       yo = y - y.mean()
+   else:
+       xo = x
+       yo = y
+   if unbiased:
+       xi = np.ones(n)
+       d = np.correlate(xi, xi, 'full')
+   else:
+       d = n
+
+   if sym:
+       corry = (np.correlate(xo, yo, 'full') / (d*(np.std(x) * np.std(y))))
+   else:
+       corry = (np.correlate(xo, yo, 'full') / (d*(np.std(x) * np.std(y))))[n - 1:]
+   corrx = np.arange(2*len(x)-1)-(len(x)-1)
+   return  np.transpose([corrx,corry])
 
 def centerfinder(vecx,vecy,buff):
 	'''

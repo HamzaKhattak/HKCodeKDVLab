@@ -82,7 +82,7 @@ plt.plot(alldatx[-20],alldaty[-20],'.')
 
 
 #%%
-corrresultstest=crco.crosscorrelator(croppedimages[0,-10],croppedimages[-20,-10])
+corrresultstest=crco.ccorrf(croppedimages[0,-10],croppedimages[-20,-10])
 
 gparam, gfit = crco.centerfinder(corrresultstest[:,0],corrresultstest[:,1],20)
 
