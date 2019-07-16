@@ -92,3 +92,9 @@ plt.plot(corrresultstest[:,0],corrresultstest[:,1],'.')
 
 plt.plot(corrresultstest[:,0],gaussfunctest)
 
+#%%
+xvals=centerloc[:,0]
+vel=np.gradient(xvals)
+plt.plot(xvals,vel,'.',markersize=1)
+plt.xlabel('Position (pixels)')
+plt.ylabel('droplet velocity')

@@ -2,6 +2,9 @@ import sys, os
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
+
+#%%
+import similaritymeasures
 #%%
 #Specify the location of the Tools folder
 CodeDR="F:\TrentDrive\Research\KDVLabCode\HKCodeKDVLab"
@@ -75,7 +78,7 @@ print(thettorot*180/np.pi)
 
 #%%
 #Rotate opposite the visible angle
-rotationtest=df.rotator(edges1,-thettorot,*leftedge)
+rotationtest=df.rotator(edges2,-thettorot,*leftedge)
 rotationtest=rotationtest-rotationtest[np.argmin(rotationtest[:,0])]
 plt.plot(rotationtest[:,0],rotationtest[:,1],'.')
 plt.axes().set_aspect('equal')
@@ -85,7 +88,36 @@ plt.axes().set_aspect('equal')
 topvalues=rotationtest[rotationtest[:,1]>0]
 bottomvalues=rotationtest[rotationtest[:,1]<0]*[1,-1]
 plt.plot(topvalues[:,0],topvalues[:,1],'r.')
-plt.plot(bottomvalues[:,0],bottomvalues[:,1],'b.')
+shiftbot=bottomvalues+[0,2]
+plt.plot(shiftbot[:,0],shiftbot[:,1],'b.')
 plt.axes().set_aspect('equal')
 
 #%%
+thet=np.zeros([allimages.shape[0],2])
+croppedimages=ede.cropper(allimages,9,750,715,898)
+for i in range(allimages.shape[0]):
+    edges=ede.edgedetector(croppedimages[i],background,-100,20,.05)
+    rotatededges=df.rotator(edges,-thettorot,*leftedge)
+    rotatededges=rotatededges-rotatededges[np.argmin(rotatededges[:,0])]
+    fit=df.datafitter(rotatededges,True,30,1,df.pol3rdorder,[0,1,1,1])
+    fit2=df.datafitter(rotatededges,False,30,1,df.pol3rdorder,[0,1,1,1])
+    thet[i]=[fit[3],fit2[3]]
+    
+#%%
+plt.plot(thet[:,0],label='left')
+plt.plot(-thet[:,1])
+plt.xlabel('frame')
+plt.ylabel('angle')
+plt.legend()
+#%%
+#testsimilarity=similaritymeasures.area_between_two_curves(bottomvalues,bottomvalues)
+#testsimilarity2=similaritymeasures.area_between_two_curves(topvalues,bottomvalues)
+shiftarray=np.arange(-5,5)
+simarray=np.zeros(shiftarray.size)
+for i in range(len(simarray)):
+    simarray[i]=similaritymeasures.area_between_two_curves(topvalues,bottomvalues+[0,shiftarray[i]])
+
+plt.plot(shiftarray,simarray/np.max(simarray))
+plt.xlabel('shift (pixels)')
+plt.ylabel('area')
+    
