@@ -43,7 +43,6 @@ def edgedetector(inimage,background,threshval,obsSize,cannysigma):
 	threshimage=morph.remove_small_objects(threshimage,obsSize)
 	#Find the edges
 	edgedetect=feature.canny(threshimage, sigma=cannysigma)
-	return edgedetect
+	return np.flip(np.argwhere(edgedetect),1)
 
-def edgestoxy(edges):
-	return np.flip(np.argwhere(edges),1)
+def seriesedgedetect(inimages,background,threhsval,obsSize,cannysigma)
