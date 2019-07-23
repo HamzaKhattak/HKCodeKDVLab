@@ -45,4 +45,18 @@ def edgedetector(inimage,background,threshval,obsSize,cannysigma):
 	edgedetect=feature.canny(threshimage, sigma=cannysigma)
 	return np.flip(np.argwhere(edgedetect),1)
 
-def seriesedgedetect(inimages,background,threhsval,obsSize,cannysigma)
+def seriesedgedetect(inimages,background,threshval,obsSize,cannysigma):
+	'''
+	This code does edge detection on a series of images and returns a python array containing numpy 
+	objects with the located edges
+	Since different number of detected points, better to use python array of numpy arrays
+	'''
+	numIm=inimages.shape[0]
+	#Create and empty python array
+	storarr=[None]*numIm
+	for i in range(numIm):
+		storarr[i]=edgedetector(inimages[i],background,threshval,obsSize,cannysigma)
+	return storarr
+
+
+

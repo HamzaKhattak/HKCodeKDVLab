@@ -4,6 +4,7 @@ Functions to find properties of droplet such as contact angle etc
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.misc import derivative
+from Tools.EdgeDetection import *
 
 def circle(x,a,b,r):
 	'''
@@ -11,9 +12,14 @@ def circle(x,a,b,r):
 	'''
 	return np.sqrt(r**2-(x-a)**2)+b
 
+def pol2ndorder(x,a,b,c):
+	return a+b*x+c*x**2
+
 def pol3rdorder(x,a,b,c,d):
 	return a+b*x+c*x**2+d*x**3
 
+def pol4thorder(x,a,b,c,d,e):
+	return a+b*x+c*x**2+d*x**3+e*x**4
 
 def slopeptline(x,m,x0,y0):
 	'''
@@ -21,10 +27,16 @@ def slopeptline(x,m,x0,y0):
 	'''
 	return m*(x-x0)+y0
 
+def linef(x,m,b):
+	'''
+	equation of a line for fitting
+	'''
+	return m*x + b
+
 
 def splitlinefinder(locs,centerybuff):
 	'''
-	Finds the center location based on some buffer
+	Finds the rough center location based on some buffer
 	'''
 	#Which area to use for splitting line (ie how far up y)
 	splitlineavregion=np.max(locs[:,0])-centerybuff
@@ -59,9 +71,9 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	#Set up trimmed Data set for fit using buffered area and only positive values
 	#Will need to change to also include data from reflection
 	if left==True:
-	    conds=np.logical_and(locs[:,0]<contactx+pixelbuff,locs[:,1]>contacty)
+	    conds=np.logical_and.reduce((locs[:,0]<contactx+pixelbuff[0],locs[:,1]>contacty,locs[:,1]<pixelbuff[1]))
 	else:
-	    conds=np.logical_and(locs[:,0]>contactx-pixelbuff,locs[:,1]>contacty)
+	    conds=np.logical_and.reduce((locs[:,0]>contactx-pixelbuff[0],locs[:,1]>contacty,locs[:,1]<pixelbuff[1]))
 	    
 	trimDat=locs[conds]-[contactx,contacty]
 
@@ -109,8 +121,28 @@ def rotator(torotate,angle,ox,oy):
 
 def angledet(x1,y1,x2,y2):
 	'''
-	determine angle needed to rotate to get line horizontal
+	determine angle needed to rotate to get line horizontal from an x and y point
 	'''
 	dx=x2-x1
 	dy=y2-y1
 	return np.arctan(dy/dx)
+
+def linedet(MultipleEdges):
+	'''
+	Takes a python array of edge xy locations and returns a list of endpoints for use with fitting
+	'''
+	#Create empty arrays
+	numIm=len(MultipleEdges)
+	leftxy=np.zeros([numIm,2])
+	rightxy=np.zeros([numIm,2])
+	for i in range(numIm):
+		#Get the indexes of the minimum and maximum x points
+		#Can be modified to extract some other property from each of the xy arrays
+		leftindex = np.argmin(MultipleEdges[i][:,0])
+		rightindex = np.argmax(MultipleEdges[i][:,0])
+		leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
+		rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
+	return leftxy, rightxy
+
+
+
