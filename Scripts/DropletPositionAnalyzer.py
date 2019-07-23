@@ -38,29 +38,38 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 #%%
+#Import the image
 allimages=ito.stackimport(dataDR+"\Translate1ums5xob.tif")
+#%%
+#Select the minimum (1s) and maximum (2s) crop locations
+x1c=9
+x2c=750
+y1c=715
+y2c=898
+croppoints=[x1c,x2c,y1c,y2c]
 
+fig, ax = plt.subplots(nrows=2, ncols=2)
 testimage1=allimages[0]
 testimage2=allimages[-1]
-plt.figure()
-plt.imshow(testimage1)
-plt.figure()
-plt.imshow(testimage2)
-#%%
-croptest1=ede.cropper(testimage1,9,750,715,898)
-croptest2=ede.cropper(testimage2,9,750,715,898)
-plt.figure()
-plt.imshow(croptest1)
-plt.figure()
-plt.imshow(croptest2)
+
+
+croptest1=ede.cropper(testimage1,*croppoints)
+croptest2=ede.cropper(testimage2,*croppoints)
+
+ax[0,0].imshow(testimage1)
+ax[0,1].imshow(testimage2)
+
+ax[1,0].imshow(croptest1)
+ax[1,1].imshow(croptest2)
 
 #%%
-
+#Crop all of the images and plot a cut at a y value
 croppedimages=ede.cropper(allimages,9,750,715,898)
 
-#%%
-a=croppedimages[0,-10]
-b=croppedimages[-1,-10]
+cutpixely=-15
+
+a=croppedimages[0,cutpixely]
+b=croppedimages[-1,cutpixely]
 plt.plot(a)
 plt.plot(b)
 #%%
@@ -69,7 +78,8 @@ centerloc=np.zeros([croppedimages.shape[0],2])
 
 a=croppedimages[0,-15]
 for i in range(croppedimages.shape[0]):
-    alldat[i]=crco.crosscorrelator(croppedimages[i,-15],a)
+    #The shift of the index 0 value represents the autocorrelation
+    alldat[i]=crco.crosscorrelator(croppedimages[i,cutpixely],a)
     gparam, gfit = crco.centerfinder(alldat[i,:,0],alldat[i,:,1],20)
     centerloc[i]=[gparam[1],gfit[1]]
     
@@ -78,19 +88,7 @@ np.save("datcorr",alldat)
 np.save("centerloc",centerloc)
 
 #%%
-plt.plot(alldatx[-20],alldaty[-20],'.')
-
-
-#%%
-corrresultstest=crco.ccorrf(croppedimages[0,-10],croppedimages[-20,-10])
-
-gparam, gfit = crco.centerfinder(corrresultstest[:,0],corrresultstest[:,1],20)
-
-gaussfunctest=crco.gaussfunc(corrresultstest[:,0],*gparam)
-
-plt.plot(corrresultstest[:,0],corrresultstest[:,1],'.')
-
-plt.plot(corrresultstest[:,0],gaussfunctest)
+plt.plot(alldat[-20,:,0],alldat[-20,:,1],'.')
 
 #%%
 xvals=centerloc[:,0]
