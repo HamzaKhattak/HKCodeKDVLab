@@ -27,9 +27,9 @@ def slopeptline(x,m,x0,y0):
 	'''
 	return m*(x-x0)+y0
 
-def linef(x,m,b):
+def linfx(x,m,b):
 	'''
-	equation of a line for fitting
+	equation of a line
 	'''
 	return m*x + b
 
@@ -96,7 +96,7 @@ def flipper(toflip,x1,y1,x2,y2):
 	#Create line to flip
 	l=np.array([x2-x1,y2-y1])
 	#Shift array to be flipped so they are vectors from origin of l
-	shiftarray=toflip-[x1,x2]
+	shiftarray= toflip - [x1,x2]
 	projection = l * np.dot(toflip, l) / np.dot(l, l)
 	return 2*projection-shiftarray
 
@@ -119,6 +119,18 @@ def rotator(torotate,angle,ox,oy):
 	rotatedarray[:,1] = np.sin(angle) * shiftedarray[:,0] + np.cos(angle) * shiftedarray[:,1]
 	return rotatedarray+[ox,oy]
 
+def xflipandcombine(toflip):
+	'''
+	Flips an already rotated edge point array and combines the top and the bottom
+	'''#Center the result
+	#Subtract the minimum
+	centeredarray=toflip-toflip[np.argmin(toflip[:,0])]
+	#Seperate and flip the negative values
+	topvalues=centeredarray[centeredarray[:,1]>0]
+	bottomvalues=centeredarray[centeredarray[:,1]<0]*[1,-1]
+	return np.concatenate([topvalues,bottomvalues])
+
+
 def angledet(x1,y1,x2,y2):
 	'''
 	determine angle needed to rotate to get line horizontal from an x and y point
@@ -137,12 +149,52 @@ def linedet(MultipleEdges):
 	rightxy=np.zeros([numIm,2])
 	for i in range(numIm):
 		#Get the indexes of the minimum and maximum x points
-		#Can be modified to extract some other property from each of the xy arrays
+		#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
 		leftindex = np.argmin(MultipleEdges[i][:,0])
 		rightindex = np.argmax(MultipleEdges[i][:,0])
 		leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
 		rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
 	return leftxy, rightxy
 
+def thetdet(edgestack):
+	'''Find the angle to rotate a stack of images based on the location of droplet edges
+	Returns the angle and a point with which to rotate'''
+	leftlineinfo, rightlineinfo = linedet(edgestack)
+	#Contact points needed for rotation, actually return the ones from the datafitter
+	allcontactpts=np.concatenate([leftlineinfo,rightlineinfo])
 
+	#Fit a line to the contact points 
+	fitlineparam,firlinecov = curve_fit(linfx,allcontactpts[:,0],allcontactpts[:,1])
+
+	#create 2 random points based on the line for the angle detection function
+	leftedge=[0,linfx(0,*fitlineparam)]
+	rightedge=[1,linfx(1,*fitlineparam)]
+	#Find the angle with horizontal
+	thet=angledet(*leftedge,*rightedge)
+	return thet, leftedge
+
+def edgestoproperties(edgestack,lims,fitfunc,fitguess):
+	'''
+    Takes a edgestack and returns a list of angles for the right and left 
+    positions and angles
+    edgestack is a python list of numpy arrays containing the edges
+    lims is the x and y pixel range to use for fitting
+    fitfunc is the function to use to find the angle
+    fitguesss is the guess for those parameters
+    '''
+	#Create arrays to store data
+	numEd=len(edgestack)
+	dropangle = np.zeros([numEd,2])
+	contactpts = np.zeros([numEd,2])
+
+	thetatorotate, leftedge = thetdet(edgestack)
+
+	for i in range(numEd):
+		rotatededges=rotator(edgestack[i],-thetatorotate,*leftedge)
+		combovals=xflipandcombine(rotatededges)
+		fitl=datafitter(combovals,True,lims,1,fitfunc,fitguess)
+		fitr=datafitter(combovals,False,lims,1,fitfunc,fitguess)
+		dropangle[i] = [fitl[3],fitr[3]]
+		contactpts[i] = [fitl[0],fitr[0]]
+	return dropangle, contactpts
 

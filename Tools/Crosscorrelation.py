@@ -23,46 +23,6 @@ def crosscorrelator(a,b):
 def gaussfunc(x,a,mu,sig):
 	return a*np.exp((-(x-mu)**2)/(2*sig))
 
-def ccorrf(x, y, unbiased=True, demean=True, sym = True):
-   ''' JC's crosscoorrelation function for 1D
-
-   Parameters
-   ----------
-   x, y : arrays
-      time series data
-   unbiased : boolean
-      if True, then denominators is n-k, otherwise n
-   sym : boolean
-       if True, the outpur is symmetrical (lag in both positive and negative)
-   Returns
-   -------
-   ccorrf : array
-      cross-correlation array
-
-   Notes
-   -----
-   This uses np.correlate which does full convolution. For very long time
-   series it is recommended to use fft convolution instead.
-   '''
-   n = len(x)
-   if demean:
-       xo = x - x.mean()
-       yo = y - y.mean()
-   else:
-       xo = x
-       yo = y
-   if unbiased:
-       xi = np.ones(n)
-       d = np.correlate(xi, xi, 'full')
-   else:
-       d = n
-
-   if sym:
-       corry = (np.correlate(xo, yo, 'full') / (d*(np.std(x) * np.std(y))))
-   else:
-       corry = (np.correlate(xo, yo, 'full') / (d*(np.std(x) * np.std(y))))[n - 1:]
-   corrx = np.arange(2*len(x)-1)-(len(x)-1)
-   return  np.transpose([corrx,corry])
 
 def centerfinder(vecx,vecy,buff):
 	'''
@@ -80,26 +40,27 @@ def centerfinder(vecx,vecy,buff):
 	#Perform the curve fit, guess parameters, just since maxpos
 	# will be pretty close to the center
 	popt, pcov = curve_fit(gaussfunc,xdata,ydata,p0=[1,vecx[maxpos],2*buff])
-	#Find standard error in parameters
-	perr = np.sqrt(np.diag(pcov))/np.sqrt(len(xdata))
+	#Find standard deviation in parameters
+	perr = np.sqrt(np.diag(pcov))
 	#Return parameter and standard deviation
 	return popt, perr
 
 def xvtfinder(images,baseimage,cutloc,gausspts1):
     '''
     Takes a image sequence and the original image and returns series of shifts
+    as well as the full cross correlation arrays
     from the base image using cross correlation at the y pixel defined by cutloc
     gaussspts1 is the number of points to use in the gaussian fit on either side
     '''
-    #Create empty array to store data
+    #Create empty arrays to store data
     centerloc=np.zeros([images.shape[0],2])
+    alldat=np.zeros([images.shape[0],images.shape[2]*2-1,2])
     #Perform cross correlation and use gaussian fit to find center position
-    for i in range(croppedimages.shape[0]):
-        alldat[i]=crco.crosscorrelator(images[i,cutloc],baseimage)
-        gparam, gcov = crco.centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
-        gerr = np.sqrt(np.diag(gcov))
+    for i in range(images.shape[0]):
+        alldat[i] = crosscorrelator(images[i,cutloc],baseimage)
+        gparam, gerr = centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
         centerloc[i]=[gparam[1],gerr[1]]
     #Account for the 0 point
     centerloc = centerloc-[centerloc[0,0],0]
-    return centerloc
+    return centerloc, alldat
 

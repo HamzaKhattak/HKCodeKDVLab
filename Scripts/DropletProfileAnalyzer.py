@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, glob
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
@@ -10,9 +10,9 @@ import similaritymeasures
 
 #%%
 #Specify the location of the Tools folder
-CodeDR="F:\TrentDrive\Research\KDVLabCode\HKCodeKDVLab"
+CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR="F:\TrentDrive\Research\Droplet forces film gradients\SlideData2"
+dataDR=r"E:\Newtips\SpeedAnalysis"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -35,18 +35,18 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 #%%
 #Import images
-allimages=ito.stackimport(dataDR+"\Translate1ums5xob.tif")
+imagestack=ito.stackimport(dataDR+r"\1ums.tif")
 #%%
 #Select the minimum (1s) and maximum (2s) crop locations
-x1c=9
-x2c=750
-y1c=715
-y2c=898
+x1c=300
+x2c=900
+y1c=400
+y2c=1000
 croppoints=[x1c,x2c,y1c,y2c]
 
 fig, ax = plt.subplots(nrows=2, ncols=2)
-testimage1=allimages[0]
-testimage2=allimages[-1]
+testimage1=imagestack[0]
+testimage2=imagestack[-1]
 
 
 croptest1=ede.cropper(testimage1,*croppoints)
@@ -66,7 +66,7 @@ background=np.zeros(croptest1.shape)
 
 
 #[threshval,obsSize,cannysigma]
-imaparam=[-100,20,.05]
+imaparam=[-30,20,.05]
 
 #Have two edges
 edges1=ede.edgedetector(croptest1,background,*imaparam)
@@ -78,15 +78,15 @@ colors = [(0,1,0,c) for c in np.linspace(0,1,100)]
 cmapg = mcolors.LinearSegmentedColormap.from_list('mycmap', colors, N=5)
 
 #Plot to show
-plt.imshow(croptest1,cmap=plt.cm.gray)
-plt.plot(edges1[:,0],edges1[:,1],'r.',markersize=1)
+plt.imshow(croptest2,cmap=plt.cm.gray)
+plt.plot(edges2[:,0],edges2[:,1],'r.',markersize=1)
 
 
 #%%
 
 #Crop and find the edges for all of the images
-croppedimages=ede.cropper(allimages,x1c,x2c,y1c,y2c)
-alledges=ede.seriesedgedetect(croppedimages,background,-100,20,.05)
+croppedimages=ede.cropper(imagestack,x1c,x2c,y1c,y2c)
+alledges=ede.seriesedgedetect(croppedimages,background,*imaparam)
 
 #%%
 #Rotating and flipping the points for a better fit
@@ -152,26 +152,61 @@ ax4.set_aspect('equal')
 #Check the polynomial fit, the 0,1,1,1 are the guesses for the parameters 
 #30 is thebuffer for which data to include in the fit
 combodat=np.concatenate([topvalues,bottomvalues])
-fitresults=df.datafitter(combodat,True,[10,20],1,df.pol2ndorder,[0,1,1])
-x=np.linspace(0,10,100)
+fitresults=df.datafitter(combodat,True,[60,60],1,df.pol2ndorder,[0,1,1])
+x=np.linspace(0,60,100)
 plt.plot(combodat[:,0],combodat[:,1],'.')
 plt.plot(x+fitresults[0],df.pol2ndorder(x,*fitresults[2])+fitresults[1],'ro',markersize=1)
 plt.set_aspect('equal')
+
+#%%
+testf=df.xflipandcombine(df.rotator(alledges[0],-thettorot,*leftedge))
 #%%
 #Apply rotation to all of the images to extract the appropriate angles
-thet = np.zeros([allimages.shape[0],2])
-edgelocs = np.zeros([allimages.shape[0],2])
-for i in range(allimages.shape[0]):
+thet = np.zeros([imagestack.shape[0],2])
+edgelocs = np.zeros([imagestack.shape[0],2])
+for i in range(imagestack.shape[0]):
     rotatededges=df.rotator(alledges[i],-thettorot,*leftedge)
     rotatededges=rotatededges-rotatededges[np.argmin(rotatededges[:,0])]
     topvalues=rotatededges[rotatededges[:,1]>0]
     bottomvalues=rotatededges[rotatededges[:,1]<0]*[1,-1]
     combovals=np.concatenate([topvalues,bottomvalues])
-    fitl=df.datafitter(combovals,True,[15,20],1,df.pol2ndorder,[0,1,1])
-    fitr=df.datafitter(combovals,False,[15,20],1,df.pol2ndorder,[0,1,1])
+    fitl=df.datafitter(combovals,True,[60,60],1,df.pol2ndorder,[0,1,1])
+    fitr=df.datafitter(combovals,False,[60,60],1,df.pol2ndorder,[0,1,1])
     thet[i] = [fitl[3],fitr[3]]
     edgelocs[i] = [fitl[0],fitr[0]]
-
+def edgestoproperties(edgestack):
+    #Create arrays to store data
+    numEd=edgestack.shape[0]
+    thet = np.zeros([numEd,2])
+    edgelocs = np.zeros([numEd,2])
+    
+    #Find the angle to rotate the image
+    leftlineinfo, rightlineinfo = df.linedet(alledges)
+    allcontactpts=np.concatenate([leftlineinfo[:500],rightlineinfo[:500]])
+    
+    #Fit a line
+    def linfx(x,m,b):
+        return m*x + b
+    fitlineparam,firlinecov = curve_fit(linfx,allcontactpts[:,0],allcontactpts[:,1])
+    
+    #create 2 random points based on the line for the angle detection function
+    leftedge=[0,linfx(0,*fitlineparam)]
+    rightedge=[1,linfx(1,*fitlineparam)]
+    thettorot=df.angledet(*leftedge,*rightedge)
+    for i in range(numEd):
+        rotatededges=df.rotator(edgestack[i],-thettorot,*leftedge)
+        rotatededges=rotatededges-rotatededges[np.argmin(rotatededges[:,0])]
+        topvalues=rotatededges[rotatededges[:,1]>0]
+        bottomvalues=rotatededges[rotatededges[:,1]<0]*[1,-1]
+        combovals=np.concatenate([topvalues,bottomvalues])
+        fitl=df.datafitter(combovals,True,[60,60],1,df.pol2ndorder,[0,1,1])
+        fitr=df.datafitter(combovals,False,[60,60],1,df.pol2ndorder,[0,1,1])
+        thet[i] = [fitl[3],fitr[3]]
+        edgelocs[i] = [fitl[0],fitr[0]]
+    '''
+    Takes a imagestack and returns a list of angles for the right and left 
+    positions and angles
+    '''
 ''' 
 plt.plot(topvalues[:,0],topvalues[:,1],'.')
 plt.plot(bottomvalues[:,0],bottomvalues[:,1],'.')
