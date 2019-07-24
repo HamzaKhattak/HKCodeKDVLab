@@ -55,9 +55,10 @@ def xvtfinder(images,baseimage,cutloc,gausspts1):
     #Create empty arrays to store data
     centerloc=np.zeros([images.shape[0],2])
     alldat=np.zeros([images.shape[0],images.shape[2]*2-1,2])
+    basecut=baseimage[cutloc]
     #Perform cross correlation and use gaussian fit to find center position
     for i in range(images.shape[0]):
-        alldat[i] = crosscorrelator(images[i,cutloc],baseimage)
+        alldat[i] = crosscorrelator(images[i,cutloc],basecut)
         gparam, gerr = centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
         centerloc[i]=[gparam[1],gerr[1]]
     #Account for the 0 point

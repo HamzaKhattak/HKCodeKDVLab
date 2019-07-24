@@ -71,9 +71,9 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	#Set up trimmed Data set for fit using buffered area and only positive values
 	#Will need to change to also include data from reflection
 	if left==True:
-	    conds=np.logical_and.reduce((locs[:,0]<contactx+pixelbuff[0],locs[:,1]>contacty,locs[:,1]<pixelbuff[1]))
+	    conds=np.logical_and.reduce((locs[:,0]<contactx+pixelbuff[0],locs[:,1]>contacty,locs[:,1]<contacty+pixelbuff[1]))
 	else:
-	    conds=np.logical_and.reduce((locs[:,0]>contactx-pixelbuff[0],locs[:,1]>contacty,locs[:,1]<pixelbuff[1]))
+	    conds=np.logical_and.reduce((locs[:,0]>contactx-pixelbuff[0],locs[:,1]>contacty,locs[:,1]<contacty+pixelbuff[1]))
 	    
 	trimDat=locs[conds]-[contactx,contacty]
 
@@ -123,8 +123,8 @@ def xflipandcombine(toflip):
 	'''
 	Flips an already rotated edge point array and combines the top and the bottom
 	'''#Center the result
-	#Subtract the minimum
-	centeredarray=toflip-toflip[np.argmin(toflip[:,0])]
+	#Subtract the minimum in y
+	centeredarray=toflip-[0,toflip[np.argmin(toflip[:,0])][0]]
 	#Seperate and flip the negative values
 	topvalues=centeredarray[centeredarray[:,1]>0]
 	bottomvalues=centeredarray[centeredarray[:,1]<0]*[1,-1]

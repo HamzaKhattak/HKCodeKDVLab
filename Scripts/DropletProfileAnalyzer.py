@@ -89,6 +89,7 @@ croppedimages=ede.cropper(imagestack,x1c,x2c,y1c,y2c)
 alledges=ede.seriesedgedetect(croppedimages,background,*imaparam)
 
 #%%
+
 #Rotating and flipping the points for a better fit
 leftlineinfo, rightlineinfo = df.linedet(alledges)
 allcontactpts=np.concatenate([leftlineinfo[:500],rightlineinfo[:500]])
@@ -117,7 +118,7 @@ plt.axes().set_aspect('equal')
 #Rotate opposite the visible angle
 rotationtest=df.rotator(alledges[0],-thettorot,*leftedge)
 #Center the result
-rotationtest=rotationtest-rotationtest[np.argmin(rotationtest[:,0])]
+rotationtest=rotationtest-[0,rotationtest[np.argmin(rotationtest[:,0])][1]]
 #Flip the negative values
 topvalues=rotationtest[rotationtest[:,1]>0]
 bottomvalues=rotationtest[rotationtest[:,1]<0]*[1,-1]
@@ -159,61 +160,14 @@ plt.plot(x+fitresults[0],df.pol2ndorder(x,*fitresults[2])+fitresults[1],'ro',mar
 plt.set_aspect('equal')
 
 #%%
-testf=df.xflipandcombine(df.rotator(alledges[0],-thettorot,*leftedge))
+testflip=df.xflipandcombine(df.rotator(alledges[0],-thettorot,*leftedge))
+plt.plot(testflip[:,0],testflip[:,1],'.',markersize=1)
+plt.set_aspect('equal')
 #%%
-#Apply rotation to all of the images to extract the appropriate angles
-thet = np.zeros([imagestack.shape[0],2])
-edgelocs = np.zeros([imagestack.shape[0],2])
-for i in range(imagestack.shape[0]):
-    rotatededges=df.rotator(alledges[i],-thettorot,*leftedge)
-    rotatededges=rotatededges-rotatededges[np.argmin(rotatededges[:,0])]
-    topvalues=rotatededges[rotatededges[:,1]>0]
-    bottomvalues=rotatededges[rotatededges[:,1]<0]*[1,-1]
-    combovals=np.concatenate([topvalues,bottomvalues])
-    fitl=df.datafitter(combovals,True,[60,60],1,df.pol2ndorder,[0,1,1])
-    fitr=df.datafitter(combovals,False,[60,60],1,df.pol2ndorder,[0,1,1])
-    thet[i] = [fitl[3],fitr[3]]
-    edgelocs[i] = [fitl[0],fitr[0]]
-def edgestoproperties(edgestack):
-    #Create arrays to store data
-    numEd=edgestack.shape[0]
-    thet = np.zeros([numEd,2])
-    edgelocs = np.zeros([numEd,2])
-    
-    #Find the angle to rotate the image
-    leftlineinfo, rightlineinfo = df.linedet(alledges)
-    allcontactpts=np.concatenate([leftlineinfo[:500],rightlineinfo[:500]])
-    
-    #Fit a line
-    def linfx(x,m,b):
-        return m*x + b
-    fitlineparam,firlinecov = curve_fit(linfx,allcontactpts[:,0],allcontactpts[:,1])
-    
-    #create 2 random points based on the line for the angle detection function
-    leftedge=[0,linfx(0,*fitlineparam)]
-    rightedge=[1,linfx(1,*fitlineparam)]
-    thettorot=df.angledet(*leftedge,*rightedge)
-    for i in range(numEd):
-        rotatededges=df.rotator(edgestack[i],-thettorot,*leftedge)
-        rotatededges=rotatededges-rotatededges[np.argmin(rotatededges[:,0])]
-        topvalues=rotatededges[rotatededges[:,1]>0]
-        bottomvalues=rotatededges[rotatededges[:,1]<0]*[1,-1]
-        combovals=np.concatenate([topvalues,bottomvalues])
-        fitl=df.datafitter(combovals,True,[60,60],1,df.pol2ndorder,[0,1,1])
-        fitr=df.datafitter(combovals,False,[60,60],1,df.pol2ndorder,[0,1,1])
-        thet[i] = [fitl[3],fitr[3]]
-        edgelocs[i] = [fitl[0],fitr[0]]
-    '''
-    Takes a imagestack and returns a list of angles for the right and left 
-    positions and angles
-    '''
-''' 
-plt.plot(topvalues[:,0],topvalues[:,1],'.')
-plt.plot(bottomvalues[:,0],bottomvalues[:,1],'.')
-''' 
-#%%
-plt.plot(-thet[:,1])
-plt.plot(thet[:,0])
+teststuffang, teststuffpos = df.edgestoproperties(alledges,[60,60],df.pol2ndorder,[0,1,1])
+
+plt.plot(teststuffpos[:,1])
+plt.plot(teststuffpos[:,0])
 #%%
 '''
 This code test shifts in y to align the data which is currently not needed.

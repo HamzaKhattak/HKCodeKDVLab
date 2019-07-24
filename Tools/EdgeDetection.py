@@ -28,7 +28,10 @@ def edgedetector(inimage,background,threshval,obsSize,cannysigma):
 	    cannysigma: Choose value of guassian blur for edge detection
 	'''
 	#Subtract background if needed and select image, droplet should be high so invert
-	imsub=background-inimage
+	if  (not isinstance(background, (list, tuple, np.ndarray)) ) and background == False:
+		imsub=np.zeros(inimage.shape)-inimage
+	else:
+		imsub=background-inimage
 
 	#Create thresholded image
 	threshimage=imsub>threshval

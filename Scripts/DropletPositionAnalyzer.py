@@ -76,7 +76,7 @@ plt.plot(b)
 #Test a couple of cut points
 cutpoint=20
 cutpoint2=30
-a=croppedimages[0,50]
+a=croppedimages[0]
 xvals,allcorr=crco.xvtfinder(croppedimages,a,cutpoint,20)
 xvals2,allcorr2=crco.xvtfinder(croppedimages,a,cutpoint2,20)
 plt.errorbar(np.arange(len(xvals)),xvals[:,0],yerr=xvals[:,1])   
