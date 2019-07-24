@@ -11,9 +11,9 @@ import numpy as np
 import importlib
 #%%
 #Specify the location of the Tools folder
-CodeDR="F:\TrentDrive\Research\KDVLabCode\HKCodeKDVLab"
+CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR="F:\TrentDrive\Research\Droplet forces film gradients\SlideData2"
+dataDR=r"E:\Newtips\1um_2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -39,13 +39,13 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 #%%
 #Import the image
-allimages=ito.stackimport(dataDR+"\Translate1ums5xob.tif")
+allimages=ito.stackimport(dataDR+r"\1um_2_MMStack_Default.ome.tif")
 #%%
 #Select the minimum (1s) and maximum (2s) crop locations
-x1c=9
-x2c=750
-y1c=715
-y2c=898
+x1c=300
+x2c=900
+y1c=400
+y2c=1000
 croppoints=[x1c,x2c,y1c,y2c]
 
 fig, ax = plt.subplots(nrows=2, ncols=2)
@@ -64,9 +64,9 @@ ax[1,1].imshow(croptest2)
 
 #%%
 #Crop all of the images and plot a cut at a y value
-croppedimages=ede.cropper(allimages,9,750,715,898)
+croppedimages=ede.cropper(allimages,*croppoints)
 
-cutpixely=-15
+cutpixely=-50
 
 a=croppedimages[0,cutpixely]
 b=croppedimages[-1,cutpixely]
@@ -82,7 +82,25 @@ for i in range(croppedimages.shape[0]):
     alldat[i]=crco.crosscorrelator(croppedimages[i,cutpixely],a)
     gparam, gfit = crco.centerfinder(alldat[i,:,0],alldat[i,:,1],20)
     centerloc[i]=[gparam[1],gfit[1]]
+
+def xvtfinder(images,baseimage,cutloc,gausspts1):
+    '''
+    Takes a image sequence and the original image and returns series of shifts
+    from the base image using cross correlation at the y pixel defined by cutloc
+    gaussspts1 is the number of points to use in the gaussian fit on either side
+    '''
+    #Create empty array to store data
+    centerloc=np.zeros([images.shape[0],2])
+    #Perform cross correlation and use gaussian fit to find center position
+    for i in range(croppedimages.shape[0]):
+        alldat[i]=crco.crosscorrelator(images[i,cutloc],baseimage)
+        gparam, gfit = crco.centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
+        centerloc[i]=[gparam[1],gfit[1]]
+    #Account for the 0 point
+    centerloc = centerloc-[centerloc[0,0],0]
+    return centerloc
     
+
     
 np.save("datcorr",alldat)
 np.save("centerloc",centerloc)
@@ -91,8 +109,11 @@ np.save("centerloc",centerloc)
 plt.plot(alldat[-20,:,0],alldat[-20,:,1],'.')
 
 #%%
-xvals=centerloc[:,0]
+xvals=centerloc[:,0]-centerloc[0,0]
+plt.plot(xvals,'.')
+#%%
+
 vel=np.gradient(xvals)
-plt.plot(xvals,vel,'.',markersize=1)
+plt.plot(xvals,vel)
 plt.xlabel('Position (pixels)')
 plt.ylabel('droplet velocity')
