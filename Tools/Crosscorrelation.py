@@ -85,4 +85,21 @@ def centerfinder(vecx,vecy,buff):
 	#Return parameter and standard deviation
 	return popt, perr
 
+def xvtfinder(images,baseimage,cutloc,gausspts1):
+    '''
+    Takes a image sequence and the original image and returns series of shifts
+    from the base image using cross correlation at the y pixel defined by cutloc
+    gaussspts1 is the number of points to use in the gaussian fit on either side
+    '''
+    #Create empty array to store data
+    centerloc=np.zeros([images.shape[0],2])
+    #Perform cross correlation and use gaussian fit to find center position
+    for i in range(croppedimages.shape[0]):
+        alldat[i]=crco.crosscorrelator(images[i,cutloc],baseimage)
+        gparam, gcov = crco.centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
+        gerr = np.sqrt(np.diag(gcov))
+        centerloc[i]=[gparam[1],gerr[1]]
+    #Account for the 0 point
+    centerloc = centerloc-[centerloc[0,0],0]
+    return centerloc
 
