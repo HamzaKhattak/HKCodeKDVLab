@@ -29,3 +29,16 @@ def folderimport(FolderLoc,extension):
 	col_dir=FolderLoc+'/*'+extension
 	return ImageCollection2(col_dir)
 
+def folderstackimport(FolderLoc):
+	'''
+	Imports stacks of tifs from a folder depending on if there are multiple
+	'''
+	imfilenames=sorted(glob.glob(FolderLoc + "/*.tif"))
+	if len(imfilenames) == 1:
+		return stackimport(FolderLoc+'/'+imfilenames[0])
+	else:
+		mainimg=stackimport(FolderLoc+'/'+imfilenames[0])
+		for i in imfilenames[1:]:
+			img=stackimport(FolderLoc+'/'+i)
+
+
