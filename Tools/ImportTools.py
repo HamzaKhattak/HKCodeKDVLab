@@ -40,5 +40,7 @@ def folderstackimport(FolderLoc):
 		mainimg=stackimport(FolderLoc+'/'+imfilenames[0])
 		for i in imfilenames[1:]:
 			img=stackimport(FolderLoc+'/'+i)
+			mainimg.append(img)
+		return mainimg
 
 
