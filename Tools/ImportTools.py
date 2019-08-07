@@ -1,6 +1,7 @@
+import os, glob
+import numpy as np
 from skimage.io import imread as imread2
 from skimage.io import ImageCollection as ImageCollection2
-import glob
 
 def stackimport(FilePath):
 	'''
@@ -35,12 +36,13 @@ def folderstackimport(FolderLoc):
 	'''
 	imfilenames=sorted(glob.glob(FolderLoc + "/*.tif"))
 	if len(imfilenames) == 1:
-		return stackimport(FolderLoc+'/'+imfilenames[0])
+		mainimg = stackimport(imfilenames[0])
+
 	else:
-		mainimg=stackimport(FolderLoc+'/'+imfilenames[0])
+		mainimg=stackimport(imfilenames[0])
 		for i in imfilenames[1:]:
-			img=stackimport(FolderLoc+'/'+i)
-			mainimg.append(img)
-		return mainimg
+			img=stackimport(i)
+			mainimg=np.concatenate((mainimg,img))
+	return mainimg
 
 
