@@ -1,0 +1,39 @@
+This is a text file with some useful info that doesn't make sense to have in its own script
+Code snippets are indicated by 
+###
+Code in here
+###
+
+Adding programs to path while changing the name:
+Ie to add fiji to Windows Path or similar for UNIX
+Use the trick of adding a .bat file in PATH that leads to it something like fiji.bat with:
+###
+@echo off
+echo.
+C:\Users\WORKSTATION\PortPrograms\Fiji.app\ImageJ-win64.exe %*
+###
+So can have a folder with aliases in some folder in the Path to run things in PowerShell/Command Prompt without actually adding a bunch of stuff to the path
+
+
+
+
+Running command prompt and FIJI code from python, not best way but works
+##
+#Create video from tif stack using Fiji, could also maybe load into numpy array, but would likely be slower
+#os.system('fiji --headless -macro ConvertToVid.ijm)
+os.system("ffmpeg -i 1umsv3.mov -c:v libx264 -b:v 2M -maxrate 2M -bufsize 1M output.mp4 ")
+###
+
+
+Use ImageJ code to save a video, need Movie plugin installed on imageJ save as a .ijm file and run using headless
+Can use the ImageJ Macro recorder for a bunch of stuff. Doesn't work well in Python mode though and the getArgument command is also broken.
+###
+name="E:/Newtips/vidcombotest/1ums.tif,E:/Newtips/vidcombotest/1umsv3.mov"
+args=split(name, ",");
+infilepath=args[0];
+outfilepath=args[1];
+open(infilepath);
+run("Movie...", "frame=100 container=.mp4 using=H.264 video=normal save=outfilepath");
+close();
+###
+
