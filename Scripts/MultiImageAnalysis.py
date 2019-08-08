@@ -17,7 +17,7 @@ import matplotlib.gridspec as gridspec
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\Newtips\SpeedAnalysis"
+dataDR=r"E:\SpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -43,22 +43,30 @@ os.chdir(dataDR)
 
 
 #%%
-#Specify parameters
+#Check on one image
+noforce=ito.imread2(dataDR+'\\base.tif')
+plt.imshow(noforce)
+#%%
 
+#Specify parameters
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
-x1c=300
-x2c=900
-y1c=400
-y2c=1000
+x1c=828
+x2c=1334
+y1c=500
+y2c=855
 croppoints=[x1c,x2c,y1c,y2c]
 
+croppedbase=ede.cropper(noforce,*croppoints)
+plt.imshow(croppedbase)
+#%%
+
 #Cross correlation
-cutpoint=30 # y pixel to use for cross correlation
+cutpoint=50 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
-imaparam=[-30,20,.05] #[threshval,obsSize,cannysigma]
+imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
 pixrange=[60,60] #xy bounding box to use in fit
@@ -66,19 +74,30 @@ pixrange=[60,60] #xy bounding box to use in fit
 #Or can set to False
 background=False 
 
+threshtest=ede.edgedetector(croppedbase,background,*imaparam)
+plt.imshow(croppedbase,cmap=plt.cm.gray)
+plt.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
+plt.axhline(cutpoint,ls='--')
+
 #%%
+'''
+Run on all of the images
+'''
 #Import images
-#Use glob to get filenames
-filenames=glob.glob("*.tif")
+#Use glob to get foldernames, tif sequences should be inside
+folderpaths=glob.glob(os.getcwd()+'/*/')
+foldernames=next(os.walk('.'))[1]
+
+#filenames=glob.glob("*.tif") #If using single files
 
 #Empty array for the position vs velocity information
-dropProp=[None]*len(filenames)
+dropProp=[None]*len(folderpaths)
 
-for i in range(len(filenames)):
-    imagestack=ito.stackimport(dataDR + '\\' + filenames[i])
+for i in range(len(folderpaths)):
+    imagestack=ito.folderstackimport(folderpaths[i])
     croppedimages=ede.cropper(imagestack,*croppoints)
     #Define no shift cropped image as first frame, could change easily if needed
-    noshift=croppedimages[0]
+    noshift=croppedbase
     #Find the cross correlation xvt and save to position arrays
     xvals , allcorr=crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
     PosvtArray = xvals[:,0]
@@ -89,8 +108,8 @@ for i in range(len(filenames)):
     #Reslice data to save for each file
     dropProp[i]=np.vstack((PosvtArray,EndptvtArray.T,AnglevtArray.T)).T
     #Save
-    fileLabel=os.path.splitext(filenames[i])
-    np.save(fileLabel[i]+'DropProps',dropProp[i])
+    #fileLabel=os.path.splitext(filenames[i]) if using files
+    np.save(foldernames[i]+'DropProps',dropProp[i])
     
     
 #%%
