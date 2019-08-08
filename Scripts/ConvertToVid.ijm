@@ -1,3 +1,6 @@
-open("E:/Newtips/vidcombotest/1ums.tif");
-run("Movie...", "frame=100 container=.mp4 using=H.264 video=normal save=E:/Newtips/vidcombotest/1umsv2.mov");
+args=split(getArgument(), ",")
+infilepath=args[0]
+outfilepath=args[1]
+open("infilepath");
+run("Movie...", "frame=100 container=.mp4 using=H.264 video=normal save=outfilepath");
 close();
