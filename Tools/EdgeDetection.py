@@ -6,6 +6,8 @@ as code to crop images
 
 import skimage.morphology as morph
 import scipy.ndimage.morphology as morph2
+from scipy.ndimage import label as ndimlabel2
+from scipy.ndimage import sum as ndimsum2
 from skimage import feature
 import numpy as np
 
@@ -44,6 +46,11 @@ def edgedetector(inimage,background,threshval,obsSize,cannysigma):
 	threshimage[[0,-1],:]=oldtopbottom
 	#Remove specs
 	threshimage=morph.remove_small_objects(threshimage,obsSize)
+	#Select largest region in case there are little blobs
+	label_im, nb_labels = ndimlabel2(threshimage)
+	sizes = ndimsum2(threshimage, label_im, range(nb_labels + 1))
+	mask = sizes == np.max(sizes)
+	threshimage=mask[label_im]
 	#Find the edges
 	edgedetect=feature.canny(threshimage, sigma=cannysigma)
 	return np.flip(np.argwhere(edgedetect),1)

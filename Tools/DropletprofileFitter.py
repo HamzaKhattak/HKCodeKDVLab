@@ -139,27 +139,45 @@ def angledet(x1,y1,x2,y2):
 	dy=y2-y1
 	return np.arctan(dy/dx)
 
-def linedet(MultipleEdges):
+def linedet(MultipleEdges,ylims=False):
 	'''
 	Takes a python array of edge xy locations and returns a list of endpoints for use with fitting
+	ylims is if there is a need to only search in a certain location
 	'''
 	#Create empty arrays
 	numIm=len(MultipleEdges)
 	leftxy=np.zeros([numIm,2])
 	rightxy=np.zeros([numIm,2])
-	for i in range(numIm):
-		#Get the indexes of the minimum and maximum x points
-		#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
-		leftindex = np.argmin(MultipleEdges[i][:,0])
-		rightindex = np.argmax(MultipleEdges[i][:,0])
-		leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
-		rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
+	#Subtract background if needed and select image, droplet should be high so invert
+	if  (not isinstance(background, (list, tuple, np.ndarray)) ) and ylims == False:
+		for i in range(numIm):
+			#Get the indexes of the minimum and maximum x points
+			#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
+			leftindex = np.argmin(MultipleEdges[i][:,0])
+			rightindex = np.argmax(MultipleEdges[i][:,0])
+			#Get the actual values
+			leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
+			rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
+	else:
+		#Define center and buffer range
+		ycen=(ylims[0]+ylims[1])/2
+		yran=np.abs(ylims[1]-ylims[0])/2
+		for i in range(numIm):
+			#Select a slice in y to analyze
+			cond = np.abs(MultipleEdges[i][:,1]-ycen) < yran #the condition to limit to the yrange of interest
+			lefttrimidx = np.where(cond)[0] #Get the indices with the condition
+			leftindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmin()] #Find the argument of the minimum in that region
+			rightindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmax()] #Same for the right
+			#Get the actual values
+			leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
+			rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
+
 	return leftxy, rightxy
 
-def thetdet(edgestack):
+def thetdet(edgestack,ylims=False):
 	'''Find the angle to rotate a stack of images based on the location of droplet edges
 	Returns the angle and a point with which to rotate'''
-	leftlineinfo, rightlineinfo = linedet(edgestack)
+	leftlineinfo, rightlineinfo = linedet(edgestack,ylims)
 	#Contact points needed for rotation, actually return the ones from the datafitter
 	allcontactpts=np.concatenate([leftlineinfo,rightlineinfo])
 
@@ -173,7 +191,7 @@ def thetdet(edgestack):
 	thet=angledet(*leftedge,*rightedge)
 	return thet, leftedge
 
-def edgestoproperties(edgestack,lims,fitfunc,fitguess):
+def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 	'''
     Takes a edgestack and returns a list of angles for the right and left 
     positions and angles
@@ -187,7 +205,7 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess):
 	dropangle = np.zeros([numEd,2])
 	contactpts = np.zeros([numEd,2])
 
-	thetatorotate, leftedge = thetdet(edgestack)
+	thetatorotate, leftedge = thetdet(edgestack,ylims)
 
 	for i in range(numEd):
 		rotatededges=rotator(edgestack[i],-thetatorotate,*leftedge)

@@ -43,22 +43,51 @@ os.chdir(dataDR)
 
 
 #%%
-#Check on one image
+#Check the extrema images and note the limits that make sense
 noforce=ito.imread2(dataDR+'\\base.tif')
-plt.imshow(noforce)
+ex1=ito.imread2(dataDR+'\\extreme1.tif')
+ex2=ito.imread2(dataDR+'\\extreme2.tif')
+
+gs = gridspec.GridSpec(1, 3)
+
+fig = plt.figure(figsize=(8,4))
+ax1 = fig.add_subplot(gs[0, 0])
+ax2 = fig.add_subplot(gs[0, 1])
+ax3 = fig.add_subplot(gs[0, 2])
+ax1.imshow(noforce)
+ax2.imshow(ex1)
+ax3.imshow(ex2)
 #%%
 
 #Specify parameters
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
-x1c=828
-x2c=1334
+#Needs to include the pipette ends
+x1c=616
+x2c=1412
 y1c=500
 y2c=855
 croppoints=[x1c,x2c,y1c,y2c]
 
+#Select crop region for fitting (just needs to be large enough so droplet end is the max)
+yanlow=679
+yanhigh=748
+yanalysisc=[yanlow-y1c,yanhigh-y1c]
+
 croppedbase=ede.cropper(noforce,*croppoints)
-plt.imshow(croppedbase)
+croppedex1=ede.cropper(ex1,*croppoints)
+croppedex2=ede.cropper(ex2,*croppoints)
+
+fig = plt.figure(figsize=(8,4))
+ax1 = fig.add_subplot(gs[0, 0])
+
+ax2 = fig.add_subplot(gs[0, 1])
+ax3 = fig.add_subplot(gs[0, 2])
+ax2.axhline(yanalysisc[0])
+ax2.axhline(yanalysisc[1])
+ax1.imshow(croppedbase)
+ax2.imshow(croppedex1)
+ax3.imshow(croppedex2)
 #%%
 
 #Cross correlation
@@ -69,7 +98,8 @@ guassfitl=20 # Number of data points to each side to use for guass fit
 imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
-pixrange=[60,60] #xy bounding box to use in fit
+clinyguess = 214 #Guess at the center line (helpful if parts of pipette are further than droplet)
+pixrange=[60,25] #xy bounding box to use in fit
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
@@ -94,24 +124,25 @@ foldernames=next(os.walk('.'))[1]
 dropProp=[None]*len(folderpaths)
 
 for i in range(len(folderpaths)):
-    imagestack=ito.folderstackimport(folderpaths[i])
-    croppedimages=ede.cropper(imagestack,*croppoints)
-    #Define no shift cropped image as first frame, could change easily if needed
-    noshift=croppedbase
-    #Find the cross correlation xvt and save to position arrays
-    xvals , allcorr=crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
-    PosvtArray = xvals[:,0]
-    #Perform edge detection to get python array
-    stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
-    #Fit the edges and extract angles and positions
-    AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
-    #Reslice data to save for each file
-    dropProp[i]=np.vstack((PosvtArray,EndptvtArray.T,AnglevtArray.T)).T
-    #Save
-    #fileLabel=os.path.splitext(filenames[i]) if using files
-    np.save(foldernames[i]+'DropProps',dropProp[i])
+	imagestack=ito.folderstackimport(folderpaths[i])
+	croppedimages=ede.cropper(imagestack,*croppoints)
+	#Define no shift cropped image as first frame, could change easily if needed
+	noshift=croppedbase
+	#Find the cross correlation xvt and save to position arrays
+	xvals , allcorr=crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
+	PosvtArray = xvals[:,0]
+	#Perform edge detection to get python array
+	stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
+	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
+	#Fit the edges and extract angles and positions
+	AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+	#Reslice data to save for each file
+	dropProp[i]=np.vstack((PosvtArray,EndptvtArray.T,AnglevtArray.T)).T
+	#Save
+	#fileLabel=os.path.splitext(filenames[i]) if using files
+	np.save(foldernames[i]+'DropProps',dropProp[i])
     
-    
+
 #%%
 gs = gridspec.GridSpec(3, 1)
 
