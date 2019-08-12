@@ -1,1 +1,1 @@
-Repository for sharing useful bits of code etc
+Repository for sharing useful bits of code etc (from the Droplet Transport project so far)
