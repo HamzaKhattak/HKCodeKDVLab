@@ -46,13 +46,12 @@ def splitlinefinder(locs,centerybuff):
 def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	'''
 	This function takes a numpy array of edge location xy values and returns
-	the location of the contact point as well as a fitted circle
+	the location of the contact point as well as a fitted function
 	Parameters:
 	    locs: the input array
 	    left: True for left side of droplet, false for right
-	    pixelbuff: How many pixels in x to include for fit
-	    circfitguess: Guess's for circle fit parameters, make sure to make negative for
-	        right side. [xcenter,ycenter,radius]
+	    pixelbuff: How many pixels in xy to include for fit
+	    cfitguess: Guess's for fit parameters
 	    zweight: anything below 1 gives extra weight to the zero
 
 	Circle fitting can be a bit buggy, need to be fairly close with parameters.
@@ -149,7 +148,7 @@ def linedet(MultipleEdges,ylims=False):
 	leftxy=np.zeros([numIm,2])
 	rightxy=np.zeros([numIm,2])
 	#Subtract background if needed and select image, droplet should be high so invert
-	if  (not isinstance(background, (list, tuple, np.ndarray)) ) and ylims == False:
+	if  (not isinstance(ylims, (list, tuple, np.ndarray)) ) and ylims == False:
 		for i in range(numIm):
 			#Get the indexes of the minimum and maximum x points
 			#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
@@ -198,7 +197,8 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
     edgestack is a python list of numpy arrays containing the edges
     lims is the x and y pixel range to use for fitting
     fitfunc is the function to use to find the angle
-    fitguesss is the guess for those parameters
+	fitguesss is the guess for those parameters
+	ylims is optional for when need to select a specific y region because the pipette is farther than the droplet
     '''
 	#Create arrays to store data
 	numEd=len(edgestack)

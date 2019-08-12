@@ -141,33 +141,94 @@ for i in range(len(folderpaths)):
 	#Save
 	#fileLabel=os.path.splitext(filenames[i]) if using files
 	np.save(foldernames[i]+'DropProps',dropProp[i])
-    
+#%%
+np.savetxt("foldernames.csv", foldernames, delimiter=",", fmt='%s')
 
+#%%
+def tarrf(arr,tstep):
+	return np.linspace(0,len(arr)*tstep,len(arr))
+
+tsteps=[4,0.5,2,1,1]
+varr=[0.5,10,1,2,5]
+timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 #%%
 gs = gridspec.GridSpec(3, 1)
 
-fig = plt.figure(figsize=(4,8))
+fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
-ax1.plot(dropProp[0][:,0],'b-',label=r'$1 \mu m /s$')
-ax1.plot(dropProp[1][:,0],'r-',label=r'$5 \mu m /s$')
+ax1.plot(timearr[1],dropProp[1][:,0],'g-',label=r'$10 \mu m /s$')
+ax1.plot(timearr[4],dropProp[4][:,0],'m-',label=r'$5 \mu m /s$')
+ax1.plot(timearr[2],dropProp[2][:,0],'r-',label=r'$1 \mu m /s$')
+ax1.plot(timearr[0],dropProp[0][:,0],'b-',label=r'$0.5 \mu m /s$')
+
 ax1.legend()
 ax1.set_ylabel('Pipette x (cc)')
 
 ax2 = fig.add_subplot(gs[1, 0]) 
-ax2.plot(dropProp[0][:,1],'b-',label='left')
-ax2.plot(dropProp[0][:,2],'b--',label='right')
-ax2.plot(dropProp[1][:,1],'r-')
-ax2.plot(dropProp[1][:,2],'r--')
-ax2.set_ylabel('Droplet x')
-ax2.legend()
+
+ax2.plot(timearr[1],dropProp[1][:,2]-dropProp[1][:,1],'g-')
+ax2.plot(timearr[4],dropProp[4][:,2]-dropProp[4][:,1],'m-')
+ax2.plot(timearr[2],dropProp[2][:,2]-dropProp[2][:,1],'r-')
+ax2.plot(timearr[0],dropProp[0][:,2]-dropProp[0][:,1],'b-')
+
+ax2.set_ylabel('Droplet length (pixels)')
 
 ax3 = fig.add_subplot(gs[2, 0]) 
-ax3.plot(dropProp[0][:,3],'b-')
-ax3.plot(-dropProp[0][:,4],'b--')
-ax3.plot(dropProp[1][:,3],'r-')
-ax3.plot(-dropProp[1][:,4],'r--')
+
+
+ax3.plot(timearr[1],dropProp[1][:,3],'g-')
+ax3.plot(timearr[4],dropProp[4][:,3],'m-')
+ax3.plot(timearr[2],dropProp[2][:,3],'r-')
+ax3.plot(timearr[0],dropProp[0][:,3],'b-')
+
+ax3.plot(timearr[1],-dropProp[1][:,4],'g--')
+ax3.plot(timearr[4],-dropProp[4][:,4],'m--')
+ax3.plot(timearr[2],-dropProp[2][:,4],'r--')
+ax3.plot(timearr[0],-dropProp[0][:,4],'b--')
+
+ax3.set_ylim(40,90)
 ax3.set_ylabel('Contact angle')
 ax3.set_xlabel('Time (s)')
 
 plt.tight_layout()
 
+#%%
+gs = gridspec.GridSpec(3, 1)
+
+fig = plt.figure(figsize=(8,8))
+ax1 = fig.add_subplot(gs[0, 0])
+ax1.plot(timearr[1]*varr[1],dropProp[1][:,0],'g-',label=r'$10 \mu m /s$')
+ax1.plot(timearr[4]*varr[4],dropProp[4][:,0],'m-',label=r'$5 \mu m /s$')
+ax1.plot(timearr[2]*varr[2],dropProp[2][:,0],'r-',label=r'$1 \mu m /s$')
+ax1.plot(timearr[0]*varr[0],dropProp[0][:,0],'b-',label=r'$0.5 \mu m /s$')
+
+ax1.legend()
+ax1.set_ylabel('Pipette x (cc)')
+
+ax2 = fig.add_subplot(gs[1, 0]) 
+
+ax2.plot(timearr[1]*varr[1],dropProp[1][:,2]-dropProp[1][:,1],'g-')
+ax2.plot(timearr[4]*varr[4],dropProp[4][:,2]-dropProp[4][:,1],'m-')
+ax2.plot(timearr[2]*varr[2],dropProp[2][:,2]-dropProp[2][:,1],'r-')
+ax2.plot(timearr[0]*varr[0],dropProp[0][:,2]-dropProp[0][:,1],'b-')
+
+ax2.set_ylabel('Droplet length (pixels)')
+
+ax3 = fig.add_subplot(gs[2, 0]) 
+
+
+ax3.plot(timearr[1]*varr[1],dropProp[1][:,3],'g-')
+ax3.plot(timearr[4]*varr[4],dropProp[4][:,3],'m-')
+ax3.plot(timearr[2]*varr[2],dropProp[2][:,3],'r-')
+ax3.plot(timearr[0]*varr[0],dropProp[0][:,3],'b-')
+
+ax3.plot(timearr[1]*varr[1],-dropProp[1][:,4],'g--')
+ax3.plot(timearr[4]*varr[4],-dropProp[4][:,4],'m--')
+ax3.plot(timearr[2]*varr[2],-dropProp[2][:,4],'r--')
+ax3.plot(timearr[0]*varr[0],-dropProp[0][:,4],'b--')
+
+ax3.set_ylim(40,90)
+ax3.set_ylabel('Contact angle')
+ax3.set_xlabel('Approx Substrate distance travelled')
+
+plt.tight_layout()
