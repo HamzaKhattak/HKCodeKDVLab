@@ -9,7 +9,7 @@ import importlib
 from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
-
+import pickle
 #%%
 #import similaritymeasures
 
@@ -122,7 +122,8 @@ foldernames=next(os.walk('.'))[1]
 
 #Empty array for the position vs velocity information
 dropProp=[None]*len(folderpaths)
-
+#%%
+#Edge detection and save
 for i in range(len(folderpaths)):
 	imagestack=ito.folderstackimport(folderpaths[i])
 	croppedimages=ede.cropper(imagestack,*croppoints)
@@ -133,6 +134,11 @@ for i in range(len(folderpaths)):
 	PosvtArray = xvals[:,0]
 	#Perform edge detection to get python array
 	stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
+	ito.savelistnp(folderpaths[i]+'edgedata.npy',stackedges) #Save for later use
+	#Crop
+
+for i in range(len(folderpaths)):
+	stackedges = ito.openlistnp(folderpaths[-1]+'edgedata.npy')
 	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
 	#Fit the edges and extract angles and positions
 	AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
@@ -146,7 +152,10 @@ np.savetxt("foldernames.csv", foldernames, delimiter=",", fmt='%s')
 
 #%%
 def tarrf(arr,tstep):
-	return np.linspace(0,len(arr)*tstep,len(arr))
+	'''
+	Simply returns a time array for plotting
+	'''
+	return np.linspace(0,len(arr)*tstep,len(arr)) 
 
 tsteps=[4,0.5,2,1,1]
 varr=[0.5,10,1,2,5]
@@ -217,15 +226,15 @@ ax2.set_ylabel('Droplet length (pixels)')
 ax3 = fig.add_subplot(gs[2, 0]) 
 
 
-ax3.plot(timearr[1]*varr[1],dropProp[1][:,3],'g-')
-ax3.plot(timearr[4]*varr[4],dropProp[4][:,3],'m-')
-ax3.plot(timearr[2]*varr[2],dropProp[2][:,3],'r-')
-ax3.plot(timearr[0]*varr[0],dropProp[0][:,3],'b-')
+ax3.plot(timearr[1]*varr[1],dropProp[1][:,3],'g,')
+ax3.plot(timearr[4]*varr[4],dropProp[4][:,3],'m,')
+ax3.plot(timearr[2]*varr[2],dropProp[2][:,3],'r,')
+ax3.plot(timearr[0]*varr[0],dropProp[0][:,3],'b,')
 
-ax3.plot(timearr[1]*varr[1],-dropProp[1][:,4],'g--')
-ax3.plot(timearr[4]*varr[4],-dropProp[4][:,4],'m--')
-ax3.plot(timearr[2]*varr[2],-dropProp[2][:,4],'r--')
-ax3.plot(timearr[0]*varr[0],-dropProp[0][:,4],'b--')
+ax3.plot(timearr[1]*varr[1],-dropProp[1][:,4],'g.')
+ax3.plot(timearr[4]*varr[4],-dropProp[4][:,4],'m.')
+ax3.plot(timearr[2]*varr[2],-dropProp[2][:,4],'r.')
+ax3.plot(timearr[0]*varr[0],-dropProp[0][:,4],'b.')
 
 ax3.set_ylim(40,90)
 ax3.set_ylabel('Contact angle')

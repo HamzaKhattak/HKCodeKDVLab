@@ -11,7 +11,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:/SpeedScan/10umreturn_1/"
+dataDR=r"E:/SpeedScan/5umreturn_1/"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -30,8 +30,8 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 
 #%%
-inFile="10umreturn_1_MMStack_Default.ome.tif"
-outFile="10ums.mp4"
+inFile="05umreturn_2_MMStack_Default_1.ome.tif"
+outFile="5ums.mp4"
 
 
 #Import the tif files in a folder

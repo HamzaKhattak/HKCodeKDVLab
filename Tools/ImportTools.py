@@ -1,4 +1,4 @@
-import os, glob
+import os, glob, pickle
 import numpy as np
 from skimage.io import imread as imread2
 from skimage.io import ImageCollection as ImageCollection2
@@ -46,3 +46,17 @@ def folderstackimport(FolderLoc):
 	return mainimg
 
 
+def savelistnp(filepath,data):
+	'''
+	Saves lists of numpy arrays using pickle so they don't become objects
+	'''
+	with open(filepath, 'wb') as outfile:
+		   pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
+
+def openlistnp(filepath):
+	'''
+	Opens lists of numpy arrays using pickle
+	'''
+	with open(filepath, 'rb') as infile:
+	    result = pickle.load(infile)
+	return result

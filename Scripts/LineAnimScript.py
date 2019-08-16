@@ -38,8 +38,45 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 #%%
-allimages=ito.stackimport(dataDR+"\Translate1ums5xob.tif")
-allimages=ede.cropper(allimages,9,750,715,898)
+'''
+Project specific code to get data for a single run
+'''
+
+#%%
+'''
+Image detection
+'''
+x1c=616
+x2c=1412
+y1c=500
+y2c=855
+croppoints=[x1c,x2c,y1c,y2c]
+
+#Cross correlation
+cutpoint=50 # y pixel to use for cross correlation
+guassfitl=20 # Number of data points to each side to use for guass fit
+
+#Edge detection
+imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
+fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
+fitguess=[0,1,1]
+clinyguess = 214 #Guess at the center line (helpful if parts of pipette are further than droplet)
+pixrange=[60,25] #xy bounding box to use in fit
+#Specify an image to use as a background (needs same dim as images being analysed)
+#Or can set to False
+background=False 
+
+
+allimages=ito.folderstackimport(dataDR)
+allimages=ede.cropper(allimages,*croppoints)
+#%%
+
+stackedges = ede.seriesedgedetect(allimages,background,*imaparam)
+#Fit the edges and extract angles and positions
+AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+
+noforce=ito.imread2(dataDR+'\\base.tif')
+
 loaddat=np.load("datcorr.npy")
 centrepos=np.load("centerloc.npy")
 #Array containing, extract the y and x values first (always at x=0)
