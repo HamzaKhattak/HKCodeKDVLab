@@ -46,22 +46,25 @@ def centerfinder(vecx,vecy,buff):
 	return popt, perr
 
 def xvtfinder(images,baseimage,cutloc,gausspts1):
-    '''
-    Takes a image sequence and the original image and returns series of shifts
-    as well as the full cross correlation arrays
-    from the base image using cross correlation at the y pixel defined by cutloc
-    gaussspts1 is the number of points to use in the gaussian fit on either side
-    '''
-    #Create empty arrays to store data
-    centerloc=np.zeros([images.shape[0],2])
-    alldat=np.zeros([images.shape[0],images.shape[2]*2-1,2])
-    basecut=baseimage[cutloc]
-    #Perform cross correlation and use gaussian fit to find center position
-    for i in range(images.shape[0]):
-        alldat[i] = crosscorrelator(images[i,cutloc],basecut)
-        gparam, gerr = centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
-        centerloc[i]=[gparam[1],gerr[1]]
-    #Account for the 0 point
-    centerloc = centerloc-[centerloc[0,0],0]
-    return centerloc, alldat
+	'''
+	Takes a image sequence and the original image and returns series of shifts
+	as well as the full cross correlation arrays
+	from the base image using cross correlation at the y pixel defined by cutloc
+	gaussspts1 is the number of points to use in the gaussian fit on either side
+	'''
+	#Create empty arrays to store data
+	centerloc=np.zeros([images.shape[0],2])
+	alldat=np.zeros([images.shape[0],images.shape[2]*2-1,2])
+	#autocorrelation for base
+	basecut=baseimage[cutloc]
+	basecorr=crosscorrelator(basecut,basecut)
+	bgparam, bgerr = centerfinder(basecorr[:,0],basecorr[:,1],gausspts1)
+	#Perform cross correlation and use gaussian fit to find center position
+	for i in range(images.shape[0]):
+		alldat[i] = crosscorrelator(images[i,cutloc],basecut)
+		gparam, gerr = centerfinder(alldat[i,:,0],alldat[i,:,1],gausspts1)
+		centerloc[i]=[gparam[1],gerr[1]]
+	#Account for the 0 point
+	centerloc = centerloc-[bgparam[1],0]
+	return centerloc, alldat
 

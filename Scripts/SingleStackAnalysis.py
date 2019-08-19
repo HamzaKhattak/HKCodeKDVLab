@@ -2,23 +2,22 @@
 This code performs the edge location and cross correlation analysis across multiple images
 '''
 
-import sys, os, glob
+import sys, os, glob, pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
-import pickle
 #%%
 #import similaritymeasures
 
 #%%
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
-#Specify where the data is and where plots will be saved
-dataDR=r"E:\SpeedScan"
-
+#Specify where the data is and where the folder of interest is
+dataDR=r"E:/SpeedScan/"
+foldername="/5umreturn_1/"
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
 
@@ -59,12 +58,14 @@ ax2.imshow(ex1)
 ax3.imshow(ex2)
 #%%
 
+
+
 #Specify parameters
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
 x1c=616
-x2c=1412
+x2c=1500
 y1c=500
 y2c=855
 croppoints=[x1c,x2c,y1c,y2c]
@@ -78,6 +79,7 @@ croppedbase=ede.cropper(noforce,*croppoints)
 croppedex1=ede.cropper(ex1,*croppoints)
 croppedex2=ede.cropper(ex2,*croppoints)
 
+gs = gridspec.GridSpec(1, 3)
 fig = plt.figure(figsize=(8,4))
 ax1 = fig.add_subplot(gs[0, 0])
 
@@ -88,12 +90,8 @@ ax2.axhline(yanalysisc[1])
 ax1.imshow(croppedbase)
 ax2.imshow(croppedex1)
 ax3.imshow(croppedex2)
-x1c=616
-x2c=1412
-y1c=500
-y2c=855
-croppoints=[x1c,x2c,y1c,y2c]
 
+#%%
 #Cross correlation
 cutpoint=50 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
@@ -109,12 +107,35 @@ pixrange=[60,25] #xy bounding box to use in fit
 background=False 
 
 
-allimages=ito.folderstackimport(dataDR)
+testedge=ede.edgedetector(croppedex2,background,*imaparam)
+fig = plt.figure(figsize=(8,4))
+plt.imshow(croppedex2,cmap=plt.cm.gray)
+plt.plot(testedge[:,0],testedge[:,1],'b.',markersize=1)
+croppedforfit=testedge[(testedge[:,1]<yanalysisc[1]) & (testedge[:,1]>yanalysisc[0])]
+testfit = df.datafitter(croppedforfit,True,pixrange,1,fitfunc,fitguess)
+xvals=np.arange(0,20)
+yvals=df.pol2ndorder(xvals,*testfit[-2])
+plt.plot(xvals+testfit[0],yvals+testfit[1],'r-')
+#%%
+specfolder="E:/SpeedScan/5umreturn_1/"
+allimages=ito.folderstackimport(specfolder)
 allimages=ede.cropper(allimages,*croppoints)
 #%%
+noshift=croppedbase
+#Find the cross correlation xvt and save to position arrays
+xvals , allcorr = crco.xvtfinder(allimages,noshift,cutpoint,guassfitl)
 
+np.save(dataDR+foldername+'CCorcents.npy',xvals)
+np.save(dataDR+foldername+'CCorall.npy',allcorr)
+
+#%%
 stackedges = ede.seriesedgedetect(allimages,background,*imaparam)
+ito.savelistnp(os.path.join(specfolder,'edgedata.npy'),stackedges)
 #Fit the edges and extract angles and positions
-AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+stackedgecrop = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
+AnglevtArray, EndptvtArray, ParamArrat = df.edgestoproperties(stackedgecrop,pixrange,fitfunc,fitguess)
+ito.savelistnp(os.path.join(specfolder,'fitparams.npy'),stackedges)
 
-noforce=ito.imread2(dataDR+'\\base.tif')
+
+#%%
+plt.plot(AnglevtArray[:,0])

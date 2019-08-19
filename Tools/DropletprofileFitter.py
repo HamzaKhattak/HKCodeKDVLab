@@ -86,7 +86,7 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	m0=derivative(paramfunc,0)
 	#Return angle in degrees
 	thet=np.arctan(m0)*180/np.pi
-	return [contactx,contacty,popt,thet,m0]
+	return [contactx,contacty,thet,m0,popt,pcov]
 
 def flipper(toflip,x1,y1,x2,y2):
 	'''
@@ -203,7 +203,8 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 	#Create arrays to store data
 	numEd=len(edgestack)
 	dropangle = np.zeros([numEd,2])
-	contactpts = np.zeros([numEd,2])
+	contactpts = np.zeros([numEd,2,2])
+	paramlist=np.zeros([numEd,2,len(fitguess)])
 
 	thetatorotate, leftedge = thetdet(edgestack,ylims)
 
@@ -212,7 +213,8 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 		combovals=xflipandcombine(rotatededges)
 		fitl=datafitter(combovals,True,lims,1,fitfunc,fitguess)
 		fitr=datafitter(combovals,False,lims,1,fitfunc,fitguess)
-		dropangle[i] = [fitl[3],fitr[3]]
-		contactpts[i] = [fitl[0],fitr[0]]
-	return dropangle, contactpts
+		dropangle[i] = [fitl[2],fitr[2]]
+		contactpts[i] = [[fitl[0],fitl[1]],[fitr[0],fitr[1]]]
+		paramlist[i] = [fitl[-2],fitr[-2]]
+	return dropangle, contactpts, paramlist
 

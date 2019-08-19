@@ -11,9 +11,9 @@ import importlib
 import sys, os
 #%%
 #Specify the location of the Tools folder
-CodeDR="F:\TrentDrive\Research\KDVLabCode\HKCodeKDVLab"
+CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR="F:\TrentDrive\Research\Droplet forces film gradients\SlideData2"
+dataDR=r"E:\SpeedScan\5umreturn_1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -38,50 +38,23 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 #%%
-'''
-Project specific code to get data for a single run
-'''
 
 #%%
-'''
-Image detection
-'''
+
+
 x1c=616
-x2c=1412
+x2c=1500
 y1c=500
 y2c=855
 croppoints=[x1c,x2c,y1c,y2c]
-
-#Cross correlation
-cutpoint=50 # y pixel to use for cross correlation
-guassfitl=20 # Number of data points to each side to use for guass fit
-
-#Edge detection
-imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
-fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
-fitguess=[0,1,1]
-clinyguess = 214 #Guess at the center line (helpful if parts of pipette are further than droplet)
-pixrange=[60,25] #xy bounding box to use in fit
-#Specify an image to use as a background (needs same dim as images being analysed)
-#Or can set to False
-background=False 
-
-
 allimages=ito.folderstackimport(dataDR)
 allimages=ede.cropper(allimages,*croppoints)
 #%%
+edges=ito.openlistnp(os.path.join(dataDR,'edgedata.npy'))
 
-stackedges = ede.seriesedgedetect(allimages,background,*imaparam)
-#Fit the edges and extract angles and positions
-AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+loaddat=np.load("CCorall.npy")
+centrepos=np.load("Ccorcents.npy")
 
-noforce=ito.imread2(dataDR+'\\base.tif')
-
-loaddat=np.load("datcorr.npy")
-centrepos=np.load("centerloc.npy")
-#Array containing, extract the y and x values first (always at x=0)
-#Input array of the form of a list of yvalues for every timestep
-#ie [[x1(t0),x2(t0),x3(t0)],[x1(t1),x2(t1),x3(t1)]]
 inputxvt=loaddat[:,:,0]
 inputyvt=loaddat[:,:,1]
 #%%
@@ -93,11 +66,15 @@ tArray=np.linspace(0,endT,yAnim[:,0].size) #Make a list of times
 
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(2,1,figsize=(8,8))
+im= ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
+
+edgeline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'r.',markersize=1.5,animated=True)
 line, =  plt.plot([], [],'r-', animated=True)
 vline2, = ax[1].plot([],animated=True)
 
-im= ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
-im1=ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal',alpha=0.5)
+
+
+#im1=ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal',alpha=0.5)
 #p=ax[1].axvline(x=centrepos[0,0])
 
 def init():
@@ -107,21 +84,22 @@ def init():
     """
     #Set plot limits etc
 
-    ax[0].set_xlim(0, 741)
-    ax[1].set_xlim(-681, 60)
+    ax[0].set_xlim(0, 800)
+    ax[1].set_xlim(-100, 100)
     ax[1].set_ylim(-.1, 1)
     ax[1].set_xlabel('shift (pixels)')
     ax[1].set_ylabel('Cross correlation value')
     plt.tight_layout()
-    return line,vline2,
+    return line,edgeline,vline2,
 #need number of timesteps total
 nt=yAnim[:,0].size
 def update_plot(it):
     global xAnim, yAnim
     line.set_data(yAnim[it,:], xAnim[it,:])
     im.set_data(allimages[it])
+    edgeline.set_data([edges[it][:,0],edges[it][:,1]])
     vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
-    return line,im,im1,vline2,
+    return line,im,im1,edgeline,vline2,
 plt.tight_layout()
 
 #Can control which parts are animated with the frames, interval is the speed of the animation

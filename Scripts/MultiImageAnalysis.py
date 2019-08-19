@@ -138,7 +138,7 @@ for i in range(len(folderpaths)):
 	#Crop
 
 for i in range(len(folderpaths)):
-	stackedges = ito.openlistnp(folderpaths[-1]+'edgedata.npy')
+	stackedges = ito.openlistnp(folderpaths[i]+'edgedata.npy')
 	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
 	#Fit the edges and extract angles and positions
 	AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
