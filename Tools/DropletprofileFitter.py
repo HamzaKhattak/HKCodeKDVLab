@@ -121,12 +121,17 @@ def rotator(torotate,angle,ox,oy):
 def xflipandcombine(toflip):
 	'''
 	Flips an already rotated edge point array and combines the top and the bottom
-	'''#Center the result
+	'''
+	#Find where to flip
+	locleft=np.argmin(toflip[:,0])
+	locright=np.argmin(toflip[:,0])
+	avflipy=(toflip[locleft,1]+toflip[locright,1])/2
 	#Subtract the minimum in y
-	centeredarray=toflip-[0,toflip[np.argmin(toflip[:,0])][0]]
+	#centeredarray=toflip-[0,toflip[np.argmin(toflip[:,0])][0]]
+
 	#Seperate and flip the negative values
-	topvalues=centeredarray[centeredarray[:,1]>0]
-	bottomvalues=centeredarray[centeredarray[:,1]<0]*[1,-1]
+	topvalues=toflip[toflip[:,1]>avflipy]
+	bottomvalues=toflip[toflip[:,1]<avflipy]*[1,-1]+[0,2*avflipy]
 	return np.concatenate([topvalues,bottomvalues])
 
 
@@ -207,6 +212,7 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 	paramlist=np.zeros([numEd,2,len(fitguess)])
 
 	thetatorotate, leftedge = thetdet(edgestack,ylims)
+	rotateprop = [thetatorotate,leftedge]
 
 	for i in range(numEd):
 		rotatededges=rotator(edgestack[i],-thetatorotate,*leftedge)
@@ -216,5 +222,5 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 		dropangle[i] = [fitl[2],fitr[2]]
 		contactpts[i] = [[fitl[0],fitl[1]],[fitr[0],fitr[1]]]
 		paramlist[i] = [fitl[-2],fitr[-2]]
-	return dropangle, contactpts, paramlist
+	return dropangle, contactpts, paramlist, rotateprop
 

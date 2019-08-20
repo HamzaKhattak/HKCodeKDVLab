@@ -107,9 +107,9 @@ pixrange=[60,25] #xy bounding box to use in fit
 background=False 
 
 
-testedge=ede.edgedetector(croppedex2,background,*imaparam)
+testedge=ede.edgedetector(croppedbase,background,*imaparam)
 fig = plt.figure(figsize=(8,4))
-plt.imshow(croppedex2,cmap=plt.cm.gray)
+plt.imshow(croppedbase,cmap=plt.cm.gray)
 plt.plot(testedge[:,0],testedge[:,1],'b.',markersize=1)
 croppedforfit=testedge[(testedge[:,1]<yanalysisc[1]) & (testedge[:,1]>yanalysisc[0])]
 testfit = df.datafitter(croppedforfit,True,pixrange,1,fitfunc,fitguess)
@@ -132,10 +132,16 @@ np.save(dataDR+foldername+'CCorall.npy',allcorr)
 stackedges = ede.seriesedgedetect(allimages,background,*imaparam)
 ito.savelistnp(os.path.join(specfolder,'edgedata.npy'),stackedges)
 #Fit the edges and extract angles and positions
+#%%
 stackedgecrop = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
-AnglevtArray, EndptvtArray, ParamArrat = df.edgestoproperties(stackedgecrop,pixrange,fitfunc,fitguess)
-ito.savelistnp(os.path.join(specfolder,'fitparams.npy'),stackedges)
+dropprops = df.edgestoproperties(stackedgecrop,pixrange,fitfunc,fitguess)
+AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = dropprops
+ito.savelistnp(os.path.join(specfolder,'fitparams.npy'), dropprops)
 
-
+#%%
+plt.plot(stackedges[150][:,0],stackedges[150][:,1],'.',markersize=1)
+plt.plot(stackedgecrop[150][:,0],stackedgecrop[150][:,1],'.')
+rotedges=df.xflipandcombine(df.rotator(stackedges[150],-.007,0,217))
+plt.plot(rotedges[:,0],rotedges[:,1],'.')
 #%%
 plt.plot(AnglevtArray[:,0])

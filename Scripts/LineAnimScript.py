@@ -51,12 +51,16 @@ allimages=ito.folderstackimport(dataDR)
 allimages=ede.cropper(allimages,*croppoints)
 #%%
 edges=ito.openlistnp(os.path.join(dataDR,'edgedata.npy'))
+dropprops = ito.openlistnp(os.path.join(dataDR,'fitparams.npy'))
+
+AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = dropprops
 
 loaddat=np.load("CCorall.npy")
 centrepos=np.load("Ccorcents.npy")
 
 inputxvt=loaddat[:,:,0]
 inputyvt=loaddat[:,:,1]
+
 #%%
 endT=10 #The total time over the data, assumes equal spacing
 yAnim=inputxvt
@@ -68,12 +72,13 @@ tArray=np.linspace(0,endT,yAnim[:,0].size) #Make a list of times
 fig, ax = plt.subplots(2,1,figsize=(8,8))
 im= ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 
-edgeline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'r.',markersize=1.5,animated=True)
+edgeline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'r.',markersize=1,animated=True)
+fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'b-',markersize=2,animated=True)
 line, =  plt.plot([], [],'r-', animated=True)
 vline2, = ax[1].plot([],animated=True)
 
 
-
+xvals=np.arange(0,20)
 #im1=ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal',alpha=0.5)
 #p=ax[1].axvline(x=centrepos[0,0])
 
@@ -90,21 +95,23 @@ def init():
     ax[1].set_xlabel('shift (pixels)')
     ax[1].set_ylabel('Cross correlation value')
     plt.tight_layout()
-    return line,edgeline,vline2,
+    return line,edgeline,fitline,vline2,
 #need number of timesteps total
 nt=yAnim[:,0].size
 def update_plot(it):
-    global xAnim, yAnim
-    line.set_data(yAnim[it,:], xAnim[it,:])
-    im.set_data(allimages[it])
-    edgeline.set_data([edges[it][:,0],edges[it][:,1]])
-    vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
-    return line,im,im1,edgeline,vline2,
+	global xAnim, yAnim
+	line.set_data(yAnim[it,:], xAnim[it,:])
+	im.set_data(allimages[it])
+	edgeline.set_data([edges[it][:,0],edges[it][:,1]])
+	yvals=df.pol2ndorder(xvals,*ParamArrat[it][0])
+	fitline.set_data([xvals+EndptvtArray[it,0,0],yvals+EndptvtArray[it,0,1]])
+	vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
+	return line,im,im1,edgeline,fitline,vline2,
 plt.tight_layout()
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,1), interval=5,
+ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,1), interval=200,
                     init_func=init, repeat_delay=1000, blit=True)
 
 

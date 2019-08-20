@@ -64,7 +64,7 @@ ax3.imshow(ex2)
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
 x1c=616
-x2c=1412
+x2c=1500
 y1c=500
 y2c=855
 croppoints=[x1c,x2c,y1c,y2c]
@@ -127,29 +127,38 @@ dropProp=[None]*len(folderpaths)
 for i in range(len(folderpaths)):
 	imagestack=ito.folderstackimport(folderpaths[i])
 	croppedimages=ede.cropper(imagestack,*croppoints)
-	#Define no shift cropped image as first frame, could change easily if needed
 	noshift=croppedbase
 	#Find the cross correlation xvt and save to position arrays
-	xvals , allcorr=crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
-	PosvtArray = xvals[:,0]
+	xvals , allcorr = crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
+	ito.savelistnp(folderpaths[i]+'correlationdata.npy',[xvals,allcorr])
+	
+	#Define no shift cropped image as first frame, could change easily if needed
 	#Perform edge detection to get python array
 	stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
 	ito.savelistnp(folderpaths[i]+'edgedata.npy',stackedges) #Save for later use
 	#Crop
-
+#%%
 for i in range(len(folderpaths)):
+	print(folderpaths[i])
+	PosvtArray = ito.openlistnp(folderpaths[i]+'correlationdata.npy')[0][:,0]
 	stackedges = ito.openlistnp(folderpaths[i]+'edgedata.npy')
 	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
 	#Fit the edges and extract angles and positions
-	AnglevtArray, EndptvtArray = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+	singleProps = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+	AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = singleProps
 	#Reslice data to save for each file
-	dropProp[i]=np.vstack((PosvtArray,EndptvtArray.T,AnglevtArray.T)).T
+	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,AnglevtArray.T)).T
 	#Save
 	#fileLabel=os.path.splitext(filenames[i]) if using files
 	np.save(foldernames[i]+'DropProps',dropProp[i])
-#%%
-np.savetxt("foldernames.csv", foldernames, delimiter=",", fmt='%s')
 
+#%%
+stackedges = ito.openlistnp(folderpaths[1]+'edgedata.npy')
+cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
+try2 = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
+rotedges=df.xflipandcombine(df.rotator(cropedges[i],-.007,0,217))
+#plt.plot(rotedges[:,0],rotedges[:,1],'.')
+fitl=df.datafitter(rotedges,True,[60,25],1,fitfunc,fitguess)
 #%%
 def tarrf(arr,tstep):
 	'''
