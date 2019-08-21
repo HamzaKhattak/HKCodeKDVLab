@@ -43,6 +43,31 @@ def splitlinefinder(locs,centerybuff):
 	splitline=np.mean(locs[:,1][locs[:,0]>splitlineavregion])
 	return splitline
 
+def contactptfind(locs,left,buff=0,doublesided=False):
+	'''
+	This function finds the contact pt between the droplet and surface
+	It takes an array of xy pairs and a left Boolean True False to determine side
+	It also takes a buffer argument to not include points within a buffer from the top
+	It returns the contactx and contacty positions
+	'''
+	miny = np.amin(locs[:,1])
+	maxy = np.amax(locs[:,1])
+	#Account for double sided buffer requirements
+	if doublesided == True:
+		cond = np.logical_and(locs[:,1] > miny + buff,locs[:,1]< maxy - buff)
+	else:
+		cond = locs[:,1] < maxy - buff
+	#Get the min or max position
+	if left==True:
+		contactx = np.amin(locs[cond,0])
+	else:
+		contactx = np.amax(locs[cond,0])
+	#Find y values (need to account for multiple mins)
+	allcens = np.argwhere(locs[:,0] == contactx)
+	contacty = np.mean(locs[allcens,1])
+	return contactx, contacty
+
+
 def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	'''
 	This function takes a numpy array of edge location xy values and returns
@@ -50,32 +75,28 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	Parameters:
 	    locs: the input array
 	    left: True for left side of droplet, false for right
-	    pixelbuff: How many pixels in xy to include for fit
+	    pixelbuff: How many pixels in xy to include for fit plus a y buffer
 	    cfitguess: Guess's for fit parameters
 	    zweight: anything below 1 gives extra weight to the zero
 
 	Circle fitting can be a bit buggy, need to be fairly close with parameters.
 	Better to overestimate radius somewhat.
 	'''
+	appproxsplity=np.mean(locs[:,0])
+	contactx, contacty = contactptfind(locs,left,pixelbuff[2])
 
-	#Get the min or max position
-	if left==True:
-	    contactloc=np.argmin(locs[:,0])
-	else:
-	    contactloc=np.argmax(locs[:,0])
-
-	contactx=locs[contactloc,0]
-	contacty=locs[contactloc,1]
 
 	#Set up trimmed Data set for fit using buffered area and only positive values
 	#Will need to change to also include data from reflection
 	if left==True:
-	    conds=np.logical_and.reduce((locs[:,0]<contactx+pixelbuff[0],locs[:,1]>contacty,locs[:,1]<contacty+pixelbuff[1]))
+		conds1 = locs[:,0] < appproxsplity
 	else:
-	    conds=np.logical_and.reduce((locs[:,0]>contactx-pixelbuff[0],locs[:,1]>contacty,locs[:,1]<contacty+pixelbuff[1]))
-	    
-	trimDat=locs[conds]-[contactx,contacty]
+	    conds1 = locs[:,0] > appproxsplity
+	
+	conds2 = np.logical_and.reduce((np.abs(locs[:,0]-contactx)<pixelbuff[0],locs[:,1]>contacty,locs[:,1]<contacty+pixelbuff[1]))
 
+	conds=np.logical_and(conds1,conds2)
+	trimDat=locs[conds]-[contactx,contacty]
 	#Set up weighting
 	sigma = np.ones(len(trimDat[:,1]))
 	sigma[np.argmin(trimDat[:,1])] = zweight
@@ -143,7 +164,7 @@ def angledet(x1,y1,x2,y2):
 	dy=y2-y1
 	return np.arctan(dy/dx)
 
-def linedet(MultipleEdges,ylims=False):
+def linedet(MultipleEdges, buff = 0):
 	'''
 	Takes a python array of edge xy locations and returns a list of endpoints for use with fitting
 	ylims is if there is a need to only search in a certain location
@@ -153,35 +174,38 @@ def linedet(MultipleEdges,ylims=False):
 	leftxy=np.zeros([numIm,2])
 	rightxy=np.zeros([numIm,2])
 	#Subtract background if needed and select image, droplet should be high so invert
-	if  (not isinstance(ylims, (list, tuple, np.ndarray)) ) and ylims == False:
-		for i in range(numIm):
-			#Get the indexes of the minimum and maximum x points
-			#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
-			leftindex = np.argmin(MultipleEdges[i][:,0])
-			rightindex = np.argmax(MultipleEdges[i][:,0])
-			#Get the actual values
-			leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
-			rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
-	else:
-		#Define center and buffer range
-		ycen=(ylims[0]+ylims[1])/2
-		yran=np.abs(ylims[1]-ylims[0])/2
-		for i in range(numIm):
-			#Select a slice in y to analyze
-			cond = np.abs(MultipleEdges[i][:,1]-ycen) < yran #the condition to limit to the yrange of interest
-			lefttrimidx = np.where(cond)[0] #Get the indices with the condition
-			leftindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmin()] #Find the argument of the minimum in that region
-			rightindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmax()] #Same for the right
-			#Get the actual values
-			leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
-			rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
-
+	
+	for i in range(numIm):
+		#Get the indexes of the minimum and maximum x points
+		#Can be modified to extract some other property from each of the xy arrays (ie other than argmin)
+		contactxl, contactyl = contactptfind(MultipleEdges[i],True,buff,True) #left edge
+		contactxr, contactyr = contactptfind(MultipleEdges[i],False,buff,True) #right edge
+		#Get into the right form
+		leftxy[i] = [contactxl, contactyl]
+		rightxy[i] = [contactxr,contactyr]
+	
+	'''
+	OLD CODE, not used anymore but has useful snippet for getting arguments in masked array
+	
+	#Define center and buffer range
+	ycen=(ylims[0]+ylims[1])/2
+	yran=np.abs(ylims[1]-ylims[0])/2
+	for i in range(numIm):
+		#Select a slice in y to analyze
+		cond = np.abs(MultipleEdges[i][:,1]-ycen) < yran #the condition to limit to the yrange of interest
+		lefttrimidx = np.where(cond)[0] #Get the indices with the condition
+		leftindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmin()] #Find the argument of the minimum in that region
+		rightindex = lefttrimidx[MultipleEdges[i][:,0][lefttrimidx].argmax()] #Same for the right
+		#Get the actual values
+		leftxy[i] = [MultipleEdges[i][leftindex,0], MultipleEdges[i][leftindex,1]]
+		rightxy[i] = [MultipleEdges[i][rightindex,0], MultipleEdges[i][rightindex,1]]
+	'''
 	return leftxy, rightxy
 
-def thetdet(edgestack,ylims=False):
+def thetdet(edgestack,buff=0):
 	'''Find the angle to rotate a stack of images based on the location of droplet edges
 	Returns the angle and a point with which to rotate'''
-	leftlineinfo, rightlineinfo = linedet(edgestack,ylims)
+	leftlineinfo, rightlineinfo = linedet(edgestack,buff)
 	#Contact points needed for rotation, actually return the ones from the datafitter
 	allcontactpts=np.concatenate([leftlineinfo,rightlineinfo])
 
@@ -189,18 +213,18 @@ def thetdet(edgestack,ylims=False):
 	fitlineparam,firlinecov = curve_fit(linfx,allcontactpts[:,0],allcontactpts[:,1])
 
 	#create 2 random points based on the line for the angle detection function
-	leftedge=[0,linfx(0,*fitlineparam)]
-	rightedge=[1,linfx(1,*fitlineparam)]
+	leftedge=[leftlineinfo[0,0],linfx(leftlineinfo[0,0],*fitlineparam)]
+	rightedge=[rightlineinfo[0,0],linfx(rightlineinfo[0,0],*fitlineparam)]
 	#Find the angle with horizontal
 	thet=angledet(*leftedge,*rightedge)
 	return thet, leftedge
 
-def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
+def edgestoproperties(edgestack,lims,fitfunc,fitguess):
 	'''
     Takes a edgestack and returns a list of angles for the right and left 
     positions and angles
     edgestack is a python list of numpy arrays containing the edges
-    lims is the x and y pixel range to use for fitting
+    lims is the x and y pixel range to use for fitting plus a third value to trim the endpt search
     fitfunc is the function to use to find the angle
 	fitguesss is the guess for those parameters
 	ylims is optional for when need to select a specific y region because the pipette is farther than the droplet
@@ -211,7 +235,7 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,ylims=False):
 	contactpts = np.zeros([numEd,2,2])
 	paramlist=np.zeros([numEd,2,len(fitguess)])
 
-	thetatorotate, leftedge = thetdet(edgestack,ylims)
+	thetatorotate, leftedge = thetdet(edgestack,buff = lims[2])
 	rotateprop = [thetatorotate,leftedge]
 
 	for i in range(numEd):

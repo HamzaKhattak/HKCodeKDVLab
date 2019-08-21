@@ -10,6 +10,12 @@ def stackimport(FilePath):
 	'''
 	return imread2(FilePath)
 
+def cropper(seq,x1,x2,y1,y2):
+    if seq.ndim==2:
+        return seq[y1:y2, x1:x2]
+    else:
+        return seq[:, y1:y2, x1:x2]
+
 def folderimportdeprecated(FolderLoc,extension):
 	'''
 

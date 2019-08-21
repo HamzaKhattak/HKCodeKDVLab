@@ -71,12 +71,12 @@ croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
 yanlow=679
-yanhigh=748
+yanhigh=758
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
-croppedbase=ede.cropper(noforce,*croppoints)
-croppedex1=ede.cropper(ex1,*croppoints)
-croppedex2=ede.cropper(ex2,*croppoints)
+croppedbase=ito.cropper(noforce,*croppoints)
+croppedex1=ito.cropper(ex1,*croppoints)
+croppedex2=ito.cropper(ex2,*croppoints)
 
 fig = plt.figure(figsize=(8,4))
 ax1 = fig.add_subplot(gs[0, 0])
@@ -98,8 +98,7 @@ guassfitl=20 # Number of data points to each side to use for guass fit
 imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
-clinyguess = 214 #Guess at the center line (helpful if parts of pipette are further than droplet)
-pixrange=[60,25] #xy bounding box to use in fit
+pixrange=[30,30,25] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
@@ -126,7 +125,7 @@ dropProp=[None]*len(folderpaths)
 #Edge detection and save
 for i in range(len(folderpaths)):
 	imagestack=ito.folderstackimport(folderpaths[i])
-	croppedimages=ede.cropper(imagestack,*croppoints)
+	croppedimages=ito.cropper(imagestack,*croppoints)
 	noshift=croppedbase
 	#Find the cross correlation xvt and save to position arrays
 	xvals , allcorr = crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
@@ -146,19 +145,34 @@ for i in range(len(folderpaths)):
 	#Fit the edges and extract angles and positions
 	singleProps = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
 	AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = singleProps
+	ito.savelistnp(folderpaths[i]+'allDropProps.npy',singleProps)
 	#Reslice data to save for each file
-	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,AnglevtArray.T)).T
+	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,EndptvtArray[:,:,1].T,AnglevtArray.T)).T
 	#Save
 	#fileLabel=os.path.splitext(filenames[i]) if using files
 	np.save(foldernames[i]+'DropProps',dropProp[i])
 
+
 #%%
+imnum=158
 stackedges = ito.openlistnp(folderpaths[1]+'edgedata.npy')
 cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
-try2 = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
-rotedges=df.xflipandcombine(df.rotator(cropedges[i],-.007,0,217))
-#plt.plot(rotedges[:,0],rotedges[:,1],'.')
-fitl=df.datafitter(rotedges,True,[60,25],1,fitfunc,fitguess)
+
+
+thetatorotate, leftedge = df.thetdet(cropedges)
+
+rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge))
+plt.plot(rotedges[:,0],rotedges[:,1],'.')
+fitl=df.datafitter(rotedges,False,[60,25],1,fitfunc,fitguess)
+#%%
+try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
+#%%
+
+plt.plot(cropedges[158][:,0],cropedges[158][:,1],'.')
+#%%
+np.argmax(cropedges[100][:,0])
+#%%
+np.mean(1)
 #%%
 def tarrf(arr,tstep):
 	'''
@@ -168,85 +182,71 @@ def tarrf(arr,tstep):
 
 tsteps=[4,0.5,2,1,1]
 varr=[0.5,10,1,2,5]
+labelarr=['$%.1f \mu m /s$' %i for i in varr]
+indexorder=[1,4,2,0]
+colorarr=['m','b','g','orange','r']
 timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
+
 #%%
+from scipy.signal import savgol_filter
+#%%
+def anglefilter(data):
+	return savgol_filter(np.abs(data),21,3)
+
 gs = gridspec.GridSpec(3, 1)
 
 fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
-ax1.plot(timearr[1],dropProp[1][:,0],'g-',label=r'$10 \mu m /s$')
-ax1.plot(timearr[4],dropProp[4][:,0],'m-',label=r'$5 \mu m /s$')
-ax1.plot(timearr[2],dropProp[2][:,0],'r-',label=r'$1 \mu m /s$')
-ax1.plot(timearr[0],dropProp[0][:,0],'b-',label=r'$0.5 \mu m /s$')
+ax2 = fig.add_subplot(gs[1, 0])
+ax3 = fig.add_subplot(gs[2, 0]) 
+for i in indexorder:
+	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0],label=labelarr[i],color=colorarr[i])
+	ax2.plot(timearr[i]*varr[i],dropProp[i][:,2]-dropProp[i][:,1],color=colorarr[i])
+	ax3.plot(timearr[i]*varr[i],anglefilter(dropProp[i][:,5]),color=colorarr[i])
+	ax3.plot(timearr[i]*varr[i],anglefilter(dropProp[i][:,6]),color=colorarr[i])
+	
+
+
+
+
 
 ax1.legend()
 ax1.set_ylabel('Pipette x (cc)')
 
-ax2 = fig.add_subplot(gs[1, 0]) 
-
-ax2.plot(timearr[1],dropProp[1][:,2]-dropProp[1][:,1],'g-')
-ax2.plot(timearr[4],dropProp[4][:,2]-dropProp[4][:,1],'m-')
-ax2.plot(timearr[2],dropProp[2][:,2]-dropProp[2][:,1],'r-')
-ax2.plot(timearr[0],dropProp[0][:,2]-dropProp[0][:,1],'b-')
-
 ax2.set_ylabel('Droplet length (pixels)')
 
-ax3 = fig.add_subplot(gs[2, 0]) 
 
 
-ax3.plot(timearr[1],dropProp[1][:,3],'g-')
-ax3.plot(timearr[4],dropProp[4][:,3],'m-')
-ax3.plot(timearr[2],dropProp[2][:,3],'r-')
-ax3.plot(timearr[0],dropProp[0][:,3],'b-')
+'''
+ax3.plot(timearr[1]*varr[1],savgol_filter(np.abs(dropProp[1][:,5]),7,3),'g')
+ax3.plot(timearr[4]*varr[4],savgol_filter(np.abs(dropProp[4][:,5]),7,3),'m')
+ax3.plot(timearr[2]*varr[2],savgol_filter(np.abs(dropProp[2][:,5]),7,3),'r')
+ax3.plot(timearr[0]*varr[0],savgol_filter(np.abs(dropProp[0][:,5]),7,3),'b')
 
-ax3.plot(timearr[1],-dropProp[1][:,4],'g--')
-ax3.plot(timearr[4],-dropProp[4][:,4],'m--')
-ax3.plot(timearr[2],-dropProp[2][:,4],'r--')
-ax3.plot(timearr[0],-dropProp[0][:,4],'b--')
+ax3.plot(timearr[1]*varr[1],np.abs(-dropProp[1][:,6]),'g')
+ax3.plot(timearr[4]*varr[4],-dropProp[4][:,6],'m')
+ax3.plot(timearr[2]*varr[2],-dropProp[2][:,6],'r')
+ax3.plot(timearr[0]*varr[0],-dropProp[0][:,6],'b')
+'''
 
-ax3.set_ylim(40,90)
-ax3.set_ylabel('Contact angle')
-ax3.set_xlabel('Time (s)')
-
-plt.tight_layout()
-
-#%%
-gs = gridspec.GridSpec(3, 1)
-
-fig = plt.figure(figsize=(8,8))
-ax1 = fig.add_subplot(gs[0, 0])
-ax1.plot(timearr[1]*varr[1],dropProp[1][:,0],'g-',label=r'$10 \mu m /s$')
-ax1.plot(timearr[4]*varr[4],dropProp[4][:,0],'m-',label=r'$5 \mu m /s$')
-ax1.plot(timearr[2]*varr[2],dropProp[2][:,0],'r-',label=r'$1 \mu m /s$')
-ax1.plot(timearr[0]*varr[0],dropProp[0][:,0],'b-',label=r'$0.5 \mu m /s$')
-
-ax1.legend()
-ax1.set_ylabel('Pipette x (cc)')
-
-ax2 = fig.add_subplot(gs[1, 0]) 
-
-ax2.plot(timearr[1]*varr[1],dropProp[1][:,2]-dropProp[1][:,1],'g-')
-ax2.plot(timearr[4]*varr[4],dropProp[4][:,2]-dropProp[4][:,1],'m-')
-ax2.plot(timearr[2]*varr[2],dropProp[2][:,2]-dropProp[2][:,1],'r-')
-ax2.plot(timearr[0]*varr[0],dropProp[0][:,2]-dropProp[0][:,1],'b-')
-
-ax2.set_ylabel('Droplet length (pixels)')
-
-ax3 = fig.add_subplot(gs[2, 0]) 
-
-
-ax3.plot(timearr[1]*varr[1],dropProp[1][:,3],'g,')
-ax3.plot(timearr[4]*varr[4],dropProp[4][:,3],'m,')
-ax3.plot(timearr[2]*varr[2],dropProp[2][:,3],'r,')
-ax3.plot(timearr[0]*varr[0],dropProp[0][:,3],'b,')
-
-ax3.plot(timearr[1]*varr[1],-dropProp[1][:,4],'g.')
-ax3.plot(timearr[4]*varr[4],-dropProp[4][:,4],'m.')
-ax3.plot(timearr[2]*varr[2],-dropProp[2][:,4],'r.')
-ax3.plot(timearr[0]*varr[0],-dropProp[0][:,4],'b.')
-
-ax3.set_ylim(40,90)
+ax3.set_ylim(35,90)
 ax3.set_ylabel('Contact angle')
 ax3.set_xlabel('Approx Substrate distance travelled')
 
 plt.tight_layout()
+
+#%%
+gs = gridspec.GridSpec(2, 1)
+fig = plt.figure(figsize=(8,8))
+ax1 = fig.add_subplot(gs[0, 0])
+ax1.plot(timearr[4]*varr[4],dropProp[4][:,2]-dropProp[4][:,0],'g-')
+ax1.set_ylabel('left edge x (pixels)')
+
+ax2 = fig.add_subplot(gs[1, 0])
+ax2.plot(timearr[4]*varr[4],dropProp[4][:,3]-dropProp[4][0,3],'g-')
+ax2.set_ylabel('left edge y (pixels)')
+ax2.set_xlabel('Approx Substrate distance travelled')
+
+#%%
+plt.imshow(allimages[0])
+plt.plot(dropProp[4][0,1],dropProp[4][0,3],'ro')

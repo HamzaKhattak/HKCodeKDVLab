@@ -75,9 +75,9 @@ yanlow=679
 yanhigh=748
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
-croppedbase=ede.cropper(noforce,*croppoints)
-croppedex1=ede.cropper(ex1,*croppoints)
-croppedex2=ede.cropper(ex2,*croppoints)
+croppedbase=ito.cropper(noforce,*croppoints)
+croppedex1=ito.cropper(ex1,*croppoints)
+croppedex2=ito.cropper(ex2,*croppoints)
 
 gs = gridspec.GridSpec(1, 3)
 fig = plt.figure(figsize=(8,4))
@@ -97,25 +97,26 @@ cutpoint=50 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
-imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
+imaparam=[-20,20,.01] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
 clinyguess = 214 #Guess at the center line (helpful if parts of pipette are further than droplet)
-pixrange=[60,25] #xy bounding box to use in fit
+pixrange=[60,25,25] #xy bounding box to use in fit
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
 
 
-testedge=ede.edgedetector(croppedbase,background,*imaparam)
+testedge=ede.edgedetector(croppedex1,background,*imaparam)
 fig = plt.figure(figsize=(8,4))
-plt.imshow(croppedbase,cmap=plt.cm.gray)
+plt.imshow(croppedex1,cmap=plt.cm.gray)
 plt.plot(testedge[:,0],testedge[:,1],'b.',markersize=1)
 croppedforfit=testedge[(testedge[:,1]<yanalysisc[1]) & (testedge[:,1]>yanalysisc[0])]
-testfit = df.datafitter(croppedforfit,True,pixrange,1,fitfunc,fitguess)
-xvals=np.arange(0,20)
+testfit = df.datafitter(croppedforfit,False,pixrange,1,fitfunc,fitguess)
+xvals=np.arange(0,10)
 yvals=df.pol2ndorder(xvals,*testfit[-2])
 plt.plot(xvals+testfit[0],yvals+testfit[1],'r-')
+plt.ylim(np.min(testedge[:,1]),np.max(testedge[:,1]))
 #%%
 specfolder="E:/SpeedScan/5umreturn_1/"
 allimages=ito.folderstackimport(specfolder)

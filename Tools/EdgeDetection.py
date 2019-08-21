@@ -10,13 +10,6 @@ from scipy.ndimage import label as ndimlabel2
 from scipy.ndimage import sum as ndimsum2
 from skimage import feature
 import numpy as np
-
-def cropper(seq,x1,x2,y1,y2):
-    if seq.ndim==2:
-        return seq[y1:y2, x1:x2]
-    else:
-        return seq[:, y1:y2, x1:x2]
-
 def edgedetector(inimage,background,threshval,obsSize,cannysigma):
 	'''
 	This function finds the edges of a cropped image of a pipette and droplet
