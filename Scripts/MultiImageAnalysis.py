@@ -206,28 +206,10 @@ for i in indexorder:
 	ax3.plot(timearr[i]*varr[i],anglefilter(dropProp[i][:,6]),color=colorarr[i])
 	
 
-
-
-
-
 ax1.legend()
 ax1.set_ylabel('Pipette x (cc)')
 
 ax2.set_ylabel('Droplet length (pixels)')
-
-
-
-'''
-ax3.plot(timearr[1]*varr[1],savgol_filter(np.abs(dropProp[1][:,5]),7,3),'g')
-ax3.plot(timearr[4]*varr[4],savgol_filter(np.abs(dropProp[4][:,5]),7,3),'m')
-ax3.plot(timearr[2]*varr[2],savgol_filter(np.abs(dropProp[2][:,5]),7,3),'r')
-ax3.plot(timearr[0]*varr[0],savgol_filter(np.abs(dropProp[0][:,5]),7,3),'b')
-
-ax3.plot(timearr[1]*varr[1],np.abs(-dropProp[1][:,6]),'g')
-ax3.plot(timearr[4]*varr[4],-dropProp[4][:,6],'m')
-ax3.plot(timearr[2]*varr[2],-dropProp[2][:,6],'r')
-ax3.plot(timearr[0]*varr[0],-dropProp[0][:,6],'b')
-'''
 
 ax3.set_ylim(35,90)
 ax3.set_ylabel('Contact angle')
@@ -248,5 +230,9 @@ ax2.set_ylabel('left edge y (pixels)')
 ax2.set_xlabel('Approx Substrate distance travelled')
 
 #%%
-plt.imshow(allimages[0])
-plt.plot(dropProp[4][0,1],dropProp[4][0,3],'ro')
+speeds=np.array([10,5,1,.5])
+displacements=np.array([30.81,28.93,23.19,19.76])
+plt.plot(speeds,displacements,'.')
+plt.xlabel('speed ($\mu m /s$)')
+plt.ylabel('force(approx)')
+#%%
