@@ -39,9 +39,12 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 #%%
+
+#Read and crop image as needed
 image=imageio.imread('data.tif')
 imagecropped=image[825:837,407:417]
-
+'''
+#If synthetic data needs to be created
 x=np.linspace(0, 49,50)
 y=np.linspace(0, 49,50)
 X = np.meshgrid(x, y)
@@ -49,8 +52,12 @@ imagecropped = twoD_Gaussian(X,*[1,25,25,5,10,.5,.05]).reshape(50, 50)
 imagecropped=imagecropped++ 0.02*np.random.normal(size=imagecropped.shape)
 plt2.imshow(imagecropped)
 plt2.colorbar()
+'''
 #%%
-
+#Method one with ravel
+'''
+This method turns the 2D array into one long 1D array for fitting
+'''
 #define model function and pass independant variables x and y as a list
 def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     (x, y) = xdata_tuple                                                        
@@ -63,22 +70,14 @@ def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offse
                         + c*((y-yo)**2)))                                   
     return g.ravel()
 
-# Create x and y indices
+# Create x and y indices and the required meshgrid
 xlen=imagecropped.shape[1]
 ylen=imagecropped.shape[0]
 x=np.linspace(0, xlen-1,xlen)
 y=np.linspace(0, ylen-1,ylen)
 X = np.meshgrid(x, y)
-'''
-#create data
-data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, 0, 10)
 
-# plot twoD_Gaussian data generated above
-plt.figure()
-plt.imshow(data.reshape(20, 20))
-plt.colorbar()
-'''
-# add some noise to the data and try to fit the data generated beforehand
+# Provide an initial guess based on the cropped image, could use max to make this better
 initial_guess = (1,25,25,2,2,0,.05)
 
 #data_noisy = data + 0.2*np.random.normal(size=data.shape)
@@ -97,8 +96,10 @@ fig.colorbar(im, cax=cax, orientation='horizontal')
 plt.show()
 
 #%%
-
-imagecropped.shape
+'''
+This section does a 2D fit using the curve fit 2D fit rather than raveling
+'''
+#Create x and y in the proper shapes ie [[x1,y1,z1],[x2,y2,z2],....]
 x=np.linspace(0, xlen-1,xlen)
 y=np.linspace(0, ylen-1,ylen)
 
@@ -119,21 +120,21 @@ def twoD_GaussianV2(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, off
                         + c*((y-yo)**2)))                                   
     return g
 #%%
-
+#Do the fitting
 popt2, pcov2 = opt.curve_fit(twoD_GaussianV2,(xyzarr[:,0],xyzarr[:,1]), xyzarr[:,2], p0=initial_guess,maxfev = 10000)
 
-
+#Create array for the fit, compared to the other method
 xyzarrfit=np.zeros((x.size*y.size,3))
 xyzarrfit[:,0]=np.repeat(x,y.size)
 xyzarrfit[:,1]=np.tile(y,x.size)
-xyzarrfit[:,2]=twoD_GaussianV2([xyzarrfit[:,0],xyzarrfit[:,1]],*popt2)
+xyzarrfit[:,2]=twoD_GaussianV2([xyzarrfit[:,0],xyzarrfit[:,1]],*popt2) #Note this is popt2
 
 xyzarrfit2=np.zeros((x.size*y.size,3))
 xyzarrfit2[:,0]=np.repeat(x,y.size)
 xyzarrfit2[:,1]=np.tile(y,x.size)
-xyzarrfit2[:,2]=twoD_GaussianV2([xyzarrfit[:,0],xyzarrfit[:,1]],*popt)
+xyzarrfit2[:,2]=twoD_GaussianV2([xyzarrfit[:,0],xyzarrfit[:,1]],*popt) #Note this is popt
 
-
+#Some plotting
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 plt.plot(xyzarr[:,0],xyzarr[:,1],xyzarr[:,2],'g.')
@@ -143,6 +144,7 @@ plt.plot(xyzarrfit[:,0],xyzarrfit[:,1],xyzarrfit2[:,2],'r.')
 #%%
 np.meshgrid(x,y)
 #%%
+#Some assorted plotting etc
 def f(x, y):
     return twoD_GaussianV2([x,y],*popt2)
 
@@ -155,5 +157,6 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 #ax.plot_wireframe(X[0], X[1], imagecropped,color='k')
+#Compare how close both method are to the actual result
 ax.plot_wireframe(X[0], X[1], data_fitted.reshape(ylen, xlen)-imagecropped,color='r')
 ax.plot_surface(X[0], X[1], Z-imagecropped,color='g')
