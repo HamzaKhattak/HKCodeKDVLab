@@ -119,7 +119,7 @@ plt.plot(xvals+testfit[0],yvals+testfit[1],'r-')
 plt.ylim(np.min(testedge[:,1]),np.max(testedge[:,1]))
 #%%
 specfolder="E:/SpeedScan/5umreturn_1/"
-allimages=ito.folderstackimport(specfolder)
+allimages=ito.omestackimport(specfolder)
 allimages=ede.cropper(allimages,*croppoints)
 #%%
 noshift=croppedbase

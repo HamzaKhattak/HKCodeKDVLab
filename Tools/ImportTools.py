@@ -9,6 +9,14 @@ def stackimport(FilePath):
 	preferred method, need to include the filename.tif
 	'''
 	return imread2(FilePath)
+	
+def omestackimport(FolderPath):
+	'''
+	Just renaming the imread from skimage to import an image stack
+	preferred method, need to include the filename.tif of the first image
+	'''
+	imfilenames=sorted(glob.glob(FolderPath + "/*.tif"))
+	return imread2(imfilenames[0])
 
 def cropper(seq,x1,x2,y1,y2):
     if seq.ndim==2:
@@ -38,7 +46,8 @@ def folderimport(FolderLoc,extension):
 
 def folderstackimport(FolderLoc):
 	'''
-	Imports stacks of tifs from a folder depending on if there are multiple
+	Imports stacks of non-ome tifs from a folder depending on if there are multiple
+	Will return double if there are multiple ome tiffs
 	'''
 	imfilenames=sorted(glob.glob(FolderLoc + "/*.tif"))
 	if len(imfilenames) == 1:
@@ -46,8 +55,8 @@ def folderstackimport(FolderLoc):
 
 	else:
 		mainimg=stackimport(imfilenames[0])
-		for i in imfilenames[1:]:
-			img=stackimport(i)
+		for i in np.arange(len(imfilenames)-1):
+			img=stackimport(imfilenames[i+1])
 			mainimg=np.concatenate((mainimg,img))
 	return mainimg
 

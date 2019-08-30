@@ -10,6 +10,8 @@ from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 import pickle
+
+from scipy.signal import savgol_filter
 #%%
 #import similaritymeasures
 
@@ -17,7 +19,7 @@ import pickle
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SpeedScan"
+dataDR=r"E:\SoftnessTest\SIS3per14wt1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -63,15 +65,15 @@ ax3.imshow(ex2)
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
-x1c=616
+x1c=500
 x2c=1500
-y1c=500
-y2c=855
+y1c=330
+y2c=940
 croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
-yanlow=679
-yanhigh=758
+yanlow=590
+yanhigh=730
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
 croppedbase=ito.cropper(noforce,*croppoints)
@@ -98,13 +100,14 @@ guassfitl=20 # Number of data points to each side to use for guass fit
 imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
-pixrange=[30,30,25] #first two are xy bounding box for fit, last is where to search for droplet tip
+pixrange=[40,40,25] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
 
-threshtest=ede.edgedetector(croppedbase,background,*imaparam)
-plt.imshow(croppedbase,cmap=plt.cm.gray)
+threshtest=ede.edgedetector(croppedex1,background,*imaparam)
+plt.figure()
+plt.imshow(croppedex1,cmap=plt.cm.gray)
 plt.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
 plt.axhline(cutpoint,ls='--')
 
@@ -124,7 +127,7 @@ dropProp=[None]*len(folderpaths)
 #%%
 #Edge detection and save
 for i in range(len(folderpaths)):
-	imagestack=ito.folderstackimport(folderpaths[i])
+	imagestack=ito.omestackimport(folderpaths[i])
 	croppedimages=ito.cropper(imagestack,*croppoints)
 	noshift=croppedbase
 	#Find the cross correlation xvt and save to position arrays
@@ -135,6 +138,7 @@ for i in range(len(folderpaths)):
 	#Perform edge detection to get python array
 	stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
 	ito.savelistnp(folderpaths[i]+'edgedata.npy',stackedges) #Save for later use
+	print(folderpaths[i]+ ' completed')
 	#Crop
 #%%
 for i in range(len(folderpaths)):
@@ -154,6 +158,7 @@ for i in range(len(folderpaths)):
 
 
 #%%
+'''
 imnum=158
 stackedges = ito.openlistnp(folderpaths[1]+'edgedata.npy')
 cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
@@ -164,6 +169,7 @@ thetatorotate, leftedge = df.thetdet(cropedges)
 rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge))
 plt.plot(rotedges[:,0],rotedges[:,1],'.')
 fitl=df.datafitter(rotedges,False,[60,25],1,fitfunc,fitguess)
+
 #%%
 try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
 #%%
@@ -173,22 +179,38 @@ plt.plot(cropedges[158][:,0],cropedges[158][:,1],'.')
 np.argmax(cropedges[100][:,0])
 #%%
 np.mean(1)
+'''
+#%%
+'''
+Imports stacks of tifs from a folder depending on if there are multiple
+'''
+imfilenames=sorted(glob.glob(foldernames[-3] + "/*.tif"))
+
+mainimg=ito.stackimport(imfilenames[1])
+#%%
+print(mainimg.shape)
+#%%
+mainimg=ito.omestackimport(folderpaths[-3])
 #%%
 def tarrf(arr,tstep):
 	'''
 	Simply returns a time array for plotting
 	'''
 	return np.linspace(0,len(arr)*tstep,len(arr)) 
+'''
+tsteps = [13,2.6,.5,1.3,0.65,.5,.48]
+varr = [.1,.5,10,1,2,5,8]
+indexorder=[2,6,5,4,3,1,0]
+'''
+tsteps = [13.6,2.7,.5,1.36,0.68,.5,.48]
+varr = [0.1,0.5,10,1,2,5,8]
+indexorder=[2,6,5,4,3,1,0]
 
-tsteps=[4,0.5,2,1,1]
-varr=[0.5,10,1,2,5]
 labelarr=['$%.1f \mu m /s$' %i for i in varr]
-indexorder=[1,4,2,0]
-colorarr=['m','b','g','orange','r']
+
+colorarr=plt.cm.jet(np.linspace(0,1,len(tsteps)))
 timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
-#%%
-from scipy.signal import savgol_filter
 #%%
 def anglefilter(data):
 	return savgol_filter(np.abs(data),21,3)
@@ -211,11 +233,42 @@ ax1.set_ylabel('Pipette x (cc)')
 
 ax2.set_ylabel('Droplet length (pixels)')
 
-ax3.set_ylim(35,90)
+ax3.set_ylim(50,90)
 ax3.set_ylabel('Contact angle')
 ax3.set_xlabel('Approx Substrate distance travelled')
 
+xend=5000
+ax1.set_xlim(0,xend)
+ax2.set_xlim(0,xend)
+ax3.set_xlim(0,xend)
+
 plt.tight_layout()
+#%%
+def forcefilter(data):
+	arlen=data.size
+	windowlength=arlen/50
+	windowlength=np.ceil(windowlength) // 2 * 2 + 1
+	windowlength=int(windowlength)
+	return savgol_filter(data,windowlength,3)
+
+filtereddata=forcefilter(dropProp[0][:,0])
+vels=np.gradient(filtereddata,timearr[0])
+velLim=0.05*np.max(vels)
+velfiltered=filtereddata[np.abs(vels)<velLim]
+velfilteredt=timearr[0][np.abs(vels)<velLim]
+gs = gridspec.GridSpec(3, 1)
+
+fig = plt.figure(figsize=(8,8))
+ax1 = fig.add_subplot(gs[0, 0])
+ax2 = fig.add_subplot(gs[1, 0])
+
+ax1.plot(timearr[0]*varr[0],dropProp[0][:,0])
+ax1.plot(timearr[0]*varr[0],filtereddata)
+ax1.plot(velfilteredt*varr[0],velfiltered,'.')
+ax1.set_ylabel('Force')
+ax2.plot(timearr[0]*varr[0],vels)
+ax2.set_ylabel('Force rate of change')
+#%%
 
 #%%
 gs = gridspec.GridSpec(2, 1)
