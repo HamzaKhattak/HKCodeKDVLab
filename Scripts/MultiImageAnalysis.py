@@ -180,17 +180,7 @@ np.argmax(cropedges[100][:,0])
 #%%
 np.mean(1)
 '''
-#%%
-'''
-Imports stacks of tifs from a folder depending on if there are multiple
-'''
-imfilenames=sorted(glob.glob(foldernames[-3] + "/*.tif"))
 
-mainimg=ito.stackimport(imfilenames[1])
-#%%
-print(mainimg.shape)
-#%%
-mainimg=ito.omestackimport(folderpaths[-3])
 #%%
 def tarrf(arr,tstep):
 	'''
@@ -244,30 +234,100 @@ ax3.set_xlim(0,xend)
 
 plt.tight_layout()
 #%%
-def forcefilter(data):
+arrnum=3
+def smoothingfilter(data,windowfraction=50,polyorder=3):
 	arlen=data.size
-	windowlength=arlen/50
+	windowlength=arlen/windowfraction
 	windowlength=np.ceil(windowlength) // 2 * 2 + 1
 	windowlength=int(windowlength)
-	return savgol_filter(data,windowlength,3)
+	return savgol_filter(data,windowlength,polyorder)
 
-filtereddata=forcefilter(dropProp[0][:,0])
-vels=np.gradient(filtereddata,timearr[0])
-velLim=0.05*np.max(vels)
-velfiltered=filtereddata[np.abs(vels)<velLim]
-velfilteredt=timearr[0][np.abs(vels)<velLim]
+def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.2,0.2],outlierparam=1):
+	'''
+	This function finds the high or low plateaus in the force curves
+	It takes a time array, force array, smoothing parameters
+	and limits for what fraction of standard deviation to use in the velocity 
+	and acceleration cutoffs
+	returns arrays with the smoothed data, vels, accs, topfiltered and bottomfiltered
+	arrays, the final filtered arrays are in [t1,y1],[t2,y2] format
+	'''
+	
+	#Smooth and get velocities accelerations
+	smootheddat=smoothingfilter(forcearray,*smoothparams)
+	vels=np.gradient(smootheddat,timearr[arrnum])
+	accs=np.gradient(vels,timearr[arrnum])
+	
+	#Set velocity and acceleration limits and filter data based on those
+	velLim=sdevlims[0]*np.std(vels)
+	accLim=sdevlims[1]*np.std(accs)
+	filtcond= (np.abs(vels)<velLim) & (np.abs(accs)<accLim) 
+	filtered2=smootheddat[filtcond]
+	filteredtimes2=timearray[filtcond]
+	
+	#Find the high and plateaus
+	#High
+	filterhigh = filtered2 > 0
+	
+	meanhigh1 = np.mean(filtered2[filterhigh])
+	meanhsdev = np.std(filtered2[filterhigh])
+	highcond = np.abs(filtered2 - meanhigh1) < outlierparam*meanhsdev
+	high = np.transpose([filteredtimes2[highcond],filtered2[highcond]])
+	
+	
+	#Repeat for low
+	filterlow=filtered2<0
+	meanlow1 = np.mean(filtered2[filterlow])
+	meanlsdev = np.std(filtered2[filterhigh])
+	lowcond = np.abs(filtered2 - meanlow1) < outlierparam*meanlsdev
+	low = np.transpose([filteredtimes2[lowcond],filtered2[lowcond]])
+	
+	#Return numpy list with data
+	return [smootheddat,vels,accs,[high,low]]
+	
+	
+testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
+
+plt.plot(timearr[arrnum],testv1[0],'.')
+plt.plot(testv1[-1][0][:,0],testv1[-1][0][:,1],'.')
+#%%	
+	
+	
+
+
 gs = gridspec.GridSpec(3, 1)
 
 fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
+ax3 = fig.add_subplot(gs[2, 0])
 
-ax1.plot(timearr[0]*varr[0],dropProp[0][:,0])
-ax1.plot(timearr[0]*varr[0],filtereddata)
-ax1.plot(velfilteredt*varr[0],velfiltered,'.')
+testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
+
+ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0])
+ax1.plot(timearr[arrnum]*varr[arrnum],smoothingfilter(dropProp[arrnum][:,0]))
+ax1.plot(hightimes*varr[0],highvals,'.')
+ax1.plot(hightimes*varr[0],highvals,'.')
+
+
 ax1.set_ylabel('Force')
-ax2.plot(timearr[0]*varr[0],vels)
-ax2.set_ylabel('Force rate of change')
+ax2.plot(timearr[arrnum]*varr[arrnum],vels)
+ax2.axhline(velLim,c='r')
+ax2.axhline(-velLim,c='r')
+
+ax2.set_ylabel('Force\'')
+
+
+ax3.plot(timearr[arrnum]*varr[arrnum],accs*1000)
+ax3.set_ylabel('Force\" (1000s)')
+ax3.axhline(accLim*1000,c='r')
+ax3.axhline(-accLim*1000,c='r')
+
+xend=4300
+ax1.set_xlim(0,xend)
+ax2.set_xlim(0,xend)
+ax3.set_xlim(0,xend)
+
+plt.tight_layout()
 #%%
 
 #%%
