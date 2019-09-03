@@ -52,16 +52,28 @@ def contactptfind(locs,left,buff=0,doublesided=False):
 	'''
 	miny = np.amin(locs[:,1])
 	maxy = np.amax(locs[:,1])
-	#Account for double sided buffer requirements
+	
 	if doublesided == True:
-		cond = np.logical_and(locs[:,1] > miny + buff,locs[:,1]< maxy - buff)
+		#Account for double sided buffer requirements
+		cond = np.logical_and(locs[:,1] > miny + buff, locs[:,1]< maxy - buff)
+		trimDat = locs[cond]
+		#Fit a parabola to the data with the x and y flipped
+		popt, pcov = curve_fit(pol2ndorder, trimDat[:,1], trimDat[:,0])
+		#Positive curvature means the contact point is a minimum and negative means it is a max
+		if (popt[0] > 0):
+			contactx = np.amin(locs[cond,0])
+		else:
+			contactx = np.amax(locs[cond,0])
+
 	else:
 		cond = locs[:,1] < maxy - buff
-	#Get the min or max position
-	if left==True:
-		contactx = np.amin(locs[cond,0])
-	else:
-		contactx = np.amax(locs[cond,0])
+		trimDat = locs[cond]
+		#Fit a line to the data, positive slope indicates min ***Fix this to be coordinate system independant
+		popt, pcov = curve_fit(linfx, trimDat[:,0], trimDat[:,1])
+		if (popt[0] > 0):
+			contactx = np.amax(locs[cond,0])
+		else:
+			contactx = np.amin(locs[cond,0])
 	#Find y values (need to account for multiple mins)
 	allcens = np.argwhere(locs[:,0] == contactx)
 	contacty = np.mean(locs[allcens,1])
