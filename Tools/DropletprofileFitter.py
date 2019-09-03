@@ -52,28 +52,34 @@ def contactptfind(locs,left,buff=0,doublesided=False):
 	'''
 	miny = np.amin(locs[:,1])
 	maxy = np.amax(locs[:,1])
-	
+	appproxsplity=np.mean(locs[:,0])
+
+	if left==True:
+		conds1 = locs[:,0] < appproxsplity
+	else:
+	    conds1 = locs[:,0] > appproxsplity
+			
+	#Account for double sided buffer requirements (ie if it is mirrored)
 	if doublesided == True:
-		#Account for double sided buffer requirements
-		cond = np.logical_and(locs[:,1] > miny + buff, locs[:,1]< maxy - buff)
-		trimDat = locs[cond]
+		conds2 = np.logical_and(locs[:,1] > miny + buff, locs[:,1] < maxy - buff)
+		trimDat = locs[(conds1) & (conds2)]
 		#Fit a parabola to the data with the x and y flipped
 		popt, pcov = curve_fit(pol2ndorder, trimDat[:,1], trimDat[:,0])
 		#Positive curvature means the contact point is a minimum and negative means it is a max
-		if (popt[0] > 0):
-			contactx = np.amin(locs[cond,0])
+		if (popt[-1] > 0):
+			contactx = np.amin(trimDat[:,0])
 		else:
-			contactx = np.amax(locs[cond,0])
+			contactx = np.amax(trimDat[:,0])
 
 	else:
-		cond = locs[:,1] < maxy - buff
-		trimDat = locs[cond]
+		conds2 = locs[:,1] < maxy - buff
+		trimDat = locs[(conds1) & (conds2)]
 		#Fit a line to the data, positive slope indicates min ***Fix this to be coordinate system independant
 		popt, pcov = curve_fit(linfx, trimDat[:,0], trimDat[:,1])
-		if (popt[0] > 0):
-			contactx = np.amax(locs[cond,0])
+		if (popt[-1] > 0):
+			contactx = np.amin(trimDat[:,0])
 		else:
-			contactx = np.amin(locs[cond,0])
+			contactx = np.amax(trimDat[:,0])
 	#Find y values (need to account for multiple mins)
 	allcens = np.argwhere(locs[:,0] == contactx)
 	contacty = np.mean(locs[allcens,1])
@@ -95,7 +101,7 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	Better to overestimate radius somewhat.
 	'''
 	appproxsplity=np.mean(locs[:,0])
-	contactx, contacty = contactptfind(locs,left,pixelbuff[2])
+	contactx, contacty = contactptfind(locs,left,buff=pixelbuff[2])
 
 
 	#Set up trimmed Data set for fit using buffered area and only positive values
