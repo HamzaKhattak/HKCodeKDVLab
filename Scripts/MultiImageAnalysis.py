@@ -36,6 +36,8 @@ import ImportTools as ito
 importlib.reload(ito)
 import EdgeDetection as ede
 importlib.reload(ede)
+import PlateauAnalysis as planl
+importlib.reload(planl)
 
 #Remove to avoid cluttering path
 sys.path.remove('./Tools') #Remove tools from path
@@ -158,54 +160,6 @@ for i in range(len(folderpaths)):
 	np.save(foldernames[i]+'DropProps',dropProp[i])
 
 
-#%%
-
-
-stackedges = ito.openlistnp(folderpaths[-2]+'edgedata.npy')
-cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
-
-
-thetatorotate, leftedge = df.thetdet(cropedges)
-#%%
-imnum=448
-rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge),leftedge[1])
-plt.plot(cropedges[imnum][:,0],cropedges[imnum][:,1],'.')
-plt.plot(rotedges[:,0],rotedges[:,1],'.')
-fitl=df.datafitter(rotedges,False,pixrange,1,fitfunc,fitguess)
-
-
-appproxsplity=np.mean(rotedges[:,0])
-trimDat = rotedges[rotedges[:,0] > appproxsplity]
-contactx=trimDat[np.argmin(trimDat[:,1]),0]
-allcens = np.argwhere(trimDat[:,0] == contactx)
-contacty = np.mean(trimDat[allcens,1])
-plt.plot(contactx,contacty,'ro')
-
-
-#%%
-plt.plot(cropedges[imnum][:,1],cropedges[imnum][:,0],'.')
-
-x=cropedges[imnum][:,1]
-y=cropedges[imnum][:,0]
-x=x[y>700]
-y=y[y>700]
-popt,pcov=curve_fit(df.pol2ndorder,x,y)
-plt.plot(x,df.pol2ndorder(x,*popt))
-#%%
-endptarrayTest=np.zeros([len(cropedges),2],dtype=float)
-for i in range(len(cropedges)):
-	endptarrayTest[i]=df.contactptfind(cropedges[i],False,buff=0,doublesided=True)
-#%%
-plt.plot(endptarrayTest[:,1])
-	
-#%%
-try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
-#%%
-
-plt.plot(cropedges[95][:,0],cropedges[95][:,1],'.')
-#%%
-np.argmax(cropedges[100][:,0])
-#%%
 
 #%%
 def tarrf(arr,tstep):
@@ -228,10 +182,6 @@ colorarr=plt.cm.jet(np.linspace(0,1,len(tsteps)))
 timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
 #%%
-def anglefilter(data):
-	result = savgol_filter(np.abs(data),21,3)
-	result= np.abs(result)
-	return result
 
 gs = gridspec.GridSpec(3, 1)
 
@@ -242,8 +192,8 @@ ax3 = fig.add_subplot(gs[2, 0])
 for i in indexorder:
 	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0],label=labelarr[i],color=colorarr[i])
 	ax2.plot(timearr[i]*varr[i],dropProp[i][:,2]-dropProp[i][:,1],color=colorarr[i])
-	ax3.plot(timearr[i]*varr[i],anglefilter(dropProp[i][:,5]),color=colorarr[i])
-	ax3.plot(timearr[i]*varr[i],anglefilter(dropProp[i][:,6]),color=colorarr[i])
+	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,5]),color=colorarr[i])
+	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,6]),color=colorarr[i])
 	
 
 ax1.legend()
@@ -257,62 +207,28 @@ ax3.set_xlabel('Approx Substrate distance travelled')
 
 plt.tight_layout()
 #%%
-arrnum=3
-def smoothingfilter(data,windowfraction=50,polyorder=3):
-	arlen=data.size
-	windowlength=arlen/windowfraction
-	windowlength=np.ceil(windowlength) // 2 * 2 + 1
-	windowlength=int(windowlength)
-	return savgol_filter(data,windowlength,polyorder)
+arrnum=2
 
-def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.2,0.2],outlierparam=1):
-	'''
-	This function finds the high or low plateaus in the force curves
-	It takes a time array, force array, smoothing parameters
-	and limits for what fraction of standard deviation to use in the velocity 
-	and acceleration cutoffs
-	returns arrays with the smoothed data, vels, accs, topfiltered and bottomfiltered
-	arrays, the final filtered arrays are in [t1,y1],[t2,y2] format
-	'''
-	
-	#Smooth and get velocities accelerations
-	smootheddat=smoothingfilter(forcearray,*smoothparams)
-	vels=np.gradient(smootheddat,timearr[arrnum])
-	accs=np.gradient(vels,timearr[arrnum])
-	
-	#Set velocity and acceleration limits and filter data based on those
-	velLim=sdevlims[0]*np.std(vels)
-	accLim=sdevlims[1]*np.std(accs)
-	filtcond= (np.abs(vels)<velLim) & (np.abs(accs)<accLim) 
-	filtered2=smootheddat[filtcond]
-	filteredtimes2=timearray[filtcond]
-	
-	#Find the high and plateaus
-	#High
-	filterhigh = filtered2 > 0
-	
-	meanhigh1 = np.mean(filtered2[filterhigh])
-	meanhsdev = np.std(filtered2[filterhigh])
-	highcond = np.abs(filtered2 - meanhigh1) < outlierparam*meanhsdev
-	high = np.transpose([filteredtimes2[highcond],filtered2[highcond]])
 	
 	
-	#Repeat for low
-	filterlow=filtered2<0
-	meanlow1 = np.mean(filtered2[filterlow])
-	meanlsdev = np.std(filtered2[filterhigh])
-	lowcond = np.abs(filtered2 - meanlow1) < outlierparam*meanlsdev
-	low = np.transpose([filteredtimes2[lowcond],filtered2[lowcond]])
-	
-	#Return numpy list with data
-	return [smootheddat,vels,accs,[high,low]]
-	
-	
-testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
+testv1=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
 
 plt.plot(timearr[arrnum],testv1[0],'.')
-plt.plot(testv1[-1][0][:,0],testv1[-1][0][:,1],'.')
+plt.plot(testv1[-1][1][:,0],testv1[-1][1][:,1],'.')
+
+#%%
+
+
+mean1,mean2,mean2i=planl.clusteranalysis(testv1[-1][1],30)
 #%%	
+testvals=np.diff(testv1[-1][1][:,0])
+jumps=np.argwhere(testvals>50)
+
+jumps = np.insert(jumps, 0, 0)
+jumps = np.insert(jumps, len(jumps), len(testvals)-1)
+print(jumps)
+testv1[-1][1][jumps[0]+1:jumps[1],1]
+#%%
 	
 	
 
@@ -327,7 +243,7 @@ ax3 = fig.add_subplot(gs[2, 0])
 testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
 
 ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0],label='data')
-ax1.plot(timearr[arrnum]*varr[arrnum],smoothingfilter(dropProp[arrnum][:,0]),label='smoothed')
+ax1.plot(timearr[arrnum]*varr[arrnum],planl.smoothingfilter(dropProp[arrnum][:,0]),label='smoothed')
 ax1.plot(testv1[-1][0][:,0]*varr[arrnum],testv1[-1][0][:,1],'g.',markersize=3,label='Plateau Find')
 ax1.plot(testv1[-1][1][:,0]*varr[arrnum],testv1[-1][1][:,1],'g.',markersize=3)
 ax1.legend()
@@ -374,3 +290,54 @@ plt.plot(speeds,displacements,'.')
 plt.xlabel('speed ($\mu m /s$)')
 plt.ylabel('force(approx)')
 #%%
+'''
+Scratch and Testing
+Things below this are to debug bits of code etc
+'''
+'''
+
+stackedges = ito.openlistnp(folderpaths[-2]+'edgedata.npy')
+cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
+
+
+thetatorotate, leftedge = df.thetdet(cropedges)
+#%%
+imnum=448
+rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge),leftedge[1])
+plt.plot(cropedges[imnum][:,0],cropedges[imnum][:,1],'.')
+plt.plot(rotedges[:,0],rotedges[:,1],'.')
+fitl=df.datafitter(rotedges,False,pixrange,1,fitfunc,fitguess)
+
+
+appproxsplity=np.mean(rotedges[:,0])
+trimDat = rotedges[rotedges[:,0] > appproxsplity]
+contactx=trimDat[np.argmin(trimDat[:,1]),0]
+allcens = np.argwhere(trimDat[:,0] == contactx)
+contacty = np.mean(trimDat[allcens,1])
+plt.plot(contactx,contacty,'ro')
+
+
+#%%
+plt.plot(cropedges[imnum][:,1],cropedges[imnum][:,0],'.')
+
+x=cropedges[imnum][:,1]
+y=cropedges[imnum][:,0]
+x=x[y>700]
+y=y[y>700]
+popt,pcov=curve_fit(df.pol2ndorder,x,y)
+plt.plot(x,df.pol2ndorder(x,*popt))
+#%%
+endptarrayTest=np.zeros([len(cropedges),2],dtype=float)
+for i in range(len(cropedges)):
+	endptarrayTest[i]=df.contactptfind(cropedges[i],False,buff=0,doublesided=True)
+#%%
+plt.plot(endptarrayTest[:,0])
+	
+#%%
+try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
+#%%
+
+plt.plot(cropedges[95][:,0],cropedges[95][:,1],'.')
+#%%
+np.argmax(cropedges[100][:,0])
+'''

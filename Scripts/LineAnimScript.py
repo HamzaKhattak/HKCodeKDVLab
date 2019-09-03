@@ -40,14 +40,14 @@ os.chdir(dataDR)
 #%%
 
 #%%
-
+#Get the image sequence imported
 x1c=500
 x2c=1500
 y1c=330
 y2c=940
 croppoints=[x1c,x2c,y1c,y2c]
 croppoints=[x1c,x2c,y1c,y2c]
-allimages=ito.folderstackimport(dataDR)
+allimages=ito.omestackimport(dataDR)
 allimages=ito.cropper(allimages,*croppoints)
 #%%
 edges=ito.openlistnp(os.path.join(dataDR,'edgedata.npy'))
@@ -109,9 +109,10 @@ def update_plot(it):
 	im.set_data(allimages[it])
 	edgeline.set_data([edges[it][:,0],edges[it][:,1]])
 	
-	xvals=np.arange(0,20)
-	yvals=np.arange(0,20)
+	xvals=np.arange(0,40)
+	yvals=np.arange(0,40)
 	
+	#This is to account for the flipped fitting done (or else cant fit vertical)
 	#yvals=df.pol2ndorder(xvals,*ParamArrat[it][1])
 	xvals=df.pol3rdorder(yvals,*ParamArrat[it][1])
 	
@@ -122,7 +123,7 @@ def update_plot(it):
 	fitline.set_data([comboarr[:,0],comboarr[:,1]])
 	vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
 	return line,im,edgeline,fitline,vline2,
-#plt.tight_layout()
+plt.tight_layout()
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
