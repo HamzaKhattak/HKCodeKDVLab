@@ -98,9 +98,9 @@ guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
 imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
-fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
-fitguess=[0,1,1]
-pixrange=[40,40,25] #first two are xy bounding box for fit, last is where to search for droplet tip
+fitfunc=df.pol3rdorder #function ie def(x,a,b) to fit to find properties
+fitguess=[0,1,1,1]
+pixrange=[60,60,25] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
@@ -119,7 +119,8 @@ Run on all of the images
 #Use glob to get foldernames, tif sequences should be inside
 folderpaths=glob.glob(os.getcwd()+'/*/')
 foldernames=next(os.walk('.'))[1]
-
+folderpaths=sorted(folderpaths)
+foldernames=sorted(foldernames)
 #filenames=glob.glob("*.tif") #If using single files
 
 #Empty array for the position vs velocity information
@@ -158,28 +159,53 @@ for i in range(len(folderpaths)):
 
 
 #%%
-'''
-imnum=158
-stackedges = ito.openlistnp(folderpaths[1]+'edgedata.npy')
+
+
+stackedges = ito.openlistnp(folderpaths[-2]+'edgedata.npy')
 cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
 
 
 thetatorotate, leftedge = df.thetdet(cropedges)
-
-rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge))
+#%%
+imnum=448
+rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge),leftedge[1])
+plt.plot(cropedges[imnum][:,0],cropedges[imnum][:,1],'.')
 plt.plot(rotedges[:,0],rotedges[:,1],'.')
-fitl=df.datafitter(rotedges,False,[60,25],1,fitfunc,fitguess)
+fitl=df.datafitter(rotedges,False,pixrange,1,fitfunc,fitguess)
 
+
+appproxsplity=np.mean(rotedges[:,0])
+trimDat = rotedges[rotedges[:,0] > appproxsplity]
+contactx=trimDat[np.argmin(trimDat[:,1]),0]
+allcens = np.argwhere(trimDat[:,0] == contactx)
+contacty = np.mean(trimDat[allcens,1])
+plt.plot(contactx,contacty,'ro')
+
+
+#%%
+plt.plot(cropedges[imnum][:,1],cropedges[imnum][:,0],'.')
+
+x=cropedges[imnum][:,1]
+y=cropedges[imnum][:,0]
+x=x[y>700]
+y=y[y>700]
+popt,pcov=curve_fit(df.pol2ndorder,x,y)
+plt.plot(x,df.pol2ndorder(x,*popt))
+#%%
+endptarrayTest=np.zeros([len(cropedges),2],dtype=float)
+for i in range(len(cropedges)):
+	endptarrayTest[i]=df.contactptfind(cropedges[i],False,buff=0,doublesided=True)
+#%%
+plt.plot(endptarrayTest[:,1])
+	
 #%%
 try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
 #%%
 
-plt.plot(cropedges[158][:,0],cropedges[158][:,1],'.')
+plt.plot(cropedges[95][:,0],cropedges[95][:,1],'.')
 #%%
 np.argmax(cropedges[100][:,0])
 #%%
-np.mean(1)
-'''
 
 #%%
 def tarrf(arr,tstep):
@@ -203,7 +229,9 @@ timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
 #%%
 def anglefilter(data):
-	return savgol_filter(np.abs(data),21,3)
+	result = savgol_filter(np.abs(data),21,3)
+	result= np.abs(result)
+	return result
 
 gs = gridspec.GridSpec(3, 1)
 
@@ -223,14 +251,9 @@ ax1.set_ylabel('Pipette x (cc)')
 
 ax2.set_ylabel('Droplet length (pixels)')
 
-ax3.set_ylim(50,90)
+ax3.set_ylim(50,95)
 ax3.set_ylabel('Contact angle')
 ax3.set_xlabel('Approx Substrate distance travelled')
-
-xend=5000
-ax1.set_xlim(0,xend)
-ax2.set_xlim(0,xend)
-ax3.set_xlim(0,xend)
 
 plt.tight_layout()
 #%%
@@ -303,21 +326,23 @@ ax3 = fig.add_subplot(gs[2, 0])
 
 testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
 
-ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0])
-ax1.plot(timearr[arrnum]*varr[arrnum],smoothingfilter(dropProp[arrnum][:,0]))
-ax1.plot(hightimes*varr[0],highvals,'.')
-ax1.plot(hightimes*varr[0],highvals,'.')
-
+ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0],label='data')
+ax1.plot(timearr[arrnum]*varr[arrnum],smoothingfilter(dropProp[arrnum][:,0]),label='smoothed')
+ax1.plot(testv1[-1][0][:,0]*varr[arrnum],testv1[-1][0][:,1],'g.',markersize=3,label='Plateau Find')
+ax1.plot(testv1[-1][1][:,0]*varr[arrnum],testv1[-1][1][:,1],'g.',markersize=3)
+ax1.legend()
+velLim=0.2*np.std(testv1[1])
+accLim=0.2*np.std(testv1[2])
 
 ax1.set_ylabel('Force')
-ax2.plot(timearr[arrnum]*varr[arrnum],vels)
+ax2.plot(timearr[arrnum]*varr[arrnum],testv1[1])
 ax2.axhline(velLim,c='r')
 ax2.axhline(-velLim,c='r')
 
 ax2.set_ylabel('Force\'')
 
 
-ax3.plot(timearr[arrnum]*varr[arrnum],accs*1000)
+ax3.plot(timearr[arrnum]*varr[arrnum],testv1[2]*1000)
 ax3.set_ylabel('Force\" (1000s)')
 ax3.axhline(accLim*1000,c='r')
 ax3.axhline(-accLim*1000,c='r')

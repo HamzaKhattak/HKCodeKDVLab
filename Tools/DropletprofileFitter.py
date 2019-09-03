@@ -55,14 +55,14 @@ def contactptfind(locs,left,buff=0,doublesided=False):
 	appproxsplity=np.mean(locs[:,0])
 
 	if left==True:
-		conds1 = locs[:,0] < appproxsplity
+		trimDat = locs[locs[:,0] < appproxsplity]
 	else:
-	    conds1 = locs[:,0] > appproxsplity
+	    trimDat = locs[locs[:,0] > appproxsplity]
 			
 	#Account for double sided buffer requirements (ie if it is mirrored)
 	if doublesided == True:
-		conds2 = np.logical_and(locs[:,1] > miny + buff, locs[:,1] < maxy - buff)
-		trimDat = locs[(conds1) & (conds2)]
+		conds2 = np.logical_and(trimDat[:,1] > miny + buff, trimDat[:,1] < maxy - buff)
+		trimDat = trimDat[conds2]
 		#Fit a parabola to the data with the x and y flipped
 		popt, pcov = curve_fit(pol2ndorder, trimDat[:,1], trimDat[:,0])
 		#Positive curvature means the contact point is a minimum and negative means it is a max
@@ -72,21 +72,16 @@ def contactptfind(locs,left,buff=0,doublesided=False):
 			contactx = np.amax(trimDat[:,0])
 
 	else:
-		conds2 = locs[:,1] < maxy - buff
-		trimDat = locs[(conds1) & (conds2)]
-		#Fit a line to the data, positive slope indicates min ***Fix this to be coordinate system independant
-		popt, pcov = curve_fit(linfx, trimDat[:,0], trimDat[:,1])
-		if (popt[-1] > 0):
-			contactx = np.amin(trimDat[:,0])
-		else:
-			contactx = np.amax(trimDat[:,0])
+		conds2 = trimDat[:,1] < maxy - buff
+		trimDat = trimDat[conds2]
+		contactx = trimDat[np.argmin(trimDat[:,1]),0]
 	#Find y values (need to account for multiple mins)
 	allcens = np.argwhere(locs[:,0] == contactx)
 	contacty = np.mean(locs[allcens,1])
 	return contactx, contacty
 
 
-def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
+def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess,axisflip=False):
 	'''
 	This function takes a numpy array of edge location xy values and returns
 	the location of the contact point as well as a fitted function
@@ -94,8 +89,12 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	    locs: the input array
 	    left: True for left side of droplet, false for right
 	    pixelbuff: How many pixels in xy to include for fit plus a y buffer
-	    cfitguess: Guess's for fit parameters
+	    fitguess: Guess's for fit parameters
+		fitfunction: the function used for fitting
 	    zweight: anything below 1 gives extra weight to the zero
+		axisflip: in some cases it makes sense to flip x and y for better fitting
+		If flipped, the popt will be for y as a function of x
+		
 
 	Circle fitting can be a bit buggy, need to be fairly close with parameters.
 	Better to overestimate radius somewhat.
@@ -118,13 +117,21 @@ def datafitter(locs,left,pixelbuff,zweight,fitfunction,fitguess):
 	#Set up weighting
 	sigma = np.ones(len(trimDat[:,1]))
 	sigma[np.argmin(trimDat[:,1])] = zweight
+	
+	#Flip to avoid issues with vertical regions if needed
+	if axisflip==True:
+		trimDat = np.flip(trimDat,axis=1)
 	#The fitter is annoyingly dependant on being close to the actual parameters values to get a good guess
 	popt, pcov = curve_fit(fitfunction, trimDat[:,0], trimDat[:,1],p0=fitguess, sigma=sigma,maxfev=5000)
+
 	def paramfunc(x):
 	    return fitfunction(x,*popt)
 	m0=derivative(paramfunc,0)
 	#Return angle in degrees
-	thet=np.arctan(m0)*180/np.pi
+	if axisflip==False:
+		thet=np.arctan(m0)*180/np.pi
+	else:
+		thet=np.arctan(1/m0)*180/np.pi
 	return [contactx,contacty,thet,m0,popt,pcov]
 
 def flipper(toflip,x1,y1,x2,y2):
@@ -157,20 +164,15 @@ def rotator(torotate,angle,ox,oy):
 	rotatedarray[:,1] = np.sin(angle) * shiftedarray[:,0] + np.cos(angle) * shiftedarray[:,1]
 	return rotatedarray+[ox,oy]
 
-def xflipandcombine(toflip):
+def xflipandcombine(toflip,flipy):
 	'''
 	Flips an already rotated edge point array and combines the top and the bottom
+	#flipy is where to flip 
 	'''
-	#Find where to flip
-	locleft=np.argmin(toflip[:,0])
-	locright=np.argmin(toflip[:,0])
-	avflipy=(toflip[locleft,1]+toflip[locright,1])/2
-	#Subtract the minimum in y
-	#centeredarray=toflip-[0,toflip[np.argmin(toflip[:,0])][0]]
 
 	#Seperate and flip the negative values
-	topvalues=toflip[toflip[:,1]>avflipy]
-	bottomvalues=toflip[toflip[:,1]<avflipy]*[1,-1]+[0,2*avflipy]
+	topvalues = toflip[toflip[:,1]>flipy]
+	bottomvalues = toflip[toflip[:,1]<flipy]*[1,-1]+[0,2*flipy]
 	return np.concatenate([topvalues,bottomvalues])
 
 
@@ -237,7 +239,7 @@ def thetdet(edgestack,buff=0):
 	thet=angledet(*leftedge,*rightedge)
 	return thet, leftedge
 
-def edgestoproperties(edgestack,lims,fitfunc,fitguess):
+def edgestoproperties(edgestack,lims,fitfunc,fitguess,axisflip=True):
 	'''
     Takes a edgestack and returns a list of angles for the right and left 
     positions and angles
@@ -258,9 +260,9 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess):
 
 	for i in range(numEd):
 		rotatededges=rotator(edgestack[i],-thetatorotate,*leftedge)
-		combovals=xflipandcombine(rotatededges)
-		fitl=datafitter(combovals,True,lims,1,fitfunc,fitguess)
-		fitr=datafitter(combovals,False,lims,1,fitfunc,fitguess)
+		combovals=xflipandcombine(rotatededges,leftedge[1])
+		fitl=datafitter(combovals,True,lims,1,fitfunc,fitguess,axisflip=True)
+		fitr=datafitter(combovals,False,lims,1,fitfunc,fitguess,axisflip=True)
 		dropangle[i] = [fitl[2],fitr[2]]
 		contactpts[i] = [[fitl[0],fitl[1]],[fitr[0],fitr[1]]]
 		paramlist[i] = [fitl[-2],fitr[-2]]

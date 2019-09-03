@@ -13,7 +13,7 @@ import sys, os
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SpeedScan\5umreturn_1"
+dataDR=r"E:\SoftnessTest\SIS3per14wt1\5um_1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -41,10 +41,10 @@ os.chdir(dataDR)
 
 #%%
 
-x1c=616
+x1c=500
 x2c=1500
-y1c=500
-y2c=855
+y1c=330
+y2c=940
 croppoints=[x1c,x2c,y1c,y2c]
 croppoints=[x1c,x2c,y1c,y2c]
 allimages=ito.folderstackimport(dataDR)
@@ -57,8 +57,7 @@ AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = dropprops
 #rotate to match image
 edges=[df.rotator(arr,rotateinfo[0],rotateinfo[1][0],rotateinfo[1][1]) for arr in edges]
 
-loaddat=np.load("CCorall.npy")
-centrepos=np.load("Ccorcents.npy")
+centrepos, loaddat=np.load("correlationdata.npy")
 
 inputxvt=loaddat[:,:,0]
 inputyvt=loaddat[:,:,1]
@@ -79,8 +78,10 @@ fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'r-',markersize=2,animated=Tru
 line, =  plt.plot([], [],'r-', animated=True)
 vline2, = ax[1].plot([],animated=True)
 
+#Create fitted data
+xvals=np.arange(-20,20)
+yvals=np.arange(-20,20)
 
-xvals=np.arange(0,20)
 #im1=ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal',alpha=0.5)
 #p=ax[1].axvline(x=centrepos[0,0])
 
@@ -91,7 +92,7 @@ def init():
     """
     #Set plot limits etc
 
-    ax[0].set_xlim(0, 800)
+    ax[0].set_xlim(0, 1000)
     #ax[0].set_ylim(allimages[0,:,1].min, allimages[0,:,1].max)
     ax[1].set_xlim(-100, 100)
     ax[1].set_ylim(-.1, 1)
@@ -107,9 +108,16 @@ def update_plot(it):
 	line.set_data(yAnim[it,:], xAnim[it,:])
 	im.set_data(allimages[it])
 	edgeline.set_data([edges[it][:,0],edges[it][:,1]])
-	yvals=df.pol2ndorder(xvals,*ParamArrat[it][0])
-	yvals=yvals+EndptvtArray[it,0,1]
-	comboarr=np.transpose([xvals+EndptvtArray[it,0,0],yvals])
+	
+	xvals=np.arange(0,20)
+	yvals=np.arange(0,20)
+	
+	#yvals=df.pol2ndorder(xvals,*ParamArrat[it][1])
+	xvals=df.pol3rdorder(yvals,*ParamArrat[it][1])
+	
+	yvals=yvals+EndptvtArray[it,1,1]
+	xvals=xvals+EndptvtArray[it,1,0]
+	comboarr=np.transpose([xvals,yvals])
 	yvals = df.rotator(comboarr,rotateinfo[0],rotateinfo[1][0],rotateinfo[1][1])
 	fitline.set_data([comboarr[:,0],comboarr[:,1]])
 	vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
@@ -118,7 +126,7 @@ def update_plot(it):
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,1), interval=50,
+ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,1), interval=5,
                     init_func=init, repeat_delay=1000, blit=True)
 
 
