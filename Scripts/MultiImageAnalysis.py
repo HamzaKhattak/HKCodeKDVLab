@@ -2,15 +2,13 @@
 This code performs the edge location and cross correlation analysis across multiple images
 '''
 
-import sys, os, glob
+import sys, os, glob, pickle, re
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
-import pickle
-
 from scipy.signal import savgol_filter
 #%%
 #import similaritymeasures
@@ -19,7 +17,7 @@ from scipy.signal import savgol_filter
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SIS3per14wt1"
+dataDR=r"E:\SoftnessTest\SISThickness2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -67,15 +65,15 @@ ax3.imshow(ex2)
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
-x1c=500
-x2c=1500
-y1c=330
+x1c=270
+x2c=1300
+y1c=310
 y2c=940
 croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
-yanlow=590
-yanhigh=730
+yanlow=550
+yanhigh=700
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
 croppedbase=ito.cropper(noforce,*croppoints)
@@ -95,7 +93,7 @@ ax3.imshow(croppedex2)
 #%%
 
 #Cross correlation
-cutpoint=50 # y pixel to use for cross correlation
+cutpoint=30 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
@@ -117,16 +115,44 @@ plt.axhline(cutpoint,ls='--')
 '''
 Run on all of the images
 '''
+def split_on_letter(s):
+	r'''This code splits at the first letter to allow for sorting based on
+	the first letter backslash W is for the nonaplhanumeric and backslash d for
+	decimals. The hat then inverts that'''
+	match = re.compile("[^\W\d]").search(s)
+	return [s[:match.start()], s[match.start():]]
+
+def namevelfind(s):
+	'''
+	Extracts the speed from the file name based on how it is set up
+	Super sketchy but works for now
+	'''
+	allstrings = split_on_letter(s)
+	rawnum=allstrings[0]
+	if rawnum[0] == '0':
+		result = float(allstrings[0])/10
+	else:
+		result = float(allstrings[0])
+	return result
+
+
 #Import images
 #Use glob to get foldernames, tif sequences should be inside
-folderpaths=glob.glob(os.getcwd()+'/*/')
-foldernames=next(os.walk('.'))[1]
-folderpaths=sorted(folderpaths)
-foldernames=sorted(foldernames)
-#filenames=glob.glob("*.tif") #If using single files
+def foldergen():
+	folderpaths=glob.glob(os.getcwd()+'/*/')
+	foldernames=next(os.walk('.'))[1]
+	#filenames=glob.glob("*.tif") #If using single files
+	
+	#Empty array for the position vs velocity information
+	dropProp=[None]*len(folderpaths)
+	#Sort the folders by the leading numbers
+	velocitylist1=[namevelfind(i) for i in foldernames]
 
-#Empty array for the position vs velocity information
-dropProp=[None]*len(folderpaths)
+	foldernames = [x for _,x in sorted(zip(velocitylist1,foldernames))]
+	folderpaths = [x for _,x in sorted(zip(velocitylist1,folderpaths))]
+	return folderpaths,foldernames,dropProp
+
+folderpaths, foldernames, dropProp = foldergen()
 #%%
 #Edge detection and save
 for i in range(len(folderpaths)):
@@ -161,12 +187,21 @@ for i in range(len(folderpaths)):
 
 
 
+
 #%%
-def tarrf(arr,tstep):
-	'''
-	Simply returns a time array for plotting
-	'''
-	return np.linspace(0,len(arr)*tstep,len(arr)) 
+folderpaths, foldernames, dropProp = foldergen()
+
+
+dropProps= [np.open(i+'DropProps') for i in forldernames]
+
+exparams = np.genfromtxt('Aug29-SISThickness2.csv', dtype=float, delimiter=',', names=True) 
+
+indexorder=[] #Put the lists in decending order
+varr=exparams[r"Speed (um/s)"]
+tsteps=exparams[r"Time per frame required"]
+eedistance=exparams[r"Distance (um)"]
+numcycles=exparams[r"Number of periods"]
+
 '''
 tsteps = [13,2.6,.5,1.3,0.65,.5,.48]
 varr = [.1,.5,10,1,2,5,8]
@@ -175,13 +210,31 @@ indexorder=[2,6,5,4,3,1,0]
 tsteps = [13.6,2.7,.5,1.36,0.68,.5,.48]
 varr = [0.1,0.5,10,1,2,5,8]
 indexorder=[2,6,5,4,3,1,0]
+eedistance=650
+numcycles=[3,3,3,3,3,3,2]
+timebeforestop=[2*numcycles[i]*eedistance/varr[i] for i in range(len(varr))]
 
 labelarr=['$%.1f \mu m /s$' %i for i in varr]
+
+def tarrf(arr,tstep):
+	'''
+	Simply returns a time array for plotting
+	'''
+	return np.linspace(0,len(arr)*tstep,len(arr)) 
 
 colorarr=plt.cm.jet(np.linspace(0,1,len(tsteps)))
 timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
 #%%
+forceplateaudata=[None]*len(indexorder)
+for i in indexorder:	
+	plateaudata=planl.plateaufilter(timearr[i],dropProp[i][:,0],timebeforestop[i],smoothparams=[2,1],sdevlims=[.1,1],outlierparam=2)
+	topdata=plateaudata[4][0]
+	bottomdata=plateaudata[4][1]
+	tmean1,tmean2,tmean2i = planl.clusteranalysis(topdata,30)
+	bmean1,bmean2,bmean2i = planl.clusteranalysis(bottomdata,30)
+	forceplateaudata[i] = [topdata,tmean1,tmean2,bottomdata,bmean1,bmean2]
+
 
 gs = gridspec.GridSpec(3, 1)
 
@@ -191,7 +244,9 @@ ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0]) 
 for i in indexorder:
 	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0],label=labelarr[i],color=colorarr[i])
-	ax2.plot(timearr[i]*varr[i],dropProp[i][:,2]-dropProp[i][:,1],color=colorarr[i])
+	ax1.plot(forceplateaudata[i][3][:,0]*varr[i],forceplateaudata[i][3][:,1],'k.',markersize=3)
+	ax1.plot(forceplateaudata[i][0][:,0]*varr[i],forceplateaudata[i][0][:,1],'k.',markersize=3)
+	ax2.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,2]-dropProp[i][:,1]),color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,5]),color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,6]),color=colorarr[i])
 	
@@ -207,31 +262,27 @@ ax3.set_xlabel('Approx Substrate distance travelled')
 
 plt.tight_layout()
 #%%
-arrnum=2
-
-	
-	
-testv1=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
-
-plt.plot(timearr[arrnum],testv1[0],'.')
-plt.plot(testv1[-1][1][:,0],testv1[-1][1][:,1],'.')
-
+forceav=np.array([(i[1][0]-i[4][0])/2 for i in forceplateaudata])
+errbars=np.array([np.sqrt((i[1][1]+i[4][1]))/2 for i in forceplateaudata])
+plt.errorbar(varr,forceav,yerr=errbars,fmt='.')
+plt.xlabel(r"Speed ($\mu m/s$")
+plt.ylabel(r"Force ($px$)")
 #%%
 
 
-mean1,mean2,mean2i=planl.clusteranalysis(testv1[-1][1],30)
-#%%	
-testvals=np.diff(testv1[-1][1][:,0])
-jumps=np.argwhere(testvals>50)
+arrnum=1
+testvals=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0],timebeforestop[arrnum],smoothparams=[50,3],sdevlims=[.1,1],outlierparam=2)
+plt.plot(testvals[1])
+plt.plot(testvals[2]*100)
 
-jumps = np.insert(jumps, 0, 0)
-jumps = np.insert(jumps, len(jumps), len(testvals)-1)
-print(jumps)
-testv1[-1][1][jumps[0]+1:jumps[1],1]
+#%%
+plt.plot(timearr[arrnum],dropProp[arrnum][:,0])
+plt.plot(timearr[arrnum][:815],testvals[0].T)
+#%%
 #%%
 	
 	
-
+arrnum=-1
 
 gs = gridspec.GridSpec(3, 1)
 
@@ -240,25 +291,25 @@ ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0])
 
-testv1=plateaufilter(timearr[arrnum],dropProp[arrnum][:,0])
+testv1=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0],timebeforestop[arrnum],smoothparams=[50,3],sdevlims=[.1,1],outlierparam=2)
 
 ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0],label='data')
 ax1.plot(timearr[arrnum]*varr[arrnum],planl.smoothingfilter(dropProp[arrnum][:,0]),label='smoothed')
 ax1.plot(testv1[-1][0][:,0]*varr[arrnum],testv1[-1][0][:,1],'g.',markersize=3,label='Plateau Find')
 ax1.plot(testv1[-1][1][:,0]*varr[arrnum],testv1[-1][1][:,1],'g.',markersize=3)
 ax1.legend()
-velLim=0.2*np.std(testv1[1])
-accLim=0.2*np.std(testv1[2])
+velLim=0.2*np.std(testv1[2])
+accLim=0.2*np.std(testv1[3])
 
 ax1.set_ylabel('Force')
-ax2.plot(timearr[arrnum]*varr[arrnum],testv1[1])
+ax2.plot(testv1[0]*varr[arrnum],testv1[2])
 ax2.axhline(velLim,c='r')
 ax2.axhline(-velLim,c='r')
 
 ax2.set_ylabel('Force\'')
 
 
-ax3.plot(timearr[arrnum]*varr[arrnum],testv1[2]*1000)
+ax3.plot(testv1[0]*varr[arrnum],testv1[3]*1000)
 ax3.set_ylabel('Force\" (1000s)')
 ax3.axhline(accLim*1000,c='r')
 ax3.axhline(-accLim*1000,c='r')

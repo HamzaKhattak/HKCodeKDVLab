@@ -1,15 +1,19 @@
 import numpy as np
 from scipy.signal import savgol_filter
 
-def smoothingfilter(data,windowfraction=50,polyorder=3):
+def smoothingfilter(data,windowparam=50,polyorder=3,fraction=False):
 	'''
 	Simply smooths data based on a window fraction (ie what
-	fraction of total data should the window be)
+	fraction of total data should the window be) or by simply rounding to odd
 	'''
-	arlen=data.size #Get size
-	windowlength=arlen/windowfraction #divid
-	windowlength=np.ceil(windowlength) // 2 * 2 + 1 #make odd
-	windowlength=int(windowlength) #Make into an int
+	if fraction==True:
+		arlen=data.size #Get size
+		windowlength=arlen/windowparam #divid
+		windowlength=np.ceil(windowlength) // 2 * 2 + 1 #make odd
+		windowlength=int(windowlength) #Make into an int
+	else:
+		windowlength=np.ceil(windowparam) // 2 * 2 + 1 #make odd
+		windowlength=int(windowlength) #Make into an int
 	return savgol_filter(data,windowlength,polyorder) #filter
 
 
@@ -20,10 +24,10 @@ def anglefilter(data,windowsize=21,polyorder=3):
 	result = savgol_filter(np.abs(data),windowsize,polyorder)
 	return result
 
-def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.1,0.2],outlierparam=1):
+def plateaufilter(timearray,forcearray,tailcuttime,smoothparams=[],sdevlims=[0.1,0.2],outlierparam=1):
 	'''
 	This function finds the high or low plateaus in the force curves
-	It takes a time array, force array, smoothing parameters
+	It takes a time array, force array, which distance to cut the tail, smoothing parameters
 	and limits for what fraction of standard deviation to use in the velocity 
 	and acceleration cutoffs
 	returns arrays with the smoothed data, vels, accs, topfiltered and bottomfiltered
@@ -31,8 +35,11 @@ def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.1,0.2],outlie
 	'''
 	
 	#Smooth and get velocities accelerations
-	smootheddat=smoothingfilter(forcearray,*smoothparams)
 	dt = timearray[1] - timearray[0]
+	cutindex = (np.abs(timearray - tailcuttime)).argmin()
+	cutTime = timearray[:cutindex]
+
+	smootheddat=smoothingfilter(forcearray[:cutindex],*smoothparams)
 	vels=np.gradient(smootheddat,dt)
 	accs=np.gradient(vels,dt)
 	
@@ -41,7 +48,8 @@ def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.1,0.2],outlie
 	accLim=sdevlims[1]*np.std(accs)
 	filtcond= (np.abs(vels)<velLim) & (np.abs(accs)<accLim) 
 	filtered2=smootheddat[filtcond]
-	filteredtimes2=timearray[filtcond]
+	modtimes=timearray[:cutindex]
+	filteredtimes2=modtimes[filtcond]
 	
 	#Find the high and plateaus
 	#High (assumes approximate symettry around 0)
@@ -49,23 +57,24 @@ def plateaufilter(timearray,forcearray,smoothparams=[],sdevlims=[0.1,0.2],outlie
 	
 	meanhigh1 = np.mean(filtered2[filterhigh])
 	meanhsdev = np.std(filtered2[filterhigh])
+
 	highcond = np.abs(filtered2 - meanhigh1) < outlierparam*meanhsdev
 	high = np.transpose([filteredtimes2[highcond],filtered2[highcond]])
 	
 	
 	#Repeat for low
 	filterlow=filtered2<0
+
 	meanlow1 = np.mean(filtered2[filterlow])
-	meanlsdev = np.std(filtered2[filterhigh])
+	meanlsdev = np.std(filtered2[filterlow])
+
 	lowcond = np.abs(filtered2 - meanlow1) < outlierparam*meanlsdev
 	low = np.transpose([filteredtimes2[lowcond],filtered2[lowcond]])
 	
-	meanhigh=np.mean(high)
-	sdevhigh=np.std(high)
-
-	meanlow=np.mean(low)
 	#Return numpy list with data
-	return [smootheddat,vels,accs,[high,low]]
+	return [cutTime,smootheddat,vels,accs,[high,low]]
+
+
 
 def clusteranalysis(data,seperation):
 	#find mean and standard deviation for whole result
@@ -83,8 +92,8 @@ def clusteranalysis(data,seperation):
 	numjumps=len(jumplocs)
 	statsclust=np.zeros([numjumps,2])
 	for i in range(numjumps-1):
-		statsclust[i,0]=np.mean(yvals[jumplocs[i]+1:jumplocs[i+1]])
-		statsclust[i,1]=np.std(yvals[jumplocs[i]+1:jumplocs[i+1]])
+		statsclust[i,0]=np.mean(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
+		statsclust[i,1]=np.std(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
 	clusterm=np.mean(statsclust[:,0])
 	clustersdev=np.std(statsclust[:,0])
 	clusterserr=clustersdev/len(statsclust[:,0])
