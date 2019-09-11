@@ -183,7 +183,7 @@ for i in range(len(folderpaths)):
 	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,EndptvtArray[:,:,1].T,AnglevtArray.T)).T
 	#Save
 	#fileLabel=os.path.splitext(filenames[i]) if using files
-	np.save(foldernames[i]+'DropProps',dropProp[i])
+	np.save(folderpaths[i]+'DropProps',dropProp[i])
 
 
 
@@ -191,28 +191,24 @@ for i in range(len(folderpaths)):
 #%%
 folderpaths, foldernames, dropProp = foldergen()
 
-
-dropProps= [np.open(i+'DropProps') for i in forldernames]
+dropProp = [np.load(i+'/DropProps.npy') for i in folderpaths]
 
 exparams = np.genfromtxt('Aug29-SISThickness2.csv', dtype=float, delimiter=',', names=True) 
-
-indexorder=[] #Put the lists in decending order
-varr=exparams[r"Speed (um/s)"]
-tsteps=exparams[r"Time per frame required"]
-eedistance=exparams[r"Distance (um)"]
-numcycles=exparams[r"Number of periods"]
+#%%
+#These are all in descending order of speed, so reverse to match dropProps
+varr=exparams[r"Speed_ums"][::-1]
+tsteps=exparams[r"Time_per_frame_required"][::-1]
+eedistance=exparams[r"Distance_um"][::-1]
+numcycles=exparams[r"Number_of_periods"][::-1]
+indexorder=[i for i in range(varr.size)] #If want in another order for some reason
+#%%
 
 '''
 tsteps = [13,2.6,.5,1.3,0.65,.5,.48]
 varr = [.1,.5,10,1,2,5,8]
 indexorder=[2,6,5,4,3,1,0]
 '''
-tsteps = [13.6,2.7,.5,1.36,0.68,.5,.48]
-varr = [0.1,0.5,10,1,2,5,8]
-indexorder=[2,6,5,4,3,1,0]
-eedistance=650
-numcycles=[3,3,3,3,3,3,2]
-timebeforestop=[2*numcycles[i]*eedistance/varr[i] for i in range(len(varr))]
+timebeforestop=[2*numcycles[i]*eedistance[i]/varr[i] for i in range(len(varr))]
 
 labelarr=['$%.1f \mu m /s$' %i for i in varr]
 
