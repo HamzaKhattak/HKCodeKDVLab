@@ -10,7 +10,7 @@ from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
-#%%
+
 #import similaritymeasures
 
 #%%
@@ -112,47 +112,7 @@ plt.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
 plt.axhline(cutpoint,ls='--')
 
 #%%
-'''
-Run on all of the images
-'''
-def split_on_letter(s):
-	r'''This code splits at the first letter to allow for sorting based on
-	the first letter backslash W is for the nonaplhanumeric and backslash d for
-	decimals. The hat then inverts that'''
-	match = re.compile("[^\W\d]").search(s)
-	return [s[:match.start()], s[match.start():]]
-
-def namevelfind(s):
-	'''
-	Extracts the speed from the file name based on how it is set up
-	Super sketchy but works for now
-	'''
-	allstrings = split_on_letter(s)
-	rawnum=allstrings[0]
-	if rawnum[0] == '0':
-		result = float(allstrings[0])/10
-	else:
-		result = float(allstrings[0])
-	return result
-
-
-#Import images
-#Use glob to get foldernames, tif sequences should be inside
-def foldergen():
-	folderpaths=glob.glob(os.getcwd()+'/*/')
-	foldernames=next(os.walk('.'))[1]
-	#filenames=glob.glob("*.tif") #If using single files
-	
-	#Empty array for the position vs velocity information
-	dropProp=[None]*len(folderpaths)
-	#Sort the folders by the leading numbers
-	velocitylist1=[namevelfind(i) for i in foldernames]
-
-	foldernames = [x for _,x in sorted(zip(velocitylist1,foldernames))]
-	folderpaths = [x for _,x in sorted(zip(velocitylist1,folderpaths))]
-	return folderpaths,foldernames,dropProp
-
-folderpaths, foldernames, dropProp = foldergen()
+folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 #%%
 #Edge detection and save
 for i in range(len(folderpaths)):
@@ -188,8 +148,9 @@ for i in range(len(folderpaths)):
 
 
 
+
 #%%
-folderpaths, foldernames, dropProp = foldergen()
+folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 
 dropProp = [np.load(i+'/DropProps.npy') for i in folderpaths]
 
@@ -223,6 +184,7 @@ timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
 #%%
 forceplateaudata=[None]*len(indexorder)
+areanormed = [arr[:,0]/planl.anglefilter(arr[:,2]-arr[:,1]) for arr in dropProp]
 for i in indexorder:	
 	plateaudata=planl.plateaufilter(timearr[i],dropProp[i][:,0],timebeforestop[i],smoothparams=[2,1],sdevlims=[.1,1],outlierparam=2)
 	topdata=plateaudata[4][0]
@@ -239,9 +201,10 @@ ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0]) 
 for i in indexorder:
-	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0],label=labelarr[i],color=colorarr[i])
-	ax1.plot(forceplateaudata[i][3][:,0]*varr[i],forceplateaudata[i][3][:,1],'k.',markersize=3)
-	ax1.plot(forceplateaudata[i][0][:,0]*varr[i],forceplateaudata[i][0][:,1],'k.',markersize=3)
+	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0]/np.max(dropProp[0][:,0]),label=labelarr[i],color=colorarr[i])
+	ax1.plot(timearr[i]*varr[i],areanormed[i]/np.max(areanormed[0]),'--',color=colorarr[i])
+#	ax1.plot(forceplateaudata[i][3][:,0]*varr[i],forceplateaudata[i][3][:,1],'k.',markersize=3)
+#	ax1.plot(forceplateaudata[i][0][:,0]*varr[i],forceplateaudata[i][0][:,1],'k.',markersize=3)
 	ax2.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,2]-dropProp[i][:,1]),color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,5]),color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],planl.anglefilter(dropProp[i][:,6]),color=colorarr[i])
