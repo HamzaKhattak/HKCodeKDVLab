@@ -24,7 +24,7 @@ def anglefilter(data,windowsize=21,polyorder=3):
 	result = savgol_filter(np.abs(data),windowsize,polyorder)
 	return result
 
-def plateaufilter(timearray,forcearray,tailcuttime,smoothparams=[],sdevlims=[0.1,0.2],outlierparam=1):
+def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims=[0.1,0.2],outlierparam=1):
 	'''
 	This function finds the high or low plateaus in the force curves
 	It takes a time array, force array, which distance to cut the tail, smoothing parameters
@@ -36,10 +36,11 @@ def plateaufilter(timearray,forcearray,tailcuttime,smoothparams=[],sdevlims=[0.1
 	
 	#Smooth and get velocities accelerations
 	dt = timearray[1] - timearray[0]
-	cutindex = (np.abs(timearray - tailcuttime)).argmin()
-	cutTime = timearray[:cutindex]
+	cutindexr = (np.abs(timearray - regionofinterest[1])).argmin()
+	cutindexl = (np.abs(timearray - regionofinterest[0])).argmin()
+	cutTime = timearray[cutindexl:cutindexr]
 
-	smootheddat=smoothingfilter(forcearray[:cutindex],*smoothparams)
+	smootheddat=smoothingfilter(forcearray[cutindexl:cutindexr],*smoothparams)
 	vels=np.gradient(smootheddat,dt)
 	accs=np.gradient(vels,dt)
 	
@@ -48,7 +49,7 @@ def plateaufilter(timearray,forcearray,tailcuttime,smoothparams=[],sdevlims=[0.1
 	accLim=sdevlims[1]*np.std(accs)
 	filtcond= (np.abs(vels)<velLim) & (np.abs(accs)<accLim) 
 	filtered2=smootheddat[filtcond]
-	modtimes=timearray[:cutindex]
+	modtimes=timearray[cutindexl:cutindexr]
 	filteredtimes2=modtimes[filtcond]
 	
 	#Find the high and plateaus
@@ -70,9 +71,14 @@ def plateaufilter(timearray,forcearray,tailcuttime,smoothparams=[],sdevlims=[0.1
 
 	lowcond = np.abs(filtered2 - meanlow1) < outlierparam*meanlsdev
 	low = np.transpose([filteredtimes2[lowcond],filtered2[lowcond]])
+
+	
+	#Find the indexes in timearray which are part of low and high
+	idl = np.isin(timearray, filteredtimes2[lowcond], assume_unique=True)
+	idh = np.isin(timearray, filteredtimes2[highcond], assume_unique=True)
 	
 	#Return numpy list with data
-	return [cutTime,smootheddat,vels,accs,[high,low]]
+	return [cutTime,smootheddat,vels,accs,[high,low],[idh,idl]]
 
 
 
