@@ -13,7 +13,7 @@ import sys, os
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SIS3per14wt1\5um_1"
+dataDR=r"E:\SoftnessTest\SISThickness2\01um_1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -41,9 +41,9 @@ os.chdir(dataDR)
 
 #%%
 #Get the image sequence imported
-x1c=500
-x2c=1500
-y1c=330
+x1c=270
+x2c=1300
+y1c=310
 y2c=940
 croppoints=[x1c,x2c,y1c,y2c]
 croppoints=[x1c,x2c,y1c,y2c]
@@ -61,7 +61,19 @@ centrepos, loaddat=np.load("correlationdata.npy")
 
 inputxvt=loaddat[:,:,0]
 inputyvt=loaddat[:,:,1]
-
+#%%
+fig = plt.figure(figsize=(6,4))
+plt.plot(-allimages[0][500],'k-')
+plt.plot(-allimages[300][500],'b-')
+plt.xlabel('x value')
+plt.ylabel('intensity')
+#%%
+fig = plt.figure(figsize=(6,4))
+plt.plot(inputxvt[300],inputyvt[300],'b-')
+plt.xlim(-150,100)
+plt.axvline(centrepos[300,0],c='r')
+plt.xlabel('shift')
+plt.ylabel('similarity')
 #%%
 endT=10 #The total time over the data, assumes equal spacing
 yAnim=inputxvt
@@ -74,7 +86,7 @@ fig, ax = plt.subplots(2,1,figsize=(8,8))
 im = ax[0].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 
 edgeline, = ax[0].plot(edges[0][:,0],edges[0][:,1],color='cyan',marker='.',linestyle='',markersize=1,animated=True)
-fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'r-',markersize=2,animated=True)
+fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'ro',markersize=2,animated=True)
 line, =  plt.plot([], [],'r-', animated=True)
 vline2, = ax[1].plot([],animated=True)
 
@@ -92,7 +104,8 @@ def init():
     """
     #Set plot limits etc
 
-    ax[0].set_xlim(0, 1000)
+    ax[0].set_xlim(100, 1000)
+    ax[0].set_ylim(100, 500)
     #ax[0].set_ylim(allimages[0,:,1].min, allimages[0,:,1].max)
     ax[1].set_xlim(-100, 100)
     ax[1].set_ylim(-.1, 1)
@@ -114,20 +127,20 @@ def update_plot(it):
 	
 	#This is to account for the flipped fitting done (or else cant fit vertical)
 	#yvals=df.pol2ndorder(xvals,*ParamArrat[it][1])
-	xvals=df.pol3rdorder(yvals,*ParamArrat[it][1])
+	xvals=df.pol2ndorder(yvals,*ParamArrat[it][1])
 	
 	yvals=yvals+EndptvtArray[it,1,1]
 	xvals=xvals+EndptvtArray[it,1,0]
 	comboarr=np.transpose([xvals,yvals])
 	yvals = df.rotator(comboarr,rotateinfo[0],rotateinfo[1][0],rotateinfo[1][1])
-	fitline.set_data([comboarr[:,0],comboarr[:,1]])
+	fitline.set_data([yvals[:,0],yvals[:,1]])
 	vline2.set_data([[centrepos[it,0],centrepos[it,0]],[-.1,1]])
 	return line,im,edgeline,fitline,vline2,
 plt.tight_layout()
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,1), interval=5,
+ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,tArray.size,3), interval=2,
                     init_func=init, repeat_delay=1000, blit=True)
 
 

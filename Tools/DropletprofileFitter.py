@@ -15,6 +15,9 @@ def circle(x,a,b,r):
 def pol2ndorder(x,a,b,c):
 	return a+b*x+c*x**2
 
+def pol2nolin(x,a,b):
+	return a + b*x**2
+
 def pol3rdorder(x,a,b,c,d):
 	return a+b*x+c*x**2+d*x**3
 

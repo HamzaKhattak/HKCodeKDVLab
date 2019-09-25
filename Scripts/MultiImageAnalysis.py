@@ -17,7 +17,7 @@ from scipy.signal import savgol_filter
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SISThickness2"
+dataDR=r"E:\SoftnessTest\PS2Run2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -60,20 +60,21 @@ ax1.imshow(noforce)
 ax2.imshow(ex1)
 ax3.imshow(ex2)
 #%%
-
+plt.imshow(noforce,cmap=plt.cm.gray)
+#%%
 #Specify parameters
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
-x1c=270
-x2c=1300
-y1c=310
-y2c=940
+x1c=350
+x2c=1150
+y1c=200
+y2c=730
 croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
-yanlow=550
-yanhigh=700
+yanlow=400
+yanhigh=550
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
 croppedbase=ito.cropper(noforce,*croppoints)
@@ -93,13 +94,13 @@ ax3.imshow(croppedex2)
 #%%
 
 #Cross correlation
-cutpoint=30 # y pixel to use for cross correlation
+cutpoint=45 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
 imaparam=[-40,20,.05] #[threshval,obsSize,cannysigma]
-fitfunc=df.pol3rdorder #function ie def(x,a,b) to fit to find properties
-fitguess=[0,1,1,1]
+fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
+fitguess=[0,1,1]
 pixrange=[60,60,25] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False

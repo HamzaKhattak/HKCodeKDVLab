@@ -52,6 +52,11 @@ def xvtfinder(images,baseimage,cutloc,gausspts1):
 	from the base image using cross correlation at the y pixel defined by cutloc
 	gaussspts1 is the number of points to use in the gaussian fit on either side
 	'''
+	imdim=images.ndim
+	#Account for single image case
+	if imdim==2:
+		images=np.expand_dims(images, 0)
+
 	#Create empty arrays to store data
 	centerloc=np.zeros([images.shape[0],2])
 	alldat=np.zeros([images.shape[0],images.shape[2]*2-1,2])
