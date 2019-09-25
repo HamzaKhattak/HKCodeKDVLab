@@ -49,6 +49,10 @@ folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 dropProp = [np.load(i+'/DropProps.npy') for i in folderpaths]
 
 exparams = np.genfromtxt('Aug29-SISThickness2.csv', dtype=float, delimiter=',', names=True) 
+
+springc = 0.155 #N/m
+mperpix = 0.75e-6 #meters per pixel
+
 #%%
 #These are all in descending order of speed, so reverse to match dropProps
 varr=exparams[r"Speed_ums"][::-1]
@@ -78,18 +82,19 @@ timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
 
 #%%
+forcedat = np.array([arr[:,0] * mperpix * springc for arr in dropProp])
 
-forcedat = [arr[:,0] for arr in dropProp]
-lengthdat=[planl.anglefilter(arr[:,2]-arr[:,1]) for arr in dropProp]
-langledat=[planl.anglefilter(arr[:,5]) for arr in dropProp]
-rangledat=[planl.anglefilter(arr[:,6]) for arr in dropProp]
+lengthdat = np.array([planl.anglefilter(arr[:,2]-arr[:,1]) * mperpix for arr in dropProp])
+
+langledat=np.array([planl.anglefilter(arr[:,5]) for arr in dropProp])
+rangledat=np.array([planl.anglefilter(arr[:,6]) for arr in dropProp])
 
 forceplateaudata=[None]*len(indexorder)
 angleplateaudata=[None]*len(indexorder)
 
 for i in indexorder:
 	#Get force plateau data
-	plateaudata=planl.plateaufilter(timearr[i],dropProp[i][:,0],[30,timebeforestop[i]],smoothparams=[2,1],sdevlims=[.1,1],outlierparam=2)
+	plateaudata=planl.plateaufilter(timearr[i],forcedat[i],[30,timebeforestop[i]],smoothparams=[2,1],sdevlims=[.1,1],outlierparam=2)
 	topdata=plateaudata[4][0]
 	bottomdata=plateaudata[4][1]
 	#Indexes for other steady state values
@@ -99,7 +104,7 @@ for i in indexorder:
 	#Use indexes to get angle data
 	filteredAngles = [ planl.smoothingfilter(np.abs(langledat[i])), planl.smoothingfilter(np.abs(rangledat[i])) ] 
 	
-	#Create arrays of time angle angles to organize better
+	#Create arrays of time  angles to organize better
 	tArrscut = [timearr[i][idh],timearr[i][idh],timearr[i][idl],timearr[i][idl]]
 	anglesCut= [filteredAngles[0][idh],filteredAngles[1][idh],filteredAngles[0][idl],filteredAngles[1][idl]]
 	filteredAngles = [np.transpose([tArrscut[i],anglesCut[i]]) for i in range(4)]
@@ -149,9 +154,9 @@ for i in indexorder:
 	
 
 ax1.legend()
-ax1.set_ylabel('Pipette x (cc)')
+ax1.set_ylabel('Pipette F (N)')
 
-ax2.set_ylabel('Droplet length (pixels)')
+ax2.set_ylabel('Droplet length (m)')
 
 ax3.set_ylim(40,95)
 ax3.set_ylabel('Contact angle')
