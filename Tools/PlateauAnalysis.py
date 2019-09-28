@@ -36,8 +36,8 @@ def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims
 	
 	#Smooth and get velocities accelerations
 	dt = timearray[1] - timearray[0]
-	cutindexr = (np.abs(timearray - regionofinterest[1])).argmin()
 	cutindexl = (np.abs(timearray - regionofinterest[0])).argmin()
+	cutindexr = (np.abs(timearray - regionofinterest[1])).argmin()
 	cutTime = timearray[cutindexl:cutindexr]
 
 	smootheddat=smoothingfilter(forcearray[cutindexl:cutindexr],*smoothparams)
@@ -82,7 +82,7 @@ def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims
 
 
 
-def clusteranalysis(data,seperation):
+def clusteranalysis(data,separam):
 	#find mean and standard deviation for whole result
 	#Input should be in [[x1,y1],[x2,y2]...] form
 	meanwhole=np.mean(data[:,1])
@@ -90,9 +90,11 @@ def clusteranalysis(data,seperation):
 
 	#Find mean and standard deviation using each plateau
 	diffs = np.diff(data[:,0])
+	meandiff = np.mean(diffs)
+	sdevdiffs = np.std(diffs)
 	yvals = data[:,1]
 	#Find for each individual jump
-	jumplocs = np.argwhere(diffs>seperation)
+	jumplocs = np.argwhere(np.abs(diffs-meandiff)>separam*sdevdiffs)
 	jumplocs = np.insert(jumplocs, 0, 1)
 	jumplocs = np.insert(jumplocs, len(jumplocs) ,len(yvals) - 1)
 	numjumps=len(jumplocs)
@@ -103,4 +105,4 @@ def clusteranalysis(data,seperation):
 	clusterm=np.mean(statsclust[:,0])
 	clustersdev=np.std(statsclust[:,0])
 	clusterserr=clustersdev/len(statsclust[:,0])
-	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust
+	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs

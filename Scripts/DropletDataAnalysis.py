@@ -17,7 +17,7 @@ from scipy.signal import savgol_filter
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SISThickness2"
+dataDR=r"E:\SoftnessTest\PS2Run2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -48,7 +48,7 @@ folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 
 dropProp = [np.load(i+'/DropProps.npy') for i in folderpaths]
 
-exparams = np.genfromtxt('Aug29-SISThickness2.csv', dtype=float, delimiter=',', names=True) 
+exparams = np.genfromtxt('Sep17-Ps2Run2.csv', dtype=float, delimiter=',', names=True) 
 
 springc = 0.155 #N/m
 mperpix = 0.75e-6 #meters per pixel
@@ -114,12 +114,12 @@ for i in indexorder:
 	fbotm = planl.clusteranalysis(bottomdata,30)
 	
 	#angle means for high forces
-	atopm1 = planl.clusteranalysis(filteredAngles[0],30)
-	atopm2 = planl.clusteranalysis(filteredAngles[1],30)
+	atopm1 = planl.clusteranalysis(filteredAngles[0],3)
+	atopm2 = planl.clusteranalysis(filteredAngles[1],3)
 	
 	#angle means fow low forces
-	abotm1 = planl.clusteranalysis(filteredAngles[2],30)
-	abotm2 = planl.clusteranalysis(filteredAngles[3],30)
+	abotm1 = planl.clusteranalysis(filteredAngles[2],3)
+	abotm2 = planl.clusteranalysis(filteredAngles[3],3)
 	
 
 	
@@ -129,14 +129,52 @@ for i in indexorder:
 
 allleading=[np.concatenate([arr[0][0],arr[0][3]]) for arr in angleplateaudata]
 alltrailing=[np.concatenate([arr[0][1],arr[0][2]]) for arr in angleplateaudata]
+
+forceplateaudata[0][1][2]
 #%%
 lsimplemeans = [np.mean(arr[:,1]) for arr in allleading]
 lsimpleerr = [np.std(arr[:,1]) for arr in allleading]
 tsimplemeans = [np.mean(arr[:,1]) for arr in alltrailing]
 tsimpleerr = [np.std(arr[:,1]) for arr in alltrailing]
 #%%
-	
+def clusteranalysis(data,separam):
+	#find mean and standard deviation for whole result
+	#Input should be in [[x1,y1],[x2,y2]...] form
+	meanwhole=np.mean(data[:,1])
+	sdevwhole=np.std(data[:,1])
 
+	#Find mean and standard deviation using each plateau
+	diffs = np.gradient(data[:,0])
+	meandiff = np.mean(diffs)
+	sdevdiffs = np.std(diffs)
+	yvals = data[:,1]
+	#Find for each individual jump
+	jumplocs = np.argwhere(np.abs(diffs-meandiff)>separam*sdevdiffs)
+	jumplocs = np.insert(jumplocs, 0, 1)
+	jumplocs = np.insert(jumplocs, len(jumplocs) ,len(yvals) - 1)
+	numjumps=len(jumplocs)
+	statsclust=np.zeros([numjumps,2])
+	for i in range(numjumps-1):
+		statsclust[i,0]=np.mean(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
+		statsclust[i,1]=np.std(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
+	clusterm=np.mean(statsclust[:,0])
+	clustersdev=np.std(statsclust[:,0])
+	clusterserr=clustersdev/len(statsclust[:,0])
+	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs,jumplocs
+
+test1=clusteranalysis(topdata,3)
+print(test1[2])
+plt.plot(topdata[:,0],test1[3],'.')
+plt.plot(topdata[:,0],topdata[:,1])
+
+#%%
+testmean=np.mean(forceplateaudata[0][1][3])
+testsdev=np.std(forceplateaudata[0][1][3])
+
+xlist=np.linspace(0,1,len(forceplateaudata[0][1][3]))
+plt.plot(xlist,np.abs(forceplateaudata[0][1][3]-testmean))
+plt.plot(xlist[np.abs(forceplateaudata[0][1][3]-testmean)>testsdev*3],forceplateaudata[0][1][3][np.abs(forceplateaudata[0][1][3]-testmean)>testsdev*3],'.')
+#%%
 gs = gridspec.GridSpec(3, 1)
 
 
@@ -146,7 +184,7 @@ ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0]) 
 for i in indexorder:
-	ax1.plot(timearr[i]*varr[i],dropProp[i][:,0],label=labelarr[i],color=colorarr[i])
+	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6,label=labelarr[i],color=colorarr[i])
 	ax2.plot(timearr[i]*varr[i],lengthdat[i],color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],langledat[i],color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],rangledat[i],color=colorarr[i])
@@ -154,7 +192,7 @@ for i in indexorder:
 	
 
 ax1.legend()
-ax1.set_ylabel('Pipette F (N)')
+ax1.set_ylabel('Pipette F ($\mu N$)')
 
 ax2.set_ylabel('Droplet length (m)')
 
@@ -169,8 +207,8 @@ fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 #Get forces in nice form
-forceav=np.array([(arr[1][0][0]-arr[2][0][0])/2 for arr in forceplateaudata])
-errbars=np.array([np.sqrt((arr[1][0][1]**2+arr[2][0][1]**2))/2 for arr in forceplateaudata])
+forceav=np.array([1e6*(arr[1][0][0]-arr[2][0][0])/2 for arr in forceplateaudata])
+errbars=np.array([1e6*np.sqrt((arr[1][0][1]**2+arr[2][0][1]**2))/2 for arr in forceplateaudata])
 
 anglemeans = [ [arr[1][0][0],arr[2][0][0],arr[3][0][0],arr[4][0][0]] for arr in angleplateaudata]
 anglemeans=np.array(anglemeans)
