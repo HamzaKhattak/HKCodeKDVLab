@@ -89,7 +89,7 @@ def clusteranalysis(data,separam):
 	sdevwhole=np.std(data[:,1])
 
 	#Find mean and standard deviation using each plateau
-	diffs = np.diff(data[:,0])
+	diffs = np.gradient(data[:,0])
 	meandiff = np.mean(diffs)
 	sdevdiffs = np.std(diffs)
 	yvals = data[:,1]
@@ -105,4 +105,4 @@ def clusteranalysis(data,separam):
 	clusterm=np.mean(statsclust[:,0])
 	clustersdev=np.std(statsclust[:,0])
 	clusterserr=clustersdev/len(statsclust[:,0])
-	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs
+	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs,jumplocs

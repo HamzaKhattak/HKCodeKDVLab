@@ -60,7 +60,7 @@ ax1.imshow(noforce)
 ax2.imshow(ex1)
 ax3.imshow(ex2)
 #%%
-plt.imshow(noforce,cmap=plt.cm.gray)
+plt.imshow(ex2,cmap=plt.cm.gray)
 #%%
 #Specify parameters
 #Cropping

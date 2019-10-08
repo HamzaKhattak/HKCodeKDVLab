@@ -17,7 +17,7 @@ from scipy.signal import savgol_filter
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\PS2Run2"
+dataDR=r"E:\SoftnessTest\SIS3per14wt1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -46,9 +46,9 @@ os.chdir(dataDR)
 #%%
 folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 
-dropProp = [np.load(i+'/DropProps.npy') for i in folderpaths]
+dropProp = [np.load(i+'DropProps.npy') for i in folderpaths]
 
-exparams = np.genfromtxt('Sep17-Ps2Run2.csv', dtype=float, delimiter=',', names=True) 
+exparams = np.genfromtxt('Aug27-SIS3per14wt1.csv', dtype=float, delimiter=',', names=True) 
 
 springc = 0.155 #N/m
 mperpix = 0.75e-6 #meters per pixel
@@ -112,7 +112,7 @@ for i in indexorder:
 	#force cluster analysis
 	ftopm = planl.clusteranalysis(topdata,30)
 	fbotm = planl.clusteranalysis(bottomdata,30)
-	
+	'''
 	#angle means for high forces
 	atopm1 = planl.clusteranalysis(filteredAngles[0],3)
 	atopm2 = planl.clusteranalysis(filteredAngles[1],3)
@@ -120,60 +120,35 @@ for i in indexorder:
 	#angle means fow low forces
 	abotm1 = planl.clusteranalysis(filteredAngles[2],3)
 	abotm2 = planl.clusteranalysis(filteredAngles[3],3)
-	
+	'''
 
 	
 	forceplateaudata[i] = [[topdata,bottomdata,idh,idl],ftopm,fbotm]
-	angleplateaudata[i] = [filteredAngles,atopm1,atopm2,abotm1,abotm2]
+	#angleplateaudata[i] = [filteredAngles,atopm1,atopm2,abotm1,abotm2]
 
 
-allleading=[np.concatenate([arr[0][0],arr[0][3]]) for arr in angleplateaudata]
-alltrailing=[np.concatenate([arr[0][1],arr[0][2]]) for arr in angleplateaudata]
-
-forceplateaudata[0][1][2]
-#%%
+'''
+#allleading=[np.concatenate([arr[0][0],arr[0][3]]) for arr in angleplateaudata]
+#alltrailing=[np.concatenate([arr[0][1],arr[0][2]]) for arr in angleplateaudata]
 lsimplemeans = [np.mean(arr[:,1]) for arr in allleading]
 lsimpleerr = [np.std(arr[:,1]) for arr in allleading]
 tsimplemeans = [np.mean(arr[:,1]) for arr in alltrailing]
 tsimpleerr = [np.std(arr[:,1]) for arr in alltrailing]
-#%%
-def clusteranalysis(data,separam):
-	#find mean and standard deviation for whole result
-	#Input should be in [[x1,y1],[x2,y2]...] form
-	meanwhole=np.mean(data[:,1])
-	sdevwhole=np.std(data[:,1])
 
-	#Find mean and standard deviation using each plateau
-	diffs = np.gradient(data[:,0])
-	meandiff = np.mean(diffs)
-	sdevdiffs = np.std(diffs)
-	yvals = data[:,1]
-	#Find for each individual jump
-	jumplocs = np.argwhere(np.abs(diffs-meandiff)>separam*sdevdiffs)
-	jumplocs = np.insert(jumplocs, 0, 1)
-	jumplocs = np.insert(jumplocs, len(jumplocs) ,len(yvals) - 1)
-	numjumps=len(jumplocs)
-	statsclust=np.zeros([numjumps,2])
-	for i in range(numjumps-1):
-		statsclust[i,0]=np.mean(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
-		statsclust[i,1]=np.std(yvals[jumplocs[i]+1:jumplocs[i+1]-1])
-	clusterm=np.mean(statsclust[:,0])
-	clustersdev=np.std(statsclust[:,0])
-	clusterserr=clustersdev/len(statsclust[:,0])
-	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs,jumplocs
+'''
 
-test1=clusteranalysis(topdata,3)
-print(test1[2])
-plt.plot(topdata[:,0],test1[3],'.')
-plt.plot(topdata[:,0],topdata[:,1])
+#Get forces in nice form
+forceav=np.array([1e6*(arr[1][0][0]-arr[2][0][0])/2 for arr in forceplateaudata])
+errbars=np.array([1e6*np.sqrt((arr[1][0][1]**2+arr[2][0][1]**2))/2 for arr in forceplateaudata])
 
-#%%
-testmean=np.mean(forceplateaudata[0][1][3])
-testsdev=np.std(forceplateaudata[0][1][3])
 
-xlist=np.linspace(0,1,len(forceplateaudata[0][1][3]))
-plt.plot(xlist,np.abs(forceplateaudata[0][1][3]-testmean))
-plt.plot(xlist[np.abs(forceplateaudata[0][1][3]-testmean)>testsdev*3],forceplateaudata[0][1][3][np.abs(forceplateaudata[0][1][3]-testmean)>testsdev*3],'.')
+anglemeans = [ [arr[1][0][0],arr[2][0][0],arr[3][0][0],arr[4][0][0]] for arr in angleplateaudata]
+anglemeans=np.array(anglemeans)
+anglestds = [ [arr[1][0][1],arr[2][0][1],arr[3][0][1],arr[4][0][1]] for arr in angleplateaudata]
+anglestds=np.array(anglestds)
+
+
+
 #%%
 gs = gridspec.GridSpec(3, 1)
 
@@ -183,22 +158,28 @@ fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0]) 
+'''
 for i in indexorder:
 	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6,label=labelarr[i],color=colorarr[i])
-	ax2.plot(timearr[i]*varr[i],lengthdat[i],color=colorarr[i])
+	ax2.plot(timearr[i]*varr[i],lengthdat[i]*1e6,color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],langledat[i],color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],rangledat[i],color=colorarr[i])
-	ax3.plot(allleading[i][:,0]*varr[i],allleading[i][:,1],'k.',markersize=2)
-	
-
 ax1.legend()
+'''
+
+for i in [0]:
+	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6)
+	ax2.plot(timearr[i]*varr[i],lengthdat[i]*1e6)
+	ax3.plot(timearr[i]*varr[i],langledat[i])
+	ax3.plot(timearr[i]*varr[i],rangledat[i])
+
 ax1.set_ylabel('Pipette F ($\mu N$)')
 
-ax2.set_ylabel('Droplet length (m)')
+ax2.set_ylabel('Droplet length ($\mu m$)')
 
-ax3.set_ylim(40,95)
+ax3.set_ylim(45,95)
 ax3.set_ylabel('Contact angle')
-ax3.set_xlabel('Approx Substrate distance travelled')
+ax3.set_xlabel('Approx Substrate distance travelled ($\mu m$)')
 
 plt.tight_layout()
 #%%
@@ -206,14 +187,6 @@ gs = gridspec.GridSpec(2, 1)
 fig = plt.figure(figsize=(8,8))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
-#Get forces in nice form
-forceav=np.array([1e6*(arr[1][0][0]-arr[2][0][0])/2 for arr in forceplateaudata])
-errbars=np.array([1e6*np.sqrt((arr[1][0][1]**2+arr[2][0][1]**2))/2 for arr in forceplateaudata])
-
-anglemeans = [ [arr[1][0][0],arr[2][0][0],arr[3][0][0],arr[4][0][0]] for arr in angleplateaudata]
-anglemeans=np.array(anglemeans)
-anglestds = [ [arr[1][0][1],arr[2][0][1],arr[3][0][1],arr[4][0][1]] for arr in angleplateaudata]
-anglestds=np.array(anglestds)
 
 
 
@@ -229,77 +202,10 @@ ax2.set_xlabel(r"Speed ($\mu m/s$)")
 ax1.set_ylabel(r"Force ($px$)")
 ax2.set_ylabel(r"Angle")
 #%%
+runName=os.path.basename(os.getcwd())
 
+forcevt=np.column_stack([varr,forceav,errbars,anglemeans,anglestds])
+np.save(runName+'pvveldat.npy',forcevt)
 #%%
 
 
-
-
-arrnum=1
-testvals=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0],timebeforestop[arrnum],smoothparams=[50,3],sdevlims=[.1,1],outlierparam=2)
-plt.plot(testvals[1])
-plt.plot(testvals[2]*100)
-
-#%%
-plt.plot(timearr[arrnum],dropProp[arrnum][:,0])
-plt.plot(timearr[arrnum][:815],testvals[0].T)
-#%%
-#%%
-	
-	
-arrnum=-1
-
-gs = gridspec.GridSpec(3, 1)
-
-fig = plt.figure(figsize=(8,8))
-ax1 = fig.add_subplot(gs[0, 0])
-ax2 = fig.add_subplot(gs[1, 0])
-ax3 = fig.add_subplot(gs[2, 0])
-
-testv1=planl.plateaufilter(timearr[arrnum],dropProp[arrnum][:,0],timebeforestop[arrnum],smoothparams=[50,3],sdevlims=[.1,1],outlierparam=2)
-
-ax1.plot(timearr[arrnum]*varr[arrnum],dropProp[arrnum][:,0],label='data')
-ax1.plot(timearr[arrnum]*varr[arrnum],planl.smoothingfilter(dropProp[arrnum][:,0]),label='smoothed')
-ax1.plot(testv1[-1][0][:,0]*varr[arrnum],testv1[-1][0][:,1],'g.',markersize=3,label='Plateau Find')
-ax1.plot(testv1[-1][1][:,0]*varr[arrnum],testv1[-1][1][:,1],'g.',markersize=3)
-ax1.legend()
-velLim=0.2*np.std(testv1[2])
-accLim=0.2*np.std(testv1[3])
-
-ax1.set_ylabel('Force')
-ax2.plot(testv1[0]*varr[arrnum],testv1[2])
-ax2.axhline(velLim,c='r')
-ax2.axhline(-velLim,c='r')
-
-ax2.set_ylabel('Force\'')
-
-
-ax3.plot(testv1[0]*varr[arrnum],testv1[3]*1000)
-ax3.set_ylabel('Force\" (1000s)')
-ax3.axhline(accLim*1000,c='r')
-ax3.axhline(-accLim*1000,c='r')
-
-xend=4300
-ax1.set_xlim(0,xend)
-ax2.set_xlim(0,xend)
-ax3.set_xlim(0,xend)
-
-plt.tight_layout()
-#%%
-gs = gridspec.GridSpec(2, 1)
-fig = plt.figure(figsize=(8,8))
-ax1 = fig.add_subplot(gs[0, 0])
-ax1.plot(timearr[4]*varr[4],dropProp[4][:,2]-dropProp[4][:,0],'g-')
-ax1.set_ylabel('left edge x (pixels)')
-
-ax2 = fig.add_subplot(gs[1, 0])
-ax2.plot(timearr[4]*varr[4],dropProp[4][:,3]-dropProp[4][0,3],'g-')
-ax2.set_ylabel('left edge y (pixels)')
-ax2.set_xlabel('Approx Substrate distance travelled')
-
-#%%
-speeds=np.array([10,5,1,.5])
-displacements=np.array([30.81,28.93,23.19,19.76])
-plt.plot(speeds,displacements,'.')
-plt.xlabel('speed ($\mu m /s$)')
-plt.ylabel('force(approx)')
