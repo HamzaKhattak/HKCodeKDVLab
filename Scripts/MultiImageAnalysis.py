@@ -10,7 +10,7 @@ from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
-
+from matplotlib_scalebar.scalebar import ScaleBar
 #import similaritymeasures
 
 #%%
@@ -94,7 +94,7 @@ ax3.imshow(croppedex2)
 #%%
 
 #Cross correlation
-cutpoint=45 # y pixel to use for cross correlation
+cutpoint=55 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
@@ -107,10 +107,18 @@ pixrange=[60,60,25] #first two are xy bounding box for fit, last is where to sea
 background=False 
 
 threshtest=ede.edgedetector(croppedex1,background,*imaparam)
-plt.figure()
-plt.imshow(croppedex1,cmap=plt.cm.gray)
-plt.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
-plt.axhline(cutpoint,ls='--')
+
+fig,ax = plt.subplots(1)
+ax.imshow(croppedex1,cmap=plt.cm.gray)
+#ax.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
+#ax.axhline(cutpoint,ls='--')
+
+ax.axis('off')
+
+
+scalebar = ScaleBar(0.75e-6,frameon=False,location='lower right') # 1 pixel = 0.2 meter
+ax.add_artist(scalebar)
+
 
 #%%
 folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())

@@ -10,6 +10,11 @@ from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
+import tkinter as tk
+from tkinter import filedialog
+
+
+
 
 #import similaritymeasures
 
@@ -112,7 +117,7 @@ for i in indexorder:
 	#force cluster analysis
 	ftopm = planl.clusteranalysis(topdata,30)
 	fbotm = planl.clusteranalysis(bottomdata,30)
-	'''
+	
 	#angle means for high forces
 	atopm1 = planl.clusteranalysis(filteredAngles[0],3)
 	atopm2 = planl.clusteranalysis(filteredAngles[1],3)
@@ -120,22 +125,22 @@ for i in indexorder:
 	#angle means fow low forces
 	abotm1 = planl.clusteranalysis(filteredAngles[2],3)
 	abotm2 = planl.clusteranalysis(filteredAngles[3],3)
-	'''
+	
 
 	
 	forceplateaudata[i] = [[topdata,bottomdata,idh,idl],ftopm,fbotm]
-	#angleplateaudata[i] = [filteredAngles,atopm1,atopm2,abotm1,abotm2]
+	angleplateaudata[i] = [filteredAngles,atopm1,atopm2,abotm1,abotm2]
 
 
-'''
-#allleading=[np.concatenate([arr[0][0],arr[0][3]]) for arr in angleplateaudata]
-#alltrailing=[np.concatenate([arr[0][1],arr[0][2]]) for arr in angleplateaudata]
+
+allleading=[np.concatenate([arr[0][0],arr[0][3]]) for arr in angleplateaudata]
+alltrailing=[np.concatenate([arr[0][1],arr[0][2]]) for arr in angleplateaudata]
 lsimplemeans = [np.mean(arr[:,1]) for arr in allleading]
 lsimpleerr = [np.std(arr[:,1]) for arr in allleading]
 tsimplemeans = [np.mean(arr[:,1]) for arr in alltrailing]
 tsimpleerr = [np.std(arr[:,1]) for arr in alltrailing]
 
-'''
+
 
 #Get forces in nice form
 forceav=np.array([1e6*(arr[1][0][0]-arr[2][0][0])/2 for arr in forceplateaudata])
@@ -154,7 +159,7 @@ gs = gridspec.GridSpec(3, 1)
 
 
 
-fig = plt.figure(figsize=(8,8))
+fig = plt.figure(figsize=(5,5))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 ax3 = fig.add_subplot(gs[2, 0]) 
@@ -165,23 +170,40 @@ for i in indexorder:
 	ax3.plot(timearr[i]*varr[i],langledat[i],color=colorarr[i])
 	ax3.plot(timearr[i]*varr[i],rangledat[i],color=colorarr[i])
 ax1.legend()
+
 '''
+for i in [1]:
+	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6,'b')
+	ax1.plot(forceplateaudata[i][0][0][:,0]*varr[i],forceplateaudata[i][0][0][:,1]*1e6,'k.')
+	ax1.plot(forceplateaudata[i][0][1][:,0]*varr[i],forceplateaudata[i][0][1][:,1]*1e6,'k.')
+	ax2.plot(timearr[i]*varr[i],lengthdat[i]*1e6,'b')
+	ax3.plot(timearr[i]*varr[i],langledat[i],'b',label='left')
+	ax3.plot(timearr[i]*varr[i],rangledat[i],'b--',label='right')
+	
+	#ax3.plot(angleplateaudata[i][0][0][:,0]*varr[i],angleplateaudata[i][0][0][:,1],'k.')
+	#ax3.plot(angleplateaudata[i][0][1][:,0]*varr[i],angleplateaudata[i][0][1][:,1],'k.')
+	#ax3.plot(angleplateaudata[i][0][2][:,0]*varr[i],angleplateaudata[i][0][2][:,1],'k.')
+	#ax3.plot(angleplateaudata[i][0][3][:,0]*varr[i],angleplateaudata[i][0][3][:,1],'k.')
+	
+ax3.legend()
 
-for i in [0]:
-	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6)
-	ax2.plot(timearr[i]*varr[i],lengthdat[i]*1e6)
-	ax3.plot(timearr[i]*varr[i],langledat[i])
-	ax3.plot(timearr[i]*varr[i],rangledat[i])
+ax1.set_xticklabels([])
+ax2.set_xticklabels([])
+plt.subplots_adjust(hspace=-1)
 
-ax1.set_ylabel('Pipette F ($\mu N$)')
+
+ax1.set_ylabel('Force ($\mu N$)')
 
 ax2.set_ylabel('Droplet length ($\mu m$)')
 
 ax3.set_ylim(45,95)
 ax3.set_ylabel('Contact angle')
-ax3.set_xlabel('Approx Substrate distance travelled ($\mu m$)')
+ax3.set_xlabel('Substrate distance travelled ($\mu m$)')
 
 plt.tight_layout()
+file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Symposium Day'
+file_path=os.path.join(file_path,'PlateauDetect.png')
+plt.savefig(file_path,dpi=900)
 #%%
 gs = gridspec.GridSpec(2, 1)
 fig = plt.figure(figsize=(8,8))
