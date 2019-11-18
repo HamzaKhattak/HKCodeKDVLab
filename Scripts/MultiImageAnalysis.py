@@ -17,7 +17,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\PS2Run2"
+dataDR=r"E:\SoftnessTest\Sourcerunb"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -66,15 +66,15 @@ plt.imshow(ex2,cmap=plt.cm.gray)
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
-x1c=350
-x2c=1150
-y1c=200
-y2c=730
+x1c=282
+x2c=1300
+y1c=236
+y2c=577
 croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
-yanlow=400
-yanhigh=550
+yanlow=390
+yanhigh=460
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
 croppedbase=ito.cropper(noforce,*croppoints)
@@ -94,7 +94,7 @@ ax3.imshow(croppedex2)
 #%%
 
 #Cross correlation
-cutpoint=55 # y pixel to use for cross correlation
+cutpoint=25 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Edge detection
@@ -110,13 +110,13 @@ threshtest=ede.edgedetector(croppedex1,background,*imaparam)
 
 fig,ax = plt.subplots(1)
 ax.imshow(croppedex1,cmap=plt.cm.gray)
-#ax.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
-#ax.axhline(cutpoint,ls='--')
+ax.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
+ax.axhline(cutpoint,ls='--')
 
 ax.axis('off')
 
 
-scalebar = ScaleBar(0.75e-6,frameon=False,location='lower right') # 1 pixel = 0.2 meter
+scalebar = ScaleBar(0.75e-6,frameon=False,location='upper right') # 1 pixel = 0.2 meter
 ax.add_artist(scalebar)
 
 

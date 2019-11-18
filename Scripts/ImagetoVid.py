@@ -11,7 +11,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:\PipetteCalibration\Test1_5"
+dataDR=r"E:\evap\SiTest_1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -30,8 +30,8 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 
 #%%
-inFile="Test1_7_MMStack_Default.ome.tif"
-outFile="pipettecalibration.mp4"
+inFile="2ums_1_MMStack_Default.ome.tif"
+outFile="dropmod.mp4"
 
 
 #Import the tif files in a folder
@@ -40,4 +40,4 @@ imageframes=ito.omestackimport(dataDR)
 #stackimport(dataDR+'/'+inFile)
 
 #Write to a video using mimwrite
-imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','50'],  output_params=['-r', '30'])
+imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','100'],  output_params=['-r', '30'])

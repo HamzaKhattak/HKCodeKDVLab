@@ -22,7 +22,7 @@ from tkinter import filedialog
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SIS3per14wt1"
+dataDR=r"E:\SoftnessTest\SourceSIS"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -53,7 +53,7 @@ folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 
 dropProp = [np.load(i+'DropProps.npy') for i in folderpaths]
 
-exparams = np.genfromtxt('Aug27-SIS3per14wt1.csv', dtype=float, delimiter=',', names=True) 
+exparams = np.genfromtxt('Nov1-SourceSIS.csv', dtype=float, delimiter=',', names=True) 
 
 springc = 0.155 #N/m
 mperpix = 0.75e-6 #meters per pixel
@@ -85,7 +85,6 @@ def tarrf(arr,tstep):
 colorarr=plt.cm.jet(np.linspace(0,1,len(tsteps)))
 timearr=[tarrf(dropProp[i][:,0],tsteps[i]) for i in range(len(tsteps))]
 
-
 #%%
 forcedat = np.array([arr[:,0] * mperpix * springc for arr in dropProp])
 
@@ -113,6 +112,7 @@ for i in indexorder:
 	tArrscut = [timearr[i][idh],timearr[i][idh],timearr[i][idl],timearr[i][idl]]
 	anglesCut= [filteredAngles[0][idh],filteredAngles[1][idh],filteredAngles[0][idl],filteredAngles[1][idl]]
 	filteredAngles = [np.transpose([tArrscut[i],anglesCut[i]]) for i in range(4)]
+	
 	
 	#force cluster analysis
 	ftopm = planl.clusteranalysis(topdata,30)
@@ -196,7 +196,7 @@ ax1.set_ylabel('Force ($\mu N$)')
 
 ax2.set_ylabel('Droplet length ($\mu m$)')
 
-ax3.set_ylim(45,95)
+ax3.set_ylim(40,95)
 ax3.set_ylabel('Contact angle')
 ax3.set_xlabel('Substrate distance travelled ($\mu m$)')
 
@@ -204,9 +204,58 @@ plt.tight_layout()
 file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Symposium Day'
 file_path=os.path.join(file_path,'PlateauDetect.png')
 plt.savefig(file_path,dpi=900)
+
+#%%
+#Plotting two for presentation
+gs = gridspec.GridSpec(2, 1)
+
+
+
+fig = plt.figure(figsize=(5,5))
+ax1 = fig.add_subplot(gs[0, 0])
+ax2 = fig.add_subplot(gs[1, 0])
+
+for i in indexorder:
+	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6,label=labelarr[i],color=colorarr[i])
+	ax2.plot(timearr[i]*varr[i],langledat[i],color=colorarr[i])
+	ax2.plot(timearr[i]*varr[i],rangledat[i],color=colorarr[i])
+ax1.legend()
+
+'''
+for i in [1]:
+	ax1.plot(timearr[i]*varr[i],forcedat[i]*1e6,'b')
+	ax1.plot(forceplateaudata[i][0][0][:,0]*varr[i],forceplateaudata[i][0][0][:,1]*1e6,'k.')
+	ax1.plot(forceplateaudata[i][0][1][:,0]*varr[i],forceplateaudata[i][0][1][:,1]*1e6,'k.')
+	ax2.plot(timearr[i]*varr[i],langledat[i],'b',label='left')
+	ax2.plot(timearr[i]*varr[i],rangledat[i],'b--',label='right')
+	
+	ax2.plot(angleplateaudata[i][0][0][:,0]*varr[i],angleplateaudata[i][0][0][:,1],'k.')
+	ax2.plot(angleplateaudata[i][0][1][:,0]*varr[i],angleplateaudata[i][0][1][:,1],'k.')
+	ax2.plot(angleplateaudata[i][0][2][:,0]*varr[i],angleplateaudata[i][0][2][:,1],'k.')
+	ax2.plot(angleplateaudata[i][0][3][:,0]*varr[i],angleplateaudata[i][0][3][:,1],'k.')
+	
+ax2.legend()
+'''
+ax1.set_xticklabels([])
+plt.subplots_adjust(hspace=-1)
+
+
+ax1.set_ylabel('Force ($\mathrm{\mu N}$)')
+
+ax2.set_ylabel('Contact angle ($^o$)')
+
+ax2.set_ylim(30,95)
+ax2.set_ylabel('Contact angle ($^{\circ}$)')
+ax2.set_xlabel('Substrate distance travelled ($\mathrm{\mu m}$)')
+
+plt.tight_layout()
+file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Symposium Day'
+file_path=os.path.join(file_path,'PlateauDat2.png')
+plt.savefig(file_path,dpi=900)
+
 #%%
 gs = gridspec.GridSpec(2, 1)
-fig = plt.figure(figsize=(8,8))
+fig = plt.figure(figsize=(4,4))
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1, 0])
 
@@ -219,15 +268,23 @@ for i in [0,3]:
 for i in [1,2]:
 	ax2.errorbar(varr,anglemeans[:,i],yerr=anglestds[:,i],fmt='b.')
 
-
+ax1.set_xticklabels([])
 ax2.set_xlabel(r"Speed ($\mu m/s$)")
 ax1.set_ylabel(r"Force ($px$)")
 ax2.set_ylabel(r"Angle")
+plt.tight_layout()
 #%%
 runName=os.path.basename(os.getcwd())
 
 forcevt=np.column_stack([varr,forceav,errbars,anglemeans,anglestds])
 np.save(runName+'pvveldat.npy',forcevt)
 #%%
+plt.plot(dropProp[0][:,2]-dropProp[0][:,1],label="0.1")
 
+plt.plot(dropProp[1][:,2]-dropProp[1][:,1],'r--',label="0.2")
+
+plt.plot(dropProp[2][:,2]-dropProp[2][:,1],label="0.5")
+
+plt.plot(dropProp[3][:,2]-dropProp[3][:,1],label="1")
+plt.legend()
 

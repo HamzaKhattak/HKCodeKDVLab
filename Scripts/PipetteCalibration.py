@@ -85,10 +85,10 @@ massesmg=np.array([7.6,7.6,5.6,4.1,4.1,2.9,2.9,2.3,2.3,5.3,5.3,11.3,11.3])
 force=9.8*massesmg*1e-6
 
 xval2=np.array([-arr[0][0] for arr in xvals[:-1]])*1.5e-6
-
+plt.figure(figsize=(4,3))
 plt.plot(force*1e6,xval2*1e6,'.')
-plt.ylabel('Deflection ($\mu m$)')
-plt.xlabel('Force $(\mu N)$')
+plt.ylabel('Deflection ($\mathrm{\mu m}$)')
+plt.xlabel('Force $(\mathrm{\mu N})$')
 
 def linefx(x,a):
 	return a*x
@@ -97,5 +97,9 @@ poptcalib, pcovcalib = curve_fit(linefx,force,xval2)
 poptcalibf, pcovcalibf = curve_fit(linefx,xval2,force)
 
 xlin=np.linspace(0,np.max(force),100)
-plt.plot(xlin*1e6,linefx(xlin,*poptcalib)*1e6,label='Spring constant: %.3f $N / m$' %(poptcalibf[0]))
+plt.plot(xlin*1e6,linefx(xlin,*poptcalib)*1e6,label='Spring constant: %.0f $\mathrm{nN / \mu m}$' %(poptcalibf[0]*1000))
 plt.legend()
+plt.tight_layout()
+file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Symposium Day'
+file_path=os.path.join(file_path,'PipetteCalibrationv2.png')
+plt.savefig(file_path,dpi=900)
