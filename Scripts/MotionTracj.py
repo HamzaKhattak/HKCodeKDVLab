@@ -131,5 +131,18 @@ plt.show()
 plt.legend()
 
 #%%
+#plot RMS vs temperature
+interT=np.interp(timedat, envirot, envirodat[:,0])
+interH=np.interp(timedat, envirot, envirodat[:,1])
+
+#%%
+plt.plot( envirot, envirodat[:,0])
+plt.plot( timedat, interT)
+#%%
+fig=plt.figure(figsize=(5,4))
+plt.plot(interT,RMS*1e6,'.')
+plt.xlabel('Temperature ($^o C$)')
+plt.ylabel('RMS pos ($\mu m$)')
+fig.tight_layout()
 
 
