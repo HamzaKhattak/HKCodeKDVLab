@@ -11,7 +11,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:\evap\SiTest_1"
+dataDR=r"E:\PDMS\PDMSdisplace_2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -40,4 +40,4 @@ imageframes=ito.omestackimport(dataDR)
 #stackimport(dataDR+'/'+inFile)
 
 #Write to a video using mimwrite
-imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','100'],  output_params=['-r', '30'])
+imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','30'],  output_params=['-r', '30'])
