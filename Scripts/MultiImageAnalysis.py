@@ -17,7 +17,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\Sourcerunb"
+dataDR=r"E:\PDMS\SpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -66,15 +66,15 @@ plt.imshow(ex2,cmap=plt.cm.gray)
 #Cropping
 #Select the minimum (1s) and maximum (2s) crop locations
 #Needs to include the pipette ends
-x1c=282
-x2c=1300
-y1c=236
-y2c=577
+x1c=500
+x2c=1200
+y1c=330
+y2c=800
 croppoints=[x1c,x2c,y1c,y2c]
 
 #Select crop region for fitting (just needs to be large enough so droplet end is the max)
-yanlow=390
-yanhigh=460
+yanlow=482
+yanhigh=632
 yanalysisc=[yanlow-y1c,yanhigh-y1c]
 
 croppedbase=ito.cropper(noforce,*croppoints)

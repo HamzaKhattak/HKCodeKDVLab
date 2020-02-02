@@ -22,7 +22,7 @@ from tkinter import filedialog
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\SoftnessTest\SourceSIS"
+dataDR=r"E:\PDMS\PDMSThinner"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -53,7 +53,7 @@ folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
 
 dropProp = [np.load(i+'DropProps.npy') for i in folderpaths]
 
-exparams = np.genfromtxt('Nov1-SourceSIS.csv', dtype=float, delimiter=',', names=True) 
+exparams = np.genfromtxt('Jan23-NewPDMSThin.csv', dtype=float, delimiter=',', names=True) 
 
 springc = 0.155 #N/m
 mperpix = 0.75e-6 #meters per pixel
@@ -270,7 +270,7 @@ for i in [1,2]:
 
 ax1.set_xticklabels([])
 ax2.set_xlabel(r"Speed ($\mu m/s$)")
-ax1.set_ylabel(r"Force ($px$)")
+ax1.set_ylabel(r"Force ($\mu N$)")
 ax2.set_ylabel(r"Angle")
 plt.tight_layout()
 #%%
