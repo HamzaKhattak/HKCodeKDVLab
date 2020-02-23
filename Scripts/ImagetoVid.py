@@ -11,7 +11,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:\PDMS\evapabsorb\test_2"
+dataDR=r"E:\PDMS\IonicRun\10ums_1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -31,13 +31,13 @@ os.chdir(dataDR)
 
 #%%
 inFile="2ums_1_MMStack_Default.ome.tif"
-outFile="dropevap.mp4"
+outFile="ionicrun.mp4"
 
 
 #Import the tif files in a folder
 imageframes=ito.omestackimport(dataDR)
 #Or just one file
 #stackimport(dataDR+'/'+inFile)
-
+#%%
 #Write to a video using mimwrite
 imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','30'],  output_params=['-r', '30'])
