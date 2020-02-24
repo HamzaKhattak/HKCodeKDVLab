@@ -90,21 +90,5 @@ print(fity)
 print(np.sqrt(np.diag(fitp)))
 plt.plot(logdatx,logdaty,'.')
 plt.plot(logdatx,linfx(logdatx,*fity))
-#%%
-max1=np.max(Thick[:,1])
-max2=np.max(Thinner[:,1])
-max3=np.max(Thinnest[:,1])
-fig,ax=plt.subplots(figsize=(5,4))
-ax.errorbar(Thick[:,0],Thick[:,1]/max1,'.',yerr=Thick[:,2]/max1,Label='Thick')
-ax.errorbar(Thinner[:,0],Thinner[:,1]/max2,'.',yerr=Thinner[:,2]/max2,Label='Thin')
-ax.errorbar(Thinnest[:,0],Thinnest[:,1]/max3,'.',yerr=Thinnest[:,2]/max3,Label='Thinnest')
-ax.errorbar(IonicThick[:,0],IonicThick[:,1]/max3,'.',yerr=IonicThick[:,2]/max3,Label='Ionic Thick')
-ax.errorbar(IonicThin[:,0],IonicThin[:,1]/max4,'.',yerr=IonicThin[:,2]/max4,Label='Ionic Thin')
-
-ax.legend(loc='lower right')
-ax.set_xlabel('Speed ($\mathrm{\mu m /s}$)')
-ax.set_ylabel(r'Force ($\mathrm{\mu N}$)')
-fig.tight_layout()
-plt.savefig(file_path,dpi=900)
 
 #%%
