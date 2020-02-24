@@ -51,7 +51,12 @@ IonicThick=np.load('IonicThickpvveldat.npy')
 IonicThin=np.load('IonicRunpvveldat.npy')
 IonicThinner=np.load('IonicThinpvveldat.npy')
 IonicIntermediate=np.load('IonicIntermediatepvveldat.npy')
-
+'''
+normval=328/(0.75/2)
+normval=290/(0.75/2)
+normval=285/(0.75/2))
+#ax.set_xscale("log")
+'''
 #%%
 def fitfunc(x,a):
 	return a*x**(1/4)
@@ -61,25 +66,35 @@ def errorbarplot(dataset,labeld,cval,normval=1):
 	fit,pcov = curve_fit(fitfunc,dataset[:,0],dataset[:,1]/normval,maxfev=100000)
 	xlist=np.linspace(0.1,10,100)
 	ax.plot(xlist,fitfunc(xlist,*fit),linestyle='dashed',color=cval)
-	print(fit)
+	print(fit, pcov)
 	
 file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Feb17'
-file_path=os.path.join(file_path,'ComboForces.png')
+file_path=os.path.join(file_path,'frame6.png')
+
 fig,ax=plt.subplots(figsize=(5,4));
 
 #errorbarplot(Thick,"Thick",'k')
 #errorbarplot(Thinner,"Thinner",)
 #errorbarplot(Thinnest,"Thinnest")
 
-errorbarplot(IonicThick,"Ionic Thick",'b',normval=328/(0.75/2))
-errorbarplot(IonicIntermediate,"Ionic Intermediate",'r',normval=290/(0.75/2))
-errorbarplot(IonicThinner,"Ionic Thin",'g',normval=285/(0.75/2))
-#ax.set_xscale("log")
-#ax.set_yscale("log")
+errorbarplot(IonicThick,"1100 nm",'b')
+errorbarplot(IonicThin,"150 nm",'darkblue')
+errorbarplot(IonicIntermediate,"70 nm",'r')
+errorbarplot(IonicThinner,"48 nm",'g')
+ax.set_yscale("log")
+ax.set_xscale("log")
 ax.legend(loc='lower right')
 ax.set_xlabel('Speed ($\mathrm{\mu m /s}$)')
 ax.set_ylabel(r'Force ($\mathrm{\mu N}$)')
+#ax.set_ylim(0,27)
+#ax.set_ylabel(r'Force (normalized)')
+
 fig.tight_layout()
+plt.savefig(file_path,dpi=600)
+#%%
+plt.plot([1100,150,68,48],[13.84,14.38,6.5,4.1],'.')
+plt.xlabel('thickness (nm)')
+plt.ylabel('constant')
 #%%
 def linfx(x,a,b):
 	return a*x+b

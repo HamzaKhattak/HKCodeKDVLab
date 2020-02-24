@@ -47,13 +47,17 @@ def linfx2(x,a):
 	return a*x
 x=rawsizescan[:,1]/2
 y=rawsizescan[:,8]
-plt.figure(figsize=(4,3))
+plt.figure(figsize=(5,4))
 plt.errorbar(x,y,yerr=rawsizescan[:,9],marker='.',linestyle="None")
 plt.xlabel("Droplet Radius ($\mathrm{\mu m}$)")
 plt.ylabel("Force ($\mathrm{\mu N}$)")
 pf,px = curve_fit(linfx2,x,y)
-plt.xlim(0,np.max(rawsizescan[:,1]/2)+10)
-plt.ylim(0,np.max(rawsizescan[:,8])+2)
-xrange=np.arange(0,np.max(x)+20)
-plt.plot(xrange,linfx2(xrange,*pf))
+#plt.xlim(0,np.max(rawsizescan[:,1]/2)+10)
+#plt.ylim(0,np.max(rawsizescan[:,8])+2)
+#xrange=np.arange(0,np.max(x)+20)
+#plt.plot(xrange,linfx2(xrange,*pf))
+
+file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Feb17'
+file_path=os.path.join(file_path,'forceradius.png')
 plt.tight_layout()
+plt.savefig(file_path,dpi=600)
