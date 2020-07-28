@@ -9,7 +9,8 @@ import importlib
 from scipy.optimize import curve_fit
 from matplotlib_scalebar.scalebar import ScaleBar
 #import similaritymeasures
-
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 #%%
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
@@ -45,17 +46,16 @@ rawsizescan=np.genfromtxt("SizeScan.csv",skip_header=1,delimiter=',')
 
 def linfx2(x,a):
 	return a*x
-x=rawsizescan[:,1]/2
-y=rawsizescan[:,8]
-plt.figure(figsize=(5,4))
-plt.errorbar(x,y,yerr=rawsizescan[:,9],marker='.',linestyle="None")
+x=rawsizescan[:,2]/2
+y=rawsizescan[:,9]
+erdat=rawsizescan[:,10]
+plt.figure(figsize=(4,3))
+plt.errorbar(x,y,yerr=erdat,marker='.',linestyle="None",color='blue')
 plt.xlabel("Droplet Radius ($\mathrm{\mu m}$)")
 plt.ylabel("Force ($\mathrm{\mu N}$)")
 pf,px = curve_fit(linfx2,x,y)
-#plt.xlim(0,np.max(rawsizescan[:,1]/2)+10)
-#plt.ylim(0,np.max(rawsizescan[:,8])+2)
-#xrange=np.arange(0,np.max(x)+20)
-#plt.plot(xrange,linfx2(xrange,*pf))
+xrange=np.arange(0,np.max(x)+5)
+plt.plot(xrange,linfx2(xrange,*pf),color='royalblue',linestyle='--')
 
 file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Feb17'
 file_path=os.path.join(file_path,'forceradius.png')

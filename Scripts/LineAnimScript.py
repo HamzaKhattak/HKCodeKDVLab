@@ -55,6 +55,8 @@ allimages=ito.cropper(allimages,*croppoints)
 
 
 #%%
+plt.imshow(allimages[150],plt.cm.gray)
+#%%
 edges=ito.openlistnp(os.path.join(dataDR,'edgedata.npy'))
 dropprops = ito.openlistnp(os.path.join(dataDR,'allDropProps.npy'))
 AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = dropprops
@@ -62,7 +64,7 @@ AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = dropprops
 #rotate to match image
 edges=[df.rotator(arr,rotateinfo[0],rotateinfo[1][0],rotateinfo[1][1]) for arr in edges]
 
-centrepos, loaddat=np.load("correlationdata.npy")
+centrepos, loaddat=np.load("correlationdata.npy",allow_pickle=True)
 
 inputxvt=loaddat[:,:,0]
 inputyvt=loaddat[:,:,1]
@@ -83,10 +85,11 @@ plt.ylabel('Similarity')
 plt.tight_layout()
 #%%
 dt=13.6
-endT=yAnim[:,0].size*dt #The total time over the data, assumes equal spacing
+
 
 yAnim=inputxvt
 xAnim=inputyvt
+endT=yAnim[:,0].size*dt #The total time over the data, assumes equal spacing
 tArray=np.linspace(0,endT,yAnim[:,0].size) #Make a list of times
 
 
@@ -100,7 +103,7 @@ ax[0].get_xaxis().set_visible(False) # this removes the ticks and numbers for x 
 ax[0].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
 
 edgeline, = ax[0].plot(edges[0][:,0],edges[0][:,1],color='cyan',marker='.',linestyle='',markersize=1,animated=True)
-fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'ro',markersize=2,animated=True)
+fitline, = ax[0].plot(edges[0][:,0],edges[0][:,1],'cyan',alpha=0,markersize=2,animated=True)
 line, =  plt.plot([], [],'b-', animated=True)
 vline2, = ax[1].plot([],'go',animated=True)
 
@@ -195,6 +198,6 @@ plt.show()
 #%%
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=30,extra_args=['-vcodec', 'libx264'])
-file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Symposium Day'
+file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Feb24th'
 file_path=os.path.join(file_path,'AnimatedExperimentv2.mp4')
 ani.save(file_path,writer=writer,dpi=200)
