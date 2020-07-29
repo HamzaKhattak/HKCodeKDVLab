@@ -2,6 +2,7 @@
 '''
 This tool takes images at a given framerate adapted from the multi camera example
 on the Basler pypylon Github site
+Currently set up for only two cameras.
 '''
 
 import os
@@ -15,6 +16,7 @@ import tifffile as tfile
 class BCamCap:
 	def __init__(self,maxCamerasToUse,secperframe):
 		try:
+			self.spf = secperframe
 			# Get the transport layer factory.
 			tlFactory = pylon.TlFactory.GetInstance()
 		
@@ -56,34 +58,33 @@ class BCamCap:
 		tosave = fileName + '.ome.tif' #filename to save
 		
 		try:
-			atime=time.time()
 			self.cameras.StartGrabbing()
+			grabResult1=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+			grabResult2=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+			imtosave=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
+			
+			mdat={"StartTime" : time.localtime(time.time()),
+				   "IntendedDimensions": {
+									    "time": countOfImagesToGrab,
+									    "position": 1,
+									    "z": 1,
+									    "channel": 2
+										  },
+				   "Interval_ms": self.spf*1000
+				 }
+			
+			tfile.imwrite(tosave,imtosave,planarconfig='separate',append=True,bigtiff=True,metadata=mdat)
 			# Grab c_countOfImagesToGrab from the cameras.
-			print(time.time()-atime)
-			for i in range(countOfImagesToGrab*self.l):
+			for i in range(1,countOfImagesToGrab):
 				if not self.cameras.IsGrabbing():
 					break
-				grabResult=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-				
-				
-				tfile.imwrite(tosave,grabResult.GetArray(), append=True,bigtiff=True)
-				
-				'''
-				grabResult1 = cameras[0].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-				btime=time.time()
-				grabResult2 = cameras[1].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-				ctime=time.time()
-		
-				ctime=time.time()
-				
-				#tfile.imwrite('temptesting.tif',grabResult1.GetArray(), append=True)
-				#tfile.imwrite('temptesting.tif',grabResult2.GetArray(), append=True)
-				tfile.imwrite('temptesting2.ome.tif',np.array([grabResult1.GetArray(),grabResult2.GetArray()]), append=True,bigtiff=True)
-				dtime=time.time()
-				
-				print(dtime-ctime)
-				'''
-			#cameras.StopGrabbing()
+				#Grab images from cameras (could use the iterative method if more cameras end up being needed)
+				grabResult1=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+				grabResult2=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+				#Save by appending, this is slower than just saving using the Pylon built in but is more convenient
+				imtosave=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
+				tfile.imwrite(tosave,imtosave,planarconfig='separate',append=True,bigtiff=True)
+
 		except genicam.GenericException as e:
 			# Error handling
 			print("An exception occurred.", e.GetDescription())
