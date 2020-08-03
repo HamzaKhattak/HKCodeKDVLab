@@ -1,7 +1,7 @@
 '''
 Code for communicating with motion controller, right now it simply opens using
 the correct port. Can get port from the GUI or by cycling through
-Could change enable disable etc with this as well but is ussually good
+Included quick change enable disable etc with this as well but is ussually good
 to use the SMC100 applet to do that.
 Make sure to close the port or cannot rerun the program
 '''
@@ -54,7 +54,7 @@ class SMC100:
 		if position<15:
 			self.writecommand('1PA'+str(position))
 		else:
-			print('Position command too high')
+			raise ValueError('Position too high')
 	
 	def closeport(self):
 		self.ser.close()
