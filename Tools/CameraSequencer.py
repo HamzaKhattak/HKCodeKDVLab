@@ -54,13 +54,13 @@ class BCamCap:
 		
 		# Maybe work in exit codes?
 		# self.exitCode = 0
-		
+		#500 second maximum between frames
 		tosave = fileName + '.ome.tif' #filename to save
 		
 		try:
 			self.cameras.StartGrabbing()
-			grabResult1=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-			grabResult2=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+			grabResult1=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
+			grabResult2=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
 			imtosave=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
 			
 			mdat={"StartTime" : time.localtime(time.time()),
@@ -79,8 +79,8 @@ class BCamCap:
 				if not self.cameras.IsGrabbing():
 					break
 				#Grab images from cameras (could use the iterative method if more cameras end up being needed)
-				grabResult1=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-				grabResult2=self.cameras.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+				grabResult1=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
+				grabResult2=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
 				#Save by appending, this is slower than just saving using the Pylon built in but is more convenient
 				imtosave=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
 				tfile.imwrite(tosave,imtosave,planarconfig='separate',append=True,bigtiff=True)
