@@ -13,7 +13,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\FullAutoExperimentTest"
+dataDR=r"E:\DualAngles\FirstSpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -71,6 +71,8 @@ def foldercreate(runspeed):
 
 #Run the experiments, for now need to have it start and end at same points
 #Should be able to implement multi threading and a bit more complicated wait cycles later
+#Open the controller
+cont=nwpt.SMC100('COM4')
 for i in np.arange(len(speedarray)):
 	#Repeat for the number of repeats required
 	for j in np.arange(repeatnum[i]):
@@ -78,23 +80,27 @@ for i in np.arange(len(speedarray)):
 		foldname = foldercreate(speedarray[i])
 		folddir=os.path.join(dataDR,foldname)
 		os.chdir(folddir)
-		filesavename= foldname + 'test'
+		filesavename= foldname + 'run'
+		print(filesavename+'inst'+str(i)+'-'+str(j)+'Started')
 		#Find the seconds per frame
 		distance = np.abs(limit1Array[i]-limit2Array[i])
 		secperframe = 2*distance/speedarray[i]/numFrameArray[i]
 		#Open the camera and controller
 		cam=cseq.BCamCap(2,secperframe)
-		cont=nwpt.SMC100('COM4')
 		#Set the speed
 		cont.setspeed(speedarray[i])
 		#Move to the end points and capture frames
 		#Will have extra header for second go around since no multithreading yet
 		cont.goto(limit2Array[i])
 		cam.grabSequence(int(np.floor(numFrameArray[i]/2)),filesavename)
+		time.sleep(4)
+		cont.stop()
 		time.sleep(2)
 		cont.goto(limit1Array[i])
 		cam.grabSequence(int(np.ceil(numFrameArray[i]/2)),filesavename)
-		cont.closeport()
 		os.chdir(dataDR)
-		time.sleep(5) #Sleep for a bit before restarting
-		
+		time.sleep(20) #Sleep for a bit before restarting
+		cont.stop()
+		time.sleep(2)
+		print('Run Ended')
+cont.closeport()

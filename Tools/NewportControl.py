@@ -55,6 +55,9 @@ class SMC100:
 			self.writecommand('1PA'+str(position))
 		else:
 			raise ValueError('Position too high')
+			
+	def stop(self):
+		self.writecommand('ST')
 	
 	def closeport(self):
 		self.ser.close()
