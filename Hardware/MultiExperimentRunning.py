@@ -13,7 +13,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\FirstSpeedScan"
+dataDR=r"E:\DualAngles\SecondSpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -26,8 +26,8 @@ import CameraSequencer as cseq
 importlib.reload(cseq)
 import NewportControl as nwpt
 importlib.reload(nwpt)
-import ImportTools as imto
-importlib.reload(imto)
+import ImportTools as ito
+importlib.reload(ito)
 #Remove to avoid cluttering path
 sys.path.remove('./Tools') #Remove tools from path
 
@@ -53,22 +53,6 @@ numFrameArray = runparams[r"Number_of_frames"]
 repeatnum = runparams[r"Repeats"]
 
 
-
-def foldercreate(runspeed):
-	#Creates a unique folder in the working directory for a given runspeed
-	#Avoid periods and special characters in numbers so 0.1um/s becomes 0p1ums etc
-	#When reading simply replace the p with a "."
-	prefix=str(runspeed*1000)
-	prefix=prefix.replace(".","p")
-	prefix = prefix + "ums"
-	i = 0
-	while os.path.exists(prefix+str(i)):
-		i+=1
-		time.sleep(0.1)
-	createdfolder = prefix+str(i)
-	os.mkdir(createdfolder)
-	return createdfolder
-
 #Run the experiments, for now need to have it start and end at same points
 #Should be able to implement multi threading and a bit more complicated wait cycles later
 #Open the controller
@@ -77,7 +61,7 @@ for i in np.arange(len(speedarray)):
 	#Repeat for the number of repeats required
 	for j in np.arange(repeatnum[i]):
 		#Create folder and file saving name
-		foldname = foldercreate(speedarray[i])
+		foldname = ito.foldercreate(speedarray[i])
 		folddir=os.path.join(dataDR,foldname)
 		os.chdir(folddir)
 		filesavename= foldname + 'run'
