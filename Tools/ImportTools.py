@@ -3,7 +3,7 @@ import numpy as np
 from skimage.io import imread as imread2
 from skimage.io import ImageCollection as ImageCollection2
 import tifffile as tf
-
+import time
 
 
 '''

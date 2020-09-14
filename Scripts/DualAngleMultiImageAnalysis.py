@@ -94,94 +94,127 @@ croptop = np.floor(plt.ginput(2))
 plt.close(fig)
 
 
+
 #%%
-
-testing=ito.cropper2(extreme2[1],croptop)
-plt.imshow(testing)
-#%%%
-
-
-
-
-
-ex1=ito.imread2(dataDR+'\\extreme1.tif')
-ex2=ito.imread2(dataDR+'\\extreme2.tif')
-
-
-gs = gridspec.GridSpec(1, 3)
-
-fig = plt.figure(figsize=(8,4))
-ax1 = fig.add_subplot(gs[0, 0])
-ax2 = fig.add_subplot(gs[0, 1])
-ax3 = fig.add_subplot(gs[0, 2])
-ax1.imshow(noforce)
-ax2.imshow(ex1)
-ax3.imshow(ex2)
-#%%
-gs = gridspec.GridSpec(1, 3)
-fig = plt.figure(figsize=(8,4))
+gs = gridspec.GridSpec(4, 4)
+fig = plt.figure(figsize=(6,4))
 #plt.imshow(extreme2[0],cmap=plt.cm.gray)
 
+
 croppedbase=ito.cropper2(noforce,cropside)
-croppedex1=ito.cropper2(extreme1[0],cropside)
-croppedex2=ito.cropper2(extreme2[0],cropside)
+croppedsidechecks=[ito.cropper2(extreme1[0],cropside),ito.cropper2(extreme2[0],cropside)]
+croppedtopchecks=[ito.cropper2(extreme1[1],croptop),ito.cropper2(extreme2[1],croptop)]
 
-ax1 = fig.add_subplot(gs[0, 0])
 
-ax2 = fig.add_subplot(gs[0, 1])
-ax3 = fig.add_subplot(gs[0, 2])
-ax2.axhline(yanalysisc[0])
-ax2.axhline(yanalysisc[1])
-ax1.imshow(croppedbase,cmap=plt.cm.gray)
-ax2.imshow(croppedex1,cmap=plt.cm.gray)
-ax3.imshow(croppedex2,cmap=plt.cm.gray)
-#%%
+pixelsize=0.75e-6
 
 #Cross correlation
-cutpoint=10 # y pixel to use for cross correlation
+cutpoint=30 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
-#Edge detection
-imaparam=[np.min(croppedex1)/.7,20,.05] #[threshval,obsSize,cannysigma]
+#Side Edge detection
+sideimaparam=[-1*np.max(croppedsidechecks[0])/3,40,.05] #[threshval,obsSize,cannysigma]
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
-pixrange=[60,60,25] #first two are xy bounding box for fit, last is where to search for droplet tip
+pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 background=False 
 
-threshtest=ede.edgedetector(croppedex1,background,*imaparam)
+sidethreshtest=ede.edgedetector(croppedsidechecks[0],background,*sideimaparam)
 
-fig,ax = plt.subplots(1)
-ax.imshow(croppedex1,cmap=plt.cm.gray)
-ax.plot(threshtest[:,0],threshtest[:,1],'r.',markersize=1)
-ax.axhline(cutpoint,ls='--')
+#Top Edge detection
+topimaparam=[-1*np.max(croppedtopchecks[0])/2.5,60,.05] #[threshval,obsSize,cannysigma]
+background=False 
 
-ax.axis('off')
+topthreshtest=ede.edgedetector(croppedtopchecks[0],background,*topimaparam)
+topthreshtest2=ede.edgedetector(croppedtopchecks[1],background,*topimaparam)
+
+ax1 = fig.add_subplot(gs[:2, :2])
+ax2 = fig.add_subplot(gs[0, 2:])
+ax3 = fig.add_subplot(gs[1, 2:])
+ax4 = fig.add_subplot(gs[1:, :2])
+ax5 = fig.add_subplot(gs[1:, 2:])
 
 
-scalebar = ScaleBar(0.75e-6,frameon=False,location='upper right') # 1 pixel = 0.2 meter
-ax.add_artist(scalebar)
 
+
+
+
+#Plotting
+ax2.imshow(croppedbase,cmap=plt.cm.gray)
+ax2.axis('off')
+
+ax1.imshow(croppedsidechecks[0],cmap=plt.cm.gray)
+ax1.plot(sidethreshtest[:,0],sidethreshtest[:,1],'r.',markersize=1)
+ax1.axhline(yanalysisc[0])
+ax1.axhline(yanalysisc[1])
+ax1.axhline(cutpoint,ls='--')
+ax1.axis('off')
+scalebar = ScaleBar(pixelsize,frameon=False,location='lower left') # 1 pixel = 0.2 meter
+ax1.add_artist(scalebar)
+
+ax3.imshow(croppedsidechecks[1],cmap=plt.cm.gray)
+ax3.axis('off')
+ax3.axhline(yanalysisc[0])
+ax3.axhline(yanalysisc[1])
+
+
+ax4.imshow(croppedtopchecks[0],cmap=plt.cm.gray)
+ax4.plot(topthreshtest[:,0],topthreshtest[:,1],'r.',markersize=1)
+ax4.axis('off')
+ax5.imshow(croppedtopchecks[1],cmap=plt.cm.gray)
+ax5.plot(topthreshtest2[:,0],topthreshtest2[:,1],'r.',markersize=1)
+ax5.axis('off')
+plt.tight_layout()
 
 #%%
-folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
+def fitEllipse(x,y):
+    x = x[:,np.newaxis]
+    y = y[:,np.newaxis]
+    D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
+    S = np.dot(D.T,D)
+    C = np.zeros([6,6])
+    C[0,2] = C[2,0] = 2; C[1,1] = -1
+    E, V =  eig(np.dot(inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    return a
+
+testingfit = fitEllipse(topthreshtest2[:,0], topthreshtest2[:,0])
+
+
+
 #%%
 #Edge detection and save
 for i in range(len(folderpaths)):
-	imagestack=ito.omestackimport(folderpaths[i])
-	croppedimages=ito.cropper(imagestack,*croppoints)
-	noshift=croppedbase
-	#Find the cross correlation xvt and save to position arrays
-	xvals , allcorr = crco.xvtfinder(croppedimages,noshift,cutpoint,guassfitl)
-	ito.savelistnp(folderpaths[i]+'correlationdata.npy',[xvals,allcorr])
+	#Import image
+	imagepath = ito.getimpath(folderpaths[i])
+	imseq = ito.fullseqimport(imagepath)
 	
-	#Define no shift cropped image as first frame, could change easily if needed
-	#Perform edge detection to get python array
-	stackedges = ede.seriesedgedetect(croppedimages,background,*imaparam)
-	ito.savelistnp(folderpaths[i]+'edgedata.npy',stackedges) #Save for later use
+	#Seperate out side and top views
+	sidestack = imseq[:,0]
+	topstack = imseq[:,1]
+	
+	#Complete edge detection and cross correlation for side images
+	croppedsides=ito.cropper2(sidestack,cropside)
+	#Cross correlation
+	noshift=croppedbase
+	xvals , allcorr = crco.xvtfinder(croppedsides,noshift,cutpoint,guassfitl)
+	ito.savelistnp(folderpaths[i]+'correlationdata.npy',[xvals,allcorr])
+	#Perform edge detection
+	sideedges = ede.seriesedgedetect(croppedsides,background,*imaparam)
+	ito.savelistnp(folderpaths[i]+'sideedgedata.npy',sideedges) #Save for later use
+	
+	#Complete edge detection for top view
+	croppedtop=ito.cropper2(topstack,croptop)
+	sideedges = ede.seriesedgedetect(croppedsides,background,*imaparam)
+	ito.savelistnp(folderpaths[i]+'topedgedata.npy',sideedges) #Save for later use
+	
+	#analysis
+	
 	print(folderpaths[i]+ ' completed')
-	#Crop
+
 #%%
 for i in range(len(folderpaths)):
 	print(folderpaths[i])
@@ -199,54 +232,3 @@ for i in range(len(folderpaths)):
 	np.save(folderpaths[i]+'DropProps',dropProp[i])
 
 #%%
-'''
-Scratch and Testing
-Things below this are to debug bits of code etc
-'''
-'''
-
-stackedges = ito.openlistnp(folderpaths[-2]+'edgedata.npy')
-cropedges=[arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
-
-
-thetatorotate, leftedge = df.thetdet(cropedges)
-#%%
-imnum=448
-rotedges=df.xflipandcombine(df.rotator(cropedges[imnum],-thetatorotate,*leftedge),leftedge[1])
-plt.plot(cropedges[imnum][:,0],cropedges[imnum][:,1],'.')
-plt.plot(rotedges[:,0],rotedges[:,1],'.')
-fitl=df.datafitter(rotedges,False,pixrange,1,fitfunc,fitguess)
-
-
-appproxsplity=np.mean(rotedges[:,0])
-trimDat = rotedges[rotedges[:,0] > appproxsplity]
-contactx=trimDat[np.argmin(trimDat[:,1]),0]
-allcens = np.argwhere(trimDat[:,0] == contactx)
-contacty = np.mean(trimDat[allcens,1])
-plt.plot(contactx,contacty,'ro')
-
-
-#%%
-plt.plot(cropedges[imnum][:,1],cropedges[imnum][:,0],'.')
-
-x=cropedges[imnum][:,1]
-y=cropedges[imnum][:,0]
-x=x[y>700]
-y=y[y>700]
-popt,pcov=curve_fit(df.pol2ndorder,x,y)
-plt.plot(x,df.pol2ndorder(x,*popt))
-#%%
-endptarrayTest=np.zeros([len(cropedges),2],dtype=float)
-for i in range(len(cropedges)):
-	endptarrayTest[i]=df.contactptfind(cropedges[i],False,buff=0,doublesided=True)
-#%%
-plt.plot(endptarrayTest[:,0])
-	
-#%%
-try2 = df.edgestoproperties(cropedges,pixrange,fitfunc,fitguess)
-#%%
-
-plt.plot(cropedges[95][:,0],cropedges[95][:,1],'.')
-#%%
-np.argmax(cropedges[100][:,0])
-'''
