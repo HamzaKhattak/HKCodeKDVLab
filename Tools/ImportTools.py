@@ -83,7 +83,7 @@ def fullseqimport(FilePath):
 	This object imports the entire sequence of tiff images
 	'''
 	tifobj = preimport(FilePath)
-	numFrames = len(tifobj)
+	numFrames = len(tifobj.pages)
 	return tf.imread(FilePath,key=slice(0,numFrames))
 
 def getimpath(FolderPath):

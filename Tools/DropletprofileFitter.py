@@ -296,7 +296,7 @@ def eggfitter(x,y,eggdef = eggexpr):
 	# Formulate and solve the least squares problem ||Ax - b ||^2
 	A = np.hstack(eggexpr(X,Y))
 	b = np.ones_like(X)
-	x1, resid, rnk, sing = np.linalg.lstsq(A, b)
+	x1, resid, rnk, sing = np.linalg.lstsq(A, b,rcond=None)
 	param=x1.squeeze()
 	paramresid= resid.squeeze()
 	return param, paramresid
@@ -331,22 +331,40 @@ def arc_length(x,y):
 	arc = np.trapz(arc)
 	return arc
 
+def areafind(x,y):
+	'''
+	Use Green's Theorum to find from edges integrate along curve: 0.5(x dy - y dx)
+	'''
+	return 0.5*np.trapz(x*np.gradient(y)-y*np.gradient(x))
+
+def PolyArea(x,y):
+	'''
+	This method used the 'shoelace method'
+	'''
+	return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+
 def comboperimcalc(XYdat,eggdef=eggexpr):
 	'''
 	This function outputs the parameters,residuals, fit data and arclength
 	for a shape given the edge data in  [x1,y1],[x2,y2]... form
 	'''
 	x, y = XYdat[:,0] , XYdat[:,1]
+	meanx = np.mean(x)
+	meany = np.mean(y)
 	param, resid = eggfitter(x, y,eggdef)
 	cx, cy = contourfinder(x,y,param)
 	arc = arc_length(cx,cy)
-	return param, resid, [cx,cy], arc
+	area = areafind(cx,cy)
+	return param, resid, [cx,cy], [meanx,meany], arc, area
 	
 def seriescomboperimcalc(XYTimeSeries,eggdef=eggexpr):
 	'''
 	Repeats the perimeter calculation for a series of images
 	'''
-	arc = np.zeros(XYTimeSeries.shape[0])
-	for i in range(XYTimeSeries.shape[0]):
-		arc[i] = comboperimcalc(XYTimeSeries[i],eggdef)
-	return arc
+	mean = np.zeros([len(XYTimeSeries),2])
+	arc = np.zeros(len(XYTimeSeries))
+	area = np.zeros(len(XYTimeSeries))
+	for i in range(len(XYTimeSeries)):
+		dat = comboperimcalc(XYTimeSeries[i],eggdef)
+		mean[i], arc[i], area[i] = dat[3:]
+	return mean, arc, area

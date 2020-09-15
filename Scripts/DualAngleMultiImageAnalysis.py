@@ -2,7 +2,7 @@
 This code performs the edge location and cross correlation analysis across multiple images
 '''
 
-import sys, os, glob, pickle, re
+import sys, os, glob, pickle, re, time
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
@@ -114,21 +114,16 @@ guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Side Edge detection
 sideimaparam=[-1*np.max(croppedsidechecks[0])/3,40,.05] #[threshval,obsSize,cannysigma]
-fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
-fitguess=[0,1,1]
-pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
-#Specify an image to use as a background (needs same dim as images being analysed)
-#Or can set to False
-background=False 
+sidebackground=False 
 
-sidethreshtest=ede.edgedetector(croppedsidechecks[0],background,*sideimaparam)
+sidethreshtest=ede.edgedetector(croppedsidechecks[0],sidebackground,*sideimaparam)
 
 #Top Edge detection
 topimaparam=[-1*np.max(croppedtopchecks[0])/2.5,60,.05] #[threshval,obsSize,cannysigma]
-background=False 
+topbackground=False 
 
-topthreshtest=ede.edgedetector(croppedtopchecks[0],background,*topimaparam)
-topthreshtest2=ede.edgedetector(croppedtopchecks[1],background,*topimaparam)
+topthreshtest=ede.edgedetector(croppedtopchecks[0],topbackground,*topimaparam)
+topthreshtest2=ede.edgedetector(croppedtopchecks[1],topbackground,*topimaparam)
 
 ax1 = fig.add_subplot(gs[:2, :2])
 ax2 = fig.add_subplot(gs[0, 2:])
@@ -168,11 +163,16 @@ ax5.plot(topthreshtest2[:,0],topthreshtest2[:,1],'r.',markersize=1)
 ax5.axis('off')
 plt.tight_layout()
 
+#%%
+#save parameters
+edparams = [cropside,sideimaparam,croptop,topimaparam]
+ito.savelistnp('edgedetectparams.npy',edparams)
 
 #%%
 #Edge detection and save
 for i in range(len(folderpaths)):
 	#Import image
+	t1=time.time()
 	imagepath = ito.getimpath(folderpaths[i])
 	imseq = ito.fullseqimport(imagepath)
 	
@@ -187,43 +187,71 @@ for i in range(len(folderpaths)):
 	xvals , allcorr = crco.xvtfinder(croppedsides,noshift,cutpoint,guassfitl)
 	ito.savelistnp(folderpaths[i]+'correlationdata.npy',[xvals,allcorr])
 	#Perform edge detection
-	sideedges = ede.seriesedgedetect(croppedsides,background,*sideimaparam)
+	sideedges = ede.seriesedgedetect(croppedsides,sidebackground,*sideimaparam)
 	ito.savelistnp(folderpaths[i]+'sideedgedata.npy',sideedges) #Save for later use
 	
 	#Complete edge detection for top view
-	croppedtop=ito.cropper2(topstack,croptop)
-	sideedges = ede.seriesedgedetect(croppedsides,background,*topimaparam)
-	ito.savelistnp(folderpaths[i]+'topedgedata.npy',sideedges) #Save for later use
+	croppedtops=ito.cropper2(topstack,croptop)
+	topedges = ede.seriesedgedetect(croppedtops,topbackground,*topimaparam)
+	ito.savelistnp(folderpaths[i]+'topedgedata.npy',topedges) #Save for later use
 	
 	#analysis
-	
-	print(folderpaths[i]+ ' completed')
+	ttake = time.time()-t1
+	print("%s completed in %d seconds." % (folderpaths[i], ttake))
 
 #%%
 '''
 This code no longer involves the images and can run much faster
 Also has bits that are most commonly changed (ie fitting functions etc)
+This does fits etc to the output of the edge detection
 '''
+fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
+fitguess=[0,1,1]
+pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
+#Specify an image to use as a background (needs same dim as images being analysed)
+#Or can set to False
+runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True) 
+speedvals = runparams[r"Speed_ums"]/1e6 #Speed is inputted into the device
+limit1vals = runparams[r"Point_1_mm"]/1e3 
+limit2vals = runparams[r"Point_2_mm"]/1e3
+distancevals = np.abs(limit1vals-limit2vals)
+numFramevals = runparams[r"Number_of_frames"].astype(np.int)
+
+secperframevals = 2*distancevals/speedvals/numFramevals
+
+#labels for the useful data
+labels = ['time','distance travelled','crco','langle','rangle','perimeter','area']
 for i in range(len(folderpaths)):
 	print(folderpaths[i])
 	#Side view data
 	#Get correlation positions
 	PosvtArray = ito.openlistnp(folderpaths[i]+'correlationdata.npy')[0][:,0]
-	#Get contact angles etc from side profile
-	stackedges = ito.openlistnp(folderpaths[i]+'sideedgedata.npy')
-	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
+	
+	#Get contact angles etc from side profile, use cuttoffs for analysis
+	sidestackedges = ito.openlistnp(folderpaths[i]+'sideedgedata.npy')
+	sidestackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in sidestackedges]
 	#Fit the edges and extract angles and positions
-	singleProps = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
-	AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = singleProps
+	sideProps = df.edgestoproperties(sidestackedges,pixrange,fitfunc,fitguess)
+	AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = sideProps
 	
+	#Topview
+	topstackedges = ito.openlistnp(folderpaths[i]+'topedgedata.npy')
+	topProps = df.seriescomboperimcalc(topstackedges)
+	meanlocs, perims, areas = topProps
+	#Save all the fit data
+	ito.savelistnp(folderpaths[i]+'allDropProps.npy',[sideProps,topProps])
 	
+	#Save the useful bits
+	#All the values that go into the final array
+	tvals = np.linspace(0,secperframevals[0]*numFramevals[0],numFramevals[0])
+	dtrav = tvals*speedvals[i]
 	
-	ito.savelistnp(folderpaths[i]+'allDropProps.npy',singleProps)
-	
-	#Reslice data to save for each file
-	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,EndptvtArray[:,:,1].T,AnglevtArray.T)).T
-	#Save
-	#fileLabel=os.path.splitext(filenames[i]) if using files
-	np.save(folderpaths[i]+'DropProps',dropProp[i])
+	#Get all of the useful data into a single file
+	dropProp[i] = np.array([tvals,dtrav,PosvtArray,AnglevtArray[:,0],AnglevtArray[:,1],perims,areas])
 
-#%%
+	#Save
+	np.save(folderpaths[i]+'DropProps',dropProp[i])
+	
+	
+
+ito.savelistnp('MainDropParams.npy',[foldernames,speedvals,dropProp])
