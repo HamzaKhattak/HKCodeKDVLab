@@ -5,7 +5,11 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.misc import derivative
 from Tools.EdgeDetection import *
+from skimage import measure
 
+'''
+This first part is for the functions relevant to the side profile
+'''
 def circle(x,a,b,r):
 	'''
 	Simply a function for a circle
@@ -271,3 +275,78 @@ def edgestoproperties(edgestack,lims,fitfunc,fitguess,axisflip=True):
 		paramlist[i] = [fitl[-2],fitr[-2]]
 	return dropangle, contactpts, paramlist, rotateprop
 
+
+'''
+This section is for function relevant to the top profile
+'''
+def eggexpr(X,Y):
+	'''
+	This expression returns the left side of the equation of an egg
+	The right side should equal 1
+
+	'''
+	return np.array([X**2, X * Y, Y**2, X, Y,X*Y**2,Y*X**2])
+
+def eggfitter(x,y,eggdef = eggexpr):
+	'''
+	returns paramameters of an agg git for a given datset
+	the eggexprtion should = 1
+	'''
+	X, Y = x[:,np.newaxis], y[:,np.newaxis]
+	# Formulate and solve the least squares problem ||Ax - b ||^2
+	A = np.hstack(eggexpr(X,Y))
+	b = np.ones_like(X)
+	x1, resid, rnk, sing = np.linalg.lstsq(A, b)
+	param=x1.squeeze()
+	paramresid= resid.squeeze()
+	return param, paramresid
+
+
+def contourfinder(x,y,param,eggdef = eggexpr):
+	'''
+	Given x and y list (only used for length) as well as parameters for a fit this function gives
+	an x list and y list of the countours
+	Again, right side should be 1
+	'''
+	x_coord = np.arange(len(x))
+	y_coord = np.arange(len(y))
+	X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+	
+	temparray = eggdef(X_coord,Y_coord) #Calculate the x,y dependant bits of the sum
+	temparray=param[:,None,None]*temparray #Multiply in the parameters
+	Z_coord = np.sum(temparray,axis=0) #Add each of the terms together
+	
+	contours = measure.find_contours(Z_coord, 1) #Find when 1
+	cx = contours[0][:,1]
+	cy = contours[0][:,0]
+	return cx, cy
+	
+
+def arc_length(x,y):
+	'''
+	Calculates arclength for a given dataset using trapezoidal summing
+	Data must be properly ordered
+	'''
+	arc = np.sqrt(np.gradient(x)**2+np.gradient(y)**2)
+	arc = np.trapz(arc)
+	return arc
+
+def comboperimcalc(XYdat,eggdef=eggexpr):
+	'''
+	This function outputs the parameters,residuals, fit data and arclength
+	for a shape given the edge data in  [x1,y1],[x2,y2]... form
+	'''
+	x, y = XYdat[:,0] , XYdat[:,1]
+	param, resid = eggfitter(x, y,eggdef)
+	cx, cy = contourfinder(x,y,param)
+	arc = arc_length(cx,cy)
+	return param, resid, [cx,cy], arc
+	
+def seriescomboperimcalc(XYTimeSeries,eggdef=eggexpr):
+	'''
+	Repeats the perimeter calculation for a series of images
+	'''
+	arc = np.zeros(XYTimeSeries.shape[0])
+	for i in range(XYTimeSeries.shape[0]):
+		arc[i] = comboperimcalc(XYTimeSeries[i],eggdef)
+	return arc

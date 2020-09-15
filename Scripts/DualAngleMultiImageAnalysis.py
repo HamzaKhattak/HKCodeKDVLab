@@ -169,6 +169,9 @@ ax5.axis('off')
 plt.tight_layout()
 
 #%%
+
+np.save('circlefittest.npy',topthreshtest2)
+#%%
 def fitEllipse(x,y):
     x = x[:,np.newaxis]
     y = y[:,np.newaxis]
