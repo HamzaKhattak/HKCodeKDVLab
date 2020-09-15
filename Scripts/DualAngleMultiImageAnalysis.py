@@ -168,25 +168,6 @@ ax5.plot(topthreshtest2[:,0],topthreshtest2[:,1],'r.',markersize=1)
 ax5.axis('off')
 plt.tight_layout()
 
-#%%
-
-np.save('circlefittest.npy',topthreshtest2)
-#%%
-def fitEllipse(x,y):
-    x = x[:,np.newaxis]
-    y = y[:,np.newaxis]
-    D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
-    S = np.dot(D.T,D)
-    C = np.zeros([6,6])
-    C[0,2] = C[2,0] = 2; C[1,1] = -1
-    E, V =  eig(np.dot(inv(S), C))
-    n = np.argmax(np.abs(E))
-    a = V[:,n]
-    return a
-
-testingfit = fitEllipse(topthreshtest2[:,0], topthreshtest2[:,0])
-
-
 
 #%%
 #Edge detection and save
@@ -206,12 +187,12 @@ for i in range(len(folderpaths)):
 	xvals , allcorr = crco.xvtfinder(croppedsides,noshift,cutpoint,guassfitl)
 	ito.savelistnp(folderpaths[i]+'correlationdata.npy',[xvals,allcorr])
 	#Perform edge detection
-	sideedges = ede.seriesedgedetect(croppedsides,background,*imaparam)
+	sideedges = ede.seriesedgedetect(croppedsides,background,*sideimaparam)
 	ito.savelistnp(folderpaths[i]+'sideedgedata.npy',sideedges) #Save for later use
 	
 	#Complete edge detection for top view
 	croppedtop=ito.cropper2(topstack,croptop)
-	sideedges = ede.seriesedgedetect(croppedsides,background,*imaparam)
+	sideedges = ede.seriesedgedetect(croppedsides,background,*topimaparam)
 	ito.savelistnp(folderpaths[i]+'topedgedata.npy',sideedges) #Save for later use
 	
 	#analysis
@@ -219,15 +200,26 @@ for i in range(len(folderpaths)):
 	print(folderpaths[i]+ ' completed')
 
 #%%
+'''
+This code no longer involves the images and can run much faster
+Also has bits that are most commonly changed (ie fitting functions etc)
+'''
 for i in range(len(folderpaths)):
 	print(folderpaths[i])
+	#Side view data
+	#Get correlation positions
 	PosvtArray = ito.openlistnp(folderpaths[i]+'correlationdata.npy')[0][:,0]
-	stackedges = ito.openlistnp(folderpaths[i]+'edgedata.npy')
+	#Get contact angles etc from side profile
+	stackedges = ito.openlistnp(folderpaths[i]+'sideedgedata.npy')
 	stackedges = [arr[(arr[:,1]<yanalysisc[1]) & (arr[:,1]>yanalysisc[0])] for arr in stackedges]
 	#Fit the edges and extract angles and positions
 	singleProps = df.edgestoproperties(stackedges,pixrange,fitfunc,fitguess)
 	AnglevtArray, EndptvtArray, ParamArrat, rotateinfo = singleProps
+	
+	
+	
 	ito.savelistnp(folderpaths[i]+'allDropProps.npy',singleProps)
+	
 	#Reslice data to save for each file
 	dropProp[i]=np.vstack((PosvtArray,EndptvtArray[:,:,0].T,EndptvtArray[:,:,1].T,AnglevtArray.T)).T
 	#Save
