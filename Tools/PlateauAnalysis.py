@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import savgol_filter
 
-def smoothingfilter(data,windowparam=50,polyorder=3,fraction=False):
+def smoothingfilter(data,windowparam=4,polyorder=3,fraction=False):
 	'''
 	Simply smooths data based on a window fraction (ie what
 	fraction of total data should the window be) or by simply rounding to odd
@@ -106,3 +106,10 @@ def clusteranalysis(data,separam):
 	clustersdev=np.std(statsclust[:,0])
 	clusterserr=clustersdev/len(statsclust[:,0])
 	return [meanwhole,sdevwhole],[clusterm,clustersdev,clusterserr],statsclust,diffs,jumplocs
+
+
+def rejectoutliers(dat,m=2):
+	'''
+	Returns indices that are not from a numpy list
+	'''
+	return abs(dat-np.mean(dat)) < m*np.std(dat)

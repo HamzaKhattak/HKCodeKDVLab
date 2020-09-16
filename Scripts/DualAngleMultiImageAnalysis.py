@@ -17,7 +17,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\AnalysisTesting"
+dataDR=r"E:\DualAngles\SecondSpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -210,7 +210,8 @@ fitguess=[0,1,1]
 pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
-runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True) 
+runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
+runparams = np.sort(runparams,order = r"Speed_ums")
 speedvals = runparams[r"Speed_ums"]/1e6 #Speed is inputted into the device
 limit1vals = runparams[r"Point_1_mm"]/1e3 
 limit2vals = runparams[r"Point_2_mm"]/1e3
