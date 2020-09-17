@@ -17,7 +17,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\SecondSpeedScan"
+dataDR=r"E:\DualAngles\FirstSpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -52,7 +52,7 @@ os.chdir(dataDR)
 
 #get the folder names and a place to store the droplet properties
 folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
-
+#%%
 
 noforce=ito.imread2(dataDR+'\\base.tif') #Need a no force image to compare rest of results to
 
@@ -163,9 +163,8 @@ ax5.plot(topthreshtest2[:,0],topthreshtest2[:,1],'r.',markersize=1)
 ax5.axis('off')
 plt.tight_layout()
 
-#%%
 #save parameters
-edparams = [cropside,sideimaparam,croptop,topimaparam]
+edparams = [cropside,sideimaparam,croptop,topimaparam,yanalysisc]
 ito.savelistnp('edgedetectparams.npy',edparams)
 
 #%%
@@ -205,6 +204,9 @@ This code no longer involves the images and can run much faster
 Also has bits that are most commonly changed (ie fitting functions etc)
 This does fits etc to the output of the edge detection
 '''
+#save parameters
+cropside,sideimaparam,croptop,topimaparam,yanalysisc = ito.openlistnp('edgedetectparams.npy')
+#%%
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
 pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
@@ -213,6 +215,7 @@ pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to s
 runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
 runparams = np.sort(runparams,order = r"Speed_ums")
 speedvals = runparams[r"Speed_ums"]/1e6 #Speed is inputted into the device
+
 limit1vals = runparams[r"Point_1_mm"]/1e3 
 limit2vals = runparams[r"Point_2_mm"]/1e3
 distancevals = np.abs(limit1vals-limit2vals)
@@ -222,7 +225,8 @@ secperframevals = 2*distancevals/speedvals/numFramevals
 
 #labels for the useful data
 labels = ['time','distance travelled','crco','langle','rangle','perimeter','area']
-for i in range(len(folderpaths)):
+#for i in range(len(folderpaths)):
+for i in [16]:
 	print(folderpaths[i])
 	#Side view data
 	#Get correlation positions
@@ -238,7 +242,7 @@ for i in range(len(folderpaths)):
 	#Topview
 	topstackedges = ito.openlistnp(folderpaths[i]+'topedgedata.npy')
 	topProps = df.seriescomboperimcalc(topstackedges)
-	meanlocs, perims, areas = topProps
+	tparams, fitcirc, meanlocs, perims, areas = topProps
 	#Save all the fit data
 	ito.savelistnp(folderpaths[i]+'allDropProps.npy',[sideProps,topProps])
 	

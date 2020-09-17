@@ -11,7 +11,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:\DualAngles\hydroscopictest\run1_1"
+dataDR=r"E:\DualAngles\SecondSpeedScan\5p0ums1"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory

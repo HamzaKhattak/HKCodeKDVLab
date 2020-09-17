@@ -302,23 +302,29 @@ def eggfitter(x,y,eggdef = eggexpr):
 	return param, paramresid
 
 
-def contourfinder(x,y,param,eggdef = eggexpr):
+def contourfinder(x,y,param,eggdef = eggexpr,buf=20,numx=1000,numy=1000):
 	'''
 	Given x and y list (only used for length) as well as parameters for a fit this function gives
-	an x list and y list of the countours
+	an x list and y list of the countours. Also a buffer to make mesh easier to fit
 	Again, right side should be 1
 	'''
-	x_coord = np.arange(len(x))
-	y_coord = np.arange(len(y))
+	x_coord = np.linspace(np.min(x)-buf,np.max(x)+buf,numx,dtype=np.int)
+	y_coord = np.linspace(np.min(y)-buf,np.max(y)+buf,numy,dtype=np.int)
 	X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
 	
 	temparray = eggdef(X_coord,Y_coord) #Calculate the x,y dependant bits of the sum
 	temparray=param[:,None,None]*temparray #Multiply in the parameters
 	Z_coord = np.sum(temparray,axis=0) #Add each of the terms together
 	
-	contours = measure.find_contours(Z_coord, 1) #Find when 1
-	cx = contours[0][:,1]
-	cy = contours[0][:,0]
+	contours = measure.find_contours(Z_coord,1) #Find when 1
+	
+	#convert back to original coordinate system
+	mx=(np.max(x_coord)-np.min(x_coord))/numx
+	my=(np.max(y_coord)-np.min(y_coord))/numy
+
+	cx = mx*(contours[0][:,1])+np.min(x_coord)
+	cy = my*(contours[0][:,0])+np.min(y_coord)
+	
 	return cx, cy
 	
 
@@ -355,16 +361,20 @@ def comboperimcalc(XYdat,eggdef=eggexpr):
 	cx, cy = contourfinder(x,y,param)
 	arc = arc_length(cx,cy)
 	area = areafind(cx,cy)
-	return param, resid, [cx,cy], [meanx,meany], arc, area
+	return [param, resid, np.array([cx,cy]), [meanx,meany], arc, area]
 	
 def seriescomboperimcalc(XYTimeSeries,eggdef=eggexpr):
 	'''
 	Repeats the perimeter calculation for a series of images
 	'''
+	fitparams = [None]*len(XYTimeSeries)
+	shapedat = [None]*len(XYTimeSeries)
 	mean = np.zeros([len(XYTimeSeries),2])
 	arc = np.zeros(len(XYTimeSeries))
 	area = np.zeros(len(XYTimeSeries))
 	for i in range(len(XYTimeSeries)):
 		dat = comboperimcalc(XYTimeSeries[i],eggdef)
+		fitparams[i] = dat[0:2]
+		shapedat[i] = dat[2]
 		mean[i], arc[i], area[i] = dat[3:]
-	return mean, arc, area
+	return fitparams, shapedat, mean, arc, area

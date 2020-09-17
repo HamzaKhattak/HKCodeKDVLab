@@ -22,7 +22,7 @@ from tkinter import filedialog
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\FirstSpeedScan"
+dataDR=r"E:\DualAngles\SecondSpeedScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -70,7 +70,7 @@ for i in range(len(velvals)):
 	tVals = dropProp[i][0]
 	forceDat=dropProp[i][2]-fshift
 	perimDat=dropProp[i][-2]
-	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[2,1],sdevlims=[0.2,1],outlierparam=2)	
+	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[4,1],sdevlims=[0.2,2],outlierparam=2)	
 	topidx, botidx = forceplateaudata[-1]
 	meanF[i] = (np.mean(forceDat[topidx])-np.mean(forceDat[botidx]))/2
 	indexArrs[i] = [topidx, botidx]
@@ -90,7 +90,7 @@ plt.plot(tVals[botidx],forceDat[botidx],'r.')
 #%%
 plt.plot(np.sort(velvals),meanF/meanPerim[0],'r.')
 plt.plot(np.sort(velvals),meanF/meanPerim,'g.')
-plt.xscale('log')
+#plt.xscale('log')
 
 #%%
 tArry = dropProp[0][0]
