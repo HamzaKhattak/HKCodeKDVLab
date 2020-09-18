@@ -308,8 +308,8 @@ def contourfinder(x,y,param,eggdef = eggexpr,buf=20,numx=1000,numy=1000):
 	an x list and y list of the countours. Also a buffer to make mesh easier to fit
 	Again, right side should be 1
 	'''
-	x_coord = np.linspace(np.min(x)-buf,np.max(x)+buf,numx,dtype=np.int)
-	y_coord = np.linspace(np.min(y)-buf,np.max(y)+buf,numy,dtype=np.int)
+	x_coord = np.linspace(np.min(x)-buf,np.max(x)+buf,numx)
+	y_coord = np.linspace(np.min(y)-buf,np.max(y)+buf,numy)
 	X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
 	
 	temparray = eggdef(X_coord,Y_coord) #Calculate the x,y dependant bits of the sum

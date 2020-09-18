@@ -43,7 +43,7 @@ springc = 0.155 #N/m
 mperpixside = 0.75e-6 #meters per pixel
 mperpixtop = 0.75e-6
 #%%
-selectfolder='5p0ums0'
+selectfolder='0p1ums0'
 edgeparams = ito.openlistnp('edgedetectparams.npy')
 
 imfold = os.path.join(dataDR,selectfolder)

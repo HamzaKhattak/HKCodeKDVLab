@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
 import tkinter as tk
 from tkinter import filedialog
-
+import numpy_indexed as npi
 
 
 
@@ -70,7 +70,7 @@ for i in range(len(velvals)):
 	tVals = dropProp[i][0]
 	forceDat=dropProp[i][2]-fshift
 	perimDat=dropProp[i][-2]
-	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[4,1],sdevlims=[0.2,2],outlierparam=2)	
+	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[6,1],sdevlims=[0.5,.5],outlierparam=2)	
 	topidx, botidx = forceplateaudata[-1]
 	meanF[i] = (np.mean(forceDat[topidx])-np.mean(forceDat[botidx]))/2
 	indexArrs[i] = [topidx, botidx]
@@ -81,6 +81,8 @@ for i in range(len(velvals)):
 	meanPerim[i] = np.mean(perimDat[comboind])
 
 #%%
+
+
 testidx=20
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
@@ -88,10 +90,27 @@ plt.plot(tVals,forceDat)
 plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
 #%%
-plt.plot(np.sort(velvals),meanF/meanPerim[0],'r.')
-plt.plot(np.sort(velvals),meanF/meanPerim,'g.')
-#plt.xscale('log')
-
+def grouper(x,y):
+	'''
+	Assumed sorted by speed
+	'''
+	res = npi.group_by(x).mean(y)
+	sdev = npi.group_by(x).std(y)
+	return res, sdev
+#%%
+forcecombo = grouper(velvals,meanF/meanPerim[0])
+perimcombo = grouper(velvals,meanPerim)
+normforcecombo = grouper(velvals,meanF/meanPerim)
+#%%
+#%%
+plt.errorbar(forcecombo[0][0],forcecombo[0][1],yerr=forcecombo[1][1],color='red',marker='.',linestyle = "None",label='Divided by constant')
+plt.errorbar(normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1],color='green',marker='.',linestyle = "None",label='Divided by perimeters')
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel('speed (um/s)')
+plt.ylabel('force/perimeter (arb units)')
+plt.legend()
+plt.tight_layout()
 #%%
 tArry = dropProp[0][0]
 perims = dropProp[0][-2]

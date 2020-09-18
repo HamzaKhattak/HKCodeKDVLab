@@ -226,7 +226,7 @@ secperframevals = 2*distancevals/speedvals/numFramevals
 #labels for the useful data
 labels = ['time','distance travelled','crco','langle','rangle','perimeter','area']
 #for i in range(len(folderpaths)):
-for i in [16]:
+for i in range(len(speedvals)):
 	print(folderpaths[i])
 	#Side view data
 	#Get correlation positions
