@@ -13,7 +13,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\ThirdSpeedScan"
+dataDR=r"E:\DualAngles\FourthScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -57,6 +57,7 @@ repeatnum = runparams[r"Repeats"]
 #Should be able to implement multi threading and a bit more complicated wait cycles later
 #Open the controller
 cont=nwpt.SMC100('COM4')
+cont.toready()
 for i in np.arange(len(speedarray)):
 	#Repeat for the number of repeats required
 	for j in np.arange(repeatnum[i]):
@@ -87,4 +88,5 @@ for i in np.arange(len(speedarray)):
 		cont.stop()
 		time.sleep(2)
 		print('Run Ended')
+cont.torest()
 cont.closeport()
