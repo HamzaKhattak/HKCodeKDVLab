@@ -32,6 +32,9 @@ class SMC100:
 		result=rawresult[3:-2].decode('utf8')
 		return 	result
 	
+	def getpos(self):
+		return self.getinfo('1TP')
+	
 	#Some useful ones for quick access
 	def toready(self):
 		self.writecommand('1MM1')

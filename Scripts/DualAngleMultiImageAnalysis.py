@@ -17,7 +17,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\FirstSpeedScan"
+dataDR=r"E:\DualAngles\SixthScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -58,14 +58,14 @@ noforce=ito.imread2(dataDR+'\\base.tif') #Need a no force image to compare rest 
 
 #User cropping etc
 #Get the images that will be used
-cropselectfolder='10p0ums0'
-cropindices=[50,150]
+cropselectfolder='10p0ums1'
+cropindices=[41,150]
 #importimage
 extremapath = ito.getimpath(cropselectfolder)
 
 extreme1 = ito.singlesliceimport(extremapath,cropindices[0])
 extreme2 = ito.singlesliceimport(extremapath,cropindices[1])
-
+#%%
 #Side view cropping and selections
 fig = plt.figure('Pick top left and bottom right corner and then fit lines')
 plt.imshow(extreme1[0],cmap='gray')
@@ -119,7 +119,7 @@ sidebackground=False
 sidethreshtest=ede.edgedetector(croppedsidechecks[0],sidebackground,*sideimaparam)
 
 #Top Edge detection
-topimaparam=[-1*np.max(croppedtopchecks[0])/2.5,60,.05] #[threshval,obsSize,cannysigma]
+topimaparam=[-1*np.max(croppedtopchecks[0])/1.8,60,.05] #[threshval,obsSize,cannysigma]
 topbackground=False 
 
 topthreshtest=ede.edgedetector(croppedtopchecks[0],topbackground,*topimaparam)
@@ -197,19 +197,18 @@ for i in range(len(folderpaths)):
 	#analysis
 	ttake = time.time()-t1
 	print("%s completed in %d seconds." % (folderpaths[i], ttake))
-
 #%%
 '''
 This code no longer involves the images and can run much faster
 Also has bits that are most commonly changed (ie fitting functions etc)
 This does fits etc to the output of the edge detection
 '''
-#save parameters
+#open parameters
 cropside,sideimaparam,croptop,topimaparam,yanalysisc = ito.openlistnp('edgedetectparams.npy')
-#%%
+
 fitfunc=df.pol2ndorder #function ie def(x,a,b) to fit to find properties
 fitguess=[0,1,1]
-pixrange=[120,120,50] #first two are xy bounding box for fit, last is where to search for droplet tip
+pixrange=[120,120,10] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
@@ -245,7 +244,6 @@ for i in range(len(speedvals)):
 	tparams, fitcirc, meanlocs, perims, areas = topProps
 	#Save all the fit data
 	ito.savelistnp(folderpaths[i]+'allDropProps.npy',[sideProps,topProps])
-	
 	#Save the useful bits
 	#All the values that go into the final array
 	tvals = np.linspace(0,secperframevals[0]*numFramevals[0],numFramevals[0])
@@ -260,3 +258,6 @@ for i in range(len(speedvals)):
 	
 
 ito.savelistnp('MainDropParams.npy',[foldernames,speedvals,dropProp])
+#%%
+sidestackedges = ito.openlistnp(folderpaths[0]+'sideedgedata.npy')
+plt.plot(sidestackedges[0][:,0],sidestackedges[0][:,1],'.')

@@ -10,9 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 from scipy.optimize import curve_fit
-import matplotlib.colors as mcolors
-import matplotlib.gridspec as gridspec
-from scipy.signal import savgol_filter
 
 #import similaritymeasures
 

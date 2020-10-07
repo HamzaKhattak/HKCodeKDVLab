@@ -39,8 +39,10 @@ def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims
 	cutindexl = (np.abs(timearray - regionofinterest[0])).argmin()
 	cutindexr = (np.abs(timearray - regionofinterest[1])).argmin()
 	cutTime = timearray[cutindexl:cutindexr]
-
-	smootheddat=smoothingfilter(forcearray[cutindexl:cutindexr],*smoothparams)
+	if smoothparams != [0,0]:
+		smootheddat=smoothingfilter(forcearray[cutindexl:cutindexr],*smoothparams)
+	else:
+		smootheddat=forcearray[cutindexl:cutindexr]
 	vels=np.gradient(smootheddat,dt)
 	accs=np.gradient(vels,dt)
 	

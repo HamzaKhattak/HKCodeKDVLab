@@ -13,7 +13,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\FourthScan"
+dataDR=r"E:\DualAngles\SixthScan"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
