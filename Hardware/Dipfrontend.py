@@ -206,5 +206,5 @@ class Ui_MainWindow(object):
         self.label_9.setText(_translate("MainWindow", "csv speeds+times (not yet working)"))
         self.label_4.setText(_translate("MainWindow", "File Address"))
         self.csvstart.setText(_translate("MainWindow", "Start"))
-        self.butStop.setText(_translate("MainWindow", "STOP"))
+        self.butStop.setText(_translate("MainWindow", "Future"))
 

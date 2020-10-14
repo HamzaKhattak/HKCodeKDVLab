@@ -1,23 +1,9 @@
-//#include <AccelStepper.h> PlatformIO handles this
+#include <Arduino.h>
+#include <AccelStepper.h>
 
 //Select Pins
 int Dir1Pin = 2; 
 int Step1Pin = 3;
-
-//Initiate the AccelStepper object
-AccelStepper stepper(1,Step1Pin,Dir1Pin);
-
- 
-void setup()
-{  
-    Serial.begin(9600);
-    Serial.println("This demo expects 3 pieces of data - text, an integer and a floating point value");
-    Serial.println("Enter data in this style <HelloWorld, 12, 24.7>  ");
-    Serial.println();
-    stepper.setMaxSpeed(100);
-    stepper.setAcceleration(10000);
-
-}
 
 //Holding the characters
 const byte numChars = 32;
@@ -28,29 +14,18 @@ char tempChars[numChars];        // temporary array for use when parsing
 char messageFromPC[numChars] = {0};
 int integerFromPC = 0;
 float floatFromPC = 0.0;
-
-
+float tempt = 0;
+float cur_speed = 0;
+long cur_pos = 0;
 boolean newData = false;
 
-
-
-//============
-
-void loop() {
-    recvWithStartEndMarkers();
-    if (newData == true) {
-        strcpy(tempChars, receivedChars);
-            // this temporary copy is necessary to protect the original data
-            //   because strtok() used in parseData() replaces the commas with \0
-        parseData();
-        performFunction();
-        newData = false;
-    }
-}
+//Initiate the AccelStepper object
+AccelStepper stepper(1,Step1Pin,Dir1Pin);
 
 //============
 
-void recvWithStartEndMarkers() {
+void recvWithStartEndMarkers() 
+{
     static boolean recvInProgress = false;
     static byte ndx = 0;
     char startMarker = '<';
@@ -81,11 +56,13 @@ void recvWithStartEndMarkers() {
             recvInProgress = true;
         }
     }
-}
+};
 
 //============
 
-void parseData() {      // split the data into its parts
+void parseData() 
+
+{      // split the data into its parts
 
     char * strtokIndx; // this is used by strtok() as an index
 
@@ -98,40 +75,70 @@ void parseData() {      // split the data into its parts
     strtokIndx = strtok(NULL, ",");
     floatFromPC = atof(strtokIndx);     // convert this part to a float
 
-}
+};
 
 //============
 
-void performFunction() {
+void performFunction() 
+{
     switch (messageFromPC[0]) {
+
+      case 'G':
+        cur_pos = stepper.currentPosition();
+        Serial.println(cur_pos);
+        break;
+        
       case 'S':
         stepper.setMaxSpeed(floatFromPC);
         stepper.setSpeed(floatFromPC);
         break;
+
+      case 'A':
+        stepper.setAcceleration(floatFromPC);
+        break;
         
       case 'M':
-        stepper.moveTo(floatFromPC);
-        while (stepper.currentPosition()!= floatFromPC)
+        stepper.moveTo(integerFromPC);
+        while (stepper.currentPosition()!= integerFromPC)
           stepper.run();
           //Later add stops, checks etc here.
         break;
         
       case 'J':
-        tempt = millis() + floatfromPC;
+        tempt = millis() + floatFromPC;
         //stepper.setSpeed(stepper.speed(floatFromPC)*intFromPC)
         while (millis()< tempt)
           {
-          stepper.runSpeed()
+          stepper.runSpeed();
           }
           //Later add stops, checks etc here.
         break;
         
       default:
-        Serial.println('Invalid input')
+        Serial.println('Invalid input');
       break;
     }
-    Serial.print("Integer ");
-    Serial.println(integerFromPC);
-    Serial.print("Float ");
-    Serial.println(floatFromPC);
-}
+};
+
+
+ 
+void setup()
+{  
+    Serial.begin(9600);
+    stepper.setMaxSpeed(100);
+    stepper.setAcceleration(10000);
+
+};
+//============
+
+void loop() {
+    recvWithStartEndMarkers();
+    if (newData == true) {
+        strcpy(tempChars, receivedChars);
+            // this temporary copy is necessary to protect the original data
+            //   because strtok() used in parseData() replaces the commas with \0
+        parseData();
+        performFunction();
+        newData = false;
+    }
+};
