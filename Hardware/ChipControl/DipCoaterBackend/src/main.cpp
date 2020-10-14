@@ -19,6 +19,7 @@ float cur_speed = 0;
 long cur_pos = 0;
 boolean newData = false;
 
+
 //Initiate the AccelStepper object
 AccelStepper stepper(1,Step1Pin,Dir1Pin);
 
@@ -31,7 +32,6 @@ void recvWithStartEndMarkers()
     char startMarker = '<';
     char endMarker = '>';
     char rc;
-    int tempt = 0;
 
     while (Serial.available() > 0 && newData == false) {
         rc = Serial.read();
@@ -115,7 +115,7 @@ void performFunction()
         break;
         
       default:
-        Serial.println('Invalid input');
+        Serial.println("Invalid input");
       break;
     }
 };
