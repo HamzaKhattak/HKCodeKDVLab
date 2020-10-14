@@ -8,6 +8,59 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import serial
+import time
+from serial import SerialException
+class motioncontol:
+    def __init__(self,portval):
+        self.ser=serial.Serial(
+                port = portval,
+                baudrate = 9600)
+
+    def writecommand(self,docuCommand):
+        modstring=docuCommand +'\r\n'
+        self.ser.write(modstring.encode())
+
+    def closeport(self):
+        self.ser.close()
+    
+    def sendfcommand(self,paramkey,valueint,valuefloat):
+        '''
+        paramkey is a single character associated with the command
+        valueint and valuefloat are what the param needs to be set to
+        floats are rounded to 2 decimal places
+        '''
+        convint = str(valueint)
+        convflt = str(round(speedmm / mmperstep,2))
+        writestring = '<'+ paramkey + ',' + convint + ',' + convflt +'>'
+        self.writecommand(writestring) 
+
+    def setspeedacc(self,speedmm,accmm,mmperstep):
+        #Calculate the motion in steps and convert to strings
+        speedstp = round(speedmm / mmperstep,2)
+        accstp = round(accmm / mmperstep,2)
+        self.sendfcommand('A',0, accstp)
+        self.sendfcommand('S',0, speedstp)
+
+
+    def moverelative(self,distancemm,mmperstep):
+        #Speed and acceleration should already be set
+        distancestp = distancemm / mmperstep
+        current_location_stp = float(self.writecommand('<G,0,0>'))
+        newlocstp = int(current_location_stp + distancestp,2)
+        self.sendfcommand('M',newlocstp, 0) #final location should be integer since can't be at half step
+
+    def timejogmove(self,t_in,dir):
+        '''
+        Simply sends out a job command in a given direction, enter time in seconds
+        Speed should be set beforehand
+        '''
+        t_in_ms=t_in/1000
+        self.sendfcommand('J',dir,t_in_ms)
+
+        
+
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -203,40 +256,59 @@ class Ui_MainWindow(object):
 
         #Relevant variables
     def paramsetfx(self):
-        self.ppr = int(self.controller_pulserev.text())
-        self.dpr = float(self.distance_per_rotation.text())
-        self.distperpulse = self.dpr / self.ppr 
+        #Initiate parameters
+        pulserev = float(self.controller_pulserev)
+        distrot = float(self.distance_per_rotation)
+        self.distperpulse = distrot/pulserev
+        try:
+            self.text_monitor.append('Initializing')
+            self.coater = motioncontol(self.controller_pulserev.text())
+            time.sleep(4)
+        except SerialException:
+            self.text_monitor.append('reset')
 
+    def mainstartfx(self):
+        self.main_distance = float(self.main_distance.text())
+        self.mainspd = float(self.main_speed.text())
+        self.mainacc = float(self.main_acceleration.text())
+        self.coater.setspeedacc(self.mainspd,self.mainacc,self.main_distance)
+        self.coater.moverelative(self.main_distance,self.distperpulse)
+'''
     def jspeedsetfx(self):
-        self.paramsetfx()
-        self.jogspd=float(self.jogspeed.text())/self.distperpulse
-
+        self.jogspd = float(self.set_jog_speed.text())
+        self.coater.setspeedacc(self.jogspd,10000,self.distperpulse)
+'''
 
     def jogdownfx(self):
-        outstring= ''.join(['down ',  str(self.jogspd)])
-        self.text_monitor.append(outstring)
+        tempstate=0
+        if self.jogdown.isDown():
+            if tempstate == 0:
+                tempstate = 1
+                self.coater.setspeedacc(-1*self.jogspd,10000,self.distperpulse)
+                self.coater.timejogmove(100)
+            else:
+                self.coater.timejogmove(100)
 
     def jogupfx(self):
-        outstring= ''.join(['up ',  str(self.jogspd)])
-        self.text_monitor.append(outstring)
+        tempstate=0
+        if self.jogdown.isDown():
+            if tempstate == 0:
+                tempstate = 1
+                self.coater.setspeedacc(self.jogspd,10000,self.distperpulse)
+                self.coater.timejogmove(100)
+            else:
+                self.coater.timejogmove(100)
+
 
     def csvstartfx(self):
         pass
-
-    def mainstartfx(self):
-        self.paramsetfx()
-        self.spd = float(self.main_speed.text())/self.distperpulse
-        self.acc = float(self.main_acceleration.text())/self.distperpulse
-        self.dist = float(self.main_distance.text())/self.distperpulse
-        outstring=''.join(['speed: ', str(self.spd), ', acceleration: ', str(self.acc), ', distance: ',str(self.dist), '\n'])
-        self.text_monitor.append(outstring)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Chip"))
         self.label_5.setText(_translate("MainWindow", "Chip the Dip Coater and Fiber Puller Controller"))
         self.label_6.setText(_translate("MainWindow", "This is the GUI to control the DIY dipcoater/fiber puller named Chip set up in the lab."))
-        self.label_13.setText(_translate("MainWindow", "COM port"))
+        self.label_13.setText(_translate("MainWindow", "COM port name"))
         self.label_10.setText(_translate("MainWindow", "Controller pulse/revolution"))
         self.label_11.setText(_translate("MainWindow", "Distance per rotation"))
         self.param_set.setText(_translate("MainWindow", "Set"))
