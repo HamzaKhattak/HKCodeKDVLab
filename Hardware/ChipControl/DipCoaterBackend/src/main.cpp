@@ -1,4 +1,4 @@
-#include <AccelStepper.h>
+//#include <AccelStepper.h> PlatformIO handles this
 
 //Select Pins
 int Dir1Pin = 2; 
@@ -11,6 +11,9 @@ AccelStepper stepper(1,Step1Pin,Dir1Pin);
 void setup()
 {  
     Serial.begin(9600);
+    Serial.println("This demo expects 3 pieces of data - text, an integer and a floating point value");
+    Serial.println("Enter data in this style <HelloWorld, 12, 24.7>  ");
+    Serial.println();
     stepper.setMaxSpeed(100);
     stepper.setAcceleration(10000);
 
@@ -25,9 +28,8 @@ char tempChars[numChars];        // temporary array for use when parsing
 char messageFromPC[numChars] = {0};
 int integerFromPC = 0;
 float floatFromPC = 0.0;
-float tempt = 0;
-float cur_speed = 0;
-long cur_pos = 0;
+
+
 boolean newData = false;
 
 
@@ -102,40 +104,34 @@ void parseData() {      // split the data into its parts
 
 void performFunction() {
     switch (messageFromPC[0]) {
-
-      case 'G':
-        cur_pos = stepper.currentPosition();
-        Serial.println(cur_pos);
-        break;
-        
       case 'S':
         stepper.setMaxSpeed(floatFromPC);
         stepper.setSpeed(floatFromPC);
         break;
-
-      case 'A':
-        stepper.setAcceleration(floatFromPC);
-        break;
         
       case 'M':
-        stepper.moveTo(integerFromPC);
-        while (stepper.currentPosition()!= integerFromPC)
+        stepper.moveTo(floatFromPC);
+        while (stepper.currentPosition()!= floatFromPC)
           stepper.run();
           //Later add stops, checks etc here.
         break;
         
       case 'J':
-        tempt = millis() + floatFromPC;
+        tempt = millis() + floatfromPC;
         //stepper.setSpeed(stepper.speed(floatFromPC)*intFromPC)
         while (millis()< tempt)
           {
-          stepper.runSpeed();
+          stepper.runSpeed()
           }
           //Later add stops, checks etc here.
         break;
         
       default:
-        Serial.println('Invalid input');
+        Serial.println('Invalid input')
       break;
     }
+    Serial.print("Integer ");
+    Serial.println(integerFromPC);
+    Serial.print("Float ");
+    Serial.println(floatFromPC);
 }

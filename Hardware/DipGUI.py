@@ -20,6 +20,11 @@ class motioncontol:
     def writecommand(self,docuCommand):
         modstring=docuCommand +'\r\n'
         self.ser.write(modstring.encode())
+        
+    def getinfo(self):
+        rawresult = self.ser.readline().decode()
+        result = rawresult.strip()
+        return 	result
 
     def closeport(self):
         self.ser.close()
@@ -31,7 +36,7 @@ class motioncontol:
         floats are rounded to 2 decimal places
         '''
         convint = str(valueint)
-        convflt = str(round(speedmm / mmperstep,2))
+        convflt = str(round(valuefloat,2))
         writestring = '<'+ paramkey + ',' + convint + ',' + convflt +'>'
         self.writecommand(writestring) 
 
@@ -45,18 +50,18 @@ class motioncontol:
 
     def moverelative(self,distancemm,mmperstep):
         #Speed and acceleration should already be set
-        distancestp = distancemm / mmperstep
-        current_location_stp = float(self.writecommand('<G,0,0>'))
-        newlocstp = int(current_location_stp + distancestp,2)
+        distancestp = int(distancemm / mmperstep)
+        self.writecommand('<G,0,0>') #Write position
+        current_location_stp = int(self.getinfo())
+        newlocstp = int(current_location_stp + distancestp)
         self.sendfcommand('M',newlocstp, 0) #final location should be integer since can't be at half step
 
-    def timejogmove(self,t_in,dir):
+    def timejogmove(self,t_in):
         '''
         Simply sends out a job command in a given direction, enter time in seconds
         Speed should be set beforehand
         '''
-        t_in_ms=t_in/1000
-        self.sendfcommand('J',dir,t_in_ms)
+        self.sendfcommand('J',0,t_in)
 
         
 
@@ -235,7 +240,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
         self.param_set.clicked.connect(self.paramsetfx)
-        self.set_jog_speed.clicked.connect(self.jspeedsetfx)
+        #self.set_jog_speed.clicked.connect(self.jspeedsetfx)
 
         #Repeat send commands for jog buttons
         self.jogdown.setAutoRepeat(True)
@@ -247,7 +252,7 @@ class Ui_MainWindow(object):
         self.jogup.setAutoRepeatDelay(0)
         self.jogup.setAutoRepeatInterval(100)
         self.jogup.pressed.connect(self.jogupfx)
-        
+        self.tempstate = 0
 
         self.main_start.clicked.connect(self.mainstartfx)
         self.csvstart.clicked.connect(self.csvstartfx)
@@ -257,47 +262,46 @@ class Ui_MainWindow(object):
         #Relevant variables
     def paramsetfx(self):
         #Initiate parameters
-        pulserev = float(self.controller_pulserev)
-        distrot = float(self.distance_per_rotation)
+        pulserev = float(self.controller_pulserev.text())
+        distrot = float(self.distance_per_rotation.text())
         self.distperpulse = distrot/pulserev
         try:
             self.text_monitor.append('Initializing')
-            self.coater = motioncontol(self.controller_pulserev.text())
-            time.sleep(4)
+            self.coater = motioncontol(self.controller_COMport.text())
+            time.sleep(2)
         except SerialException:
             self.text_monitor.append('reset')
 
     def mainstartfx(self):
-        self.main_distance = float(self.main_distance.text())
+        self.maind = float(self.main_distance.text())
         self.mainspd = float(self.main_speed.text())
         self.mainacc = float(self.main_acceleration.text())
-        self.coater.setspeedacc(self.mainspd,self.mainacc,self.main_distance)
-        self.coater.moverelative(self.main_distance,self.distperpulse)
-'''
-    def jspeedsetfx(self):
-        self.jogspd = float(self.set_jog_speed.text())
-        self.coater.setspeedacc(self.jogspd,10000,self.distperpulse)
-'''
+        self.coater.setspeedacc(self.mainspd,self.mainacc,self.distperpulse)
+        self.coater.moverelative(self.maind,self.distperpulse)
 
     def jogdownfx(self):
-        tempstate=0
-        if self.jogdown.isDown():
-            if tempstate == 0:
-                tempstate = 1
+        if(self.jogdown.isDown()):
+            if self.tempstate == 0:
+                self.tempstate = 1
+                self.jogspd = float(self.jogspeed.text())
                 self.coater.setspeedacc(-1*self.jogspd,10000,self.distperpulse)
                 self.coater.timejogmove(100)
             else:
                 self.coater.timejogmove(100)
+        else:
+            self.tempstate = 0
 
     def jogupfx(self):
-        tempstate=0
-        if self.jogdown.isDown():
-            if tempstate == 0:
-                tempstate = 1
+        if(self.jogup.isDown()):
+            if self.tempstate == 0:
+                self.tempstate = 1
+                self.jogspd = float(self.jogspeed.text())
                 self.coater.setspeedacc(self.jogspd,10000,self.distperpulse)
                 self.coater.timejogmove(100)
             else:
                 self.coater.timejogmove(100)
+        else:
+            self.tempstate = 0
 
 
     def csvstartfx(self):
