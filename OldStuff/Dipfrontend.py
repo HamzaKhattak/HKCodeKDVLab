@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Dipfrontend.ui'
+# Form implementation generated from reading ui file 'DipGUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+    
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -109,24 +110,21 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.label_7)
         self.gridLayout_3 = QtWidgets.QGridLayout()
         self.gridLayout_3.setObjectName("gridLayout_3")
-        self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setObjectName("label_3")
-        self.gridLayout_3.addWidget(self.label_3, 0, 0, 1, 1)
-        self.jogup = QtWidgets.QPushButton(self.centralwidget)
-        self.jogup.setObjectName("jogup")
-        self.gridLayout_3.addWidget(self.jogup, 0, 2, 1, 1)
-        self.jogspeed = QtWidgets.QLineEdit(self.centralwidget)
-        self.jogspeed.setObjectName("jogspeed")
-        self.gridLayout_3.addWidget(self.jogspeed, 1, 0, 1, 1)
         self.jogdown = QtWidgets.QPushButton(self.centralwidget)
         self.jogdown.setObjectName("jogdown")
         self.gridLayout_3.addWidget(self.jogdown, 1, 2, 1, 1)
-        self.jogtimestep = QtWidgets.QLineEdit(self.centralwidget)
-        self.jogtimestep.setObjectName("jogtimestep")
-        self.gridLayout_3.addWidget(self.jogtimestep, 1, 1, 1, 1)
-        self.label_14 = QtWidgets.QLabel(self.centralwidget)
-        self.label_14.setObjectName("label_14")
-        self.gridLayout_3.addWidget(self.label_14, 0, 1, 1, 1)
+        self.jogup = QtWidgets.QPushButton(self.centralwidget)
+        self.jogup.setObjectName("jogup")
+        self.gridLayout_3.addWidget(self.jogup, 0, 2, 1, 1)
+        self.label_3 = QtWidgets.QLabel(self.centralwidget)
+        self.label_3.setObjectName("label_3")
+        self.gridLayout_3.addWidget(self.label_3, 0, 0, 1, 1)
+        self.jogspeed = QtWidgets.QLineEdit(self.centralwidget)
+        self.jogspeed.setObjectName("jogspeed")
+        self.gridLayout_3.addWidget(self.jogspeed, 1, 0, 1, 1)
+        self.set_jog_speed = QtWidgets.QPushButton(self.centralwidget)
+        self.set_jog_speed.setObjectName("set_jog_speed")
+        self.gridLayout_3.addWidget(self.set_jog_speed, 1, 1, 1, 1)
         self.verticalLayout_2.addLayout(self.gridLayout_3)
         self.line_2 = QtWidgets.QFrame(self.centralwidget)
         self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
@@ -189,7 +187,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Chip"))
         self.label_5.setText(_translate("MainWindow", "Chip the Dip Coater and Fiber Puller Controller"))
         self.label_6.setText(_translate("MainWindow", "This is the GUI to control the DIY dipcoater/fiber puller named Chip set up in the lab."))
-        self.label_13.setText(_translate("MainWindow", "COM port"))
+        self.label_13.setText(_translate("MainWindow", "COM port name"))
         self.label_10.setText(_translate("MainWindow", "Controller pulse/revolution"))
         self.label_11.setText(_translate("MainWindow", "Distance per rotation"))
         self.param_set.setText(_translate("MainWindow", "Set"))
@@ -199,12 +197,11 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Distance (mm)"))
         self.main_start.setText(_translate("MainWindow", "Start"))
         self.label_7.setText(_translate("MainWindow", "Jog"))
-        self.label_3.setText(_translate("MainWindow", "Speed (mm/s)"))
-        self.jogup.setText(_translate("MainWindow", "Up"))
         self.jogdown.setText(_translate("MainWindow", "Down"))
-        self.label_14.setText(_translate("MainWindow", "Time step for jog (ms)"))
+        self.jogup.setText(_translate("MainWindow", "Up"))
+        self.label_3.setText(_translate("MainWindow", "Speed (mm/s)"))
+        self.set_jog_speed.setText(_translate("MainWindow", "Set Jog Speed"))
         self.label_9.setText(_translate("MainWindow", "csv speeds+times (not yet working)"))
         self.label_4.setText(_translate("MainWindow", "File Address"))
         self.csvstart.setText(_translate("MainWindow", "Start"))
         self.butStop.setText(_translate("MainWindow", "STOP"))
-

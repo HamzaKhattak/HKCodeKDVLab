@@ -73,7 +73,6 @@ class FullGUI(dipfe.Ui_MainWindow):
         '''
         self.setupUi(MainWindow)
         self.param_set.clicked.connect(self.paramsetfx)
-        #self.set_jog_speed.clicked.connect(self.jspeedsetfx)
 
         #Repeat send commands for jog buttons
         self.jogdown.setAutoRepeat(True)
@@ -110,6 +109,7 @@ class FullGUI(dipfe.Ui_MainWindow):
         self.mainspd = float(self.main_speed.text())
         self.mainacc = float(self.main_acceleration.text())
         self.coater.setspeedacc(self.mainspd,self.mainacc,self.distperpulse)
+        time.sleep(.1) #Give time to process
         self.coater.moverelative(self.maind,self.distperpulse)
 
     def jogdownfx(self):
@@ -118,11 +118,12 @@ class FullGUI(dipfe.Ui_MainWindow):
                 self._tempstate = 1
                 #What happens on the initial click
                 self.jogspd = float(self.jogspeed.text())
+                self.jogtstep = float(self.jogtimestep.text())
                 self.coater.setspeedacc(-1*self.jogspd,1000,self.distperpulse)
                 time.sleep(.1) #Give time to process
             else:
                 #What repeats
-                self.coater.timejogmove(100)
+                self.coater.timejogmove(self.jogtstep)
         elif self._tempstate == 1:
             self._tempstate = 0
             #If needed what happens on release
@@ -137,12 +138,12 @@ class FullGUI(dipfe.Ui_MainWindow):
                 self._tempstate = 1
                 #What happens on the initial click
                 self.jogspd = float(self.jogspeed.text())
+                self.jogtstep = float(self.jogtimestep.text())
                 self.coater.setspeedacc(self.jogspd,1000,self.distperpulse)
                 time.sleep(.1) #Give time to process
             else:
                 #What repeats
-                print('hold')
-                self.coater.timejogmove(100)
+                self.coater.timejogmove(self.jogtstep)
         elif self._tempstate == 1:
             self._tempstate = 0
             #If needed what happens on release
