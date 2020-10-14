@@ -68,6 +68,9 @@ class FullGUI(dipfe.Ui_MainWindow):
   #  super().__init__(object)
 
     def setupUiMOD(self,MainWindow):
+        '''
+        Set up the GUI from the front end and connect to functions
+        '''
         self.setupUi(MainWindow)
         self.param_set.clicked.connect(self.paramsetfx)
         #self.set_jog_speed.clicked.connect(self.jspeedsetfx)
@@ -82,7 +85,7 @@ class FullGUI(dipfe.Ui_MainWindow):
         self.jogup.setAutoRepeatDelay(0)
         self.jogup.setAutoRepeatInterval(100)
         self.jogup.clicked.connect(self.jogupfx)
-        self.tempstate = 0
+        self._tempstate = 0
 
         self.main_start.clicked.connect(self.mainstartfx)
         self.csvstart.clicked.connect(self.csvstartfx)
@@ -95,12 +98,12 @@ class FullGUI(dipfe.Ui_MainWindow):
         pulserev = float(self.controller_pulserev.text())
         distrot = float(self.distance_per_rotation.text())
         self.distperpulse = distrot/pulserev
+        self.text_monitor.append('Setting')
         try:
-            self.text_monitor.append('Initializing')
             self.coater = motioncontol(self.controller_COMport.text())
             time.sleep(2)
         except SerialException:
-            self.text_monitor.append('reset')
+            self.text_monitor.append('Warning: serial exception')
 
     def mainstartfx(self):
         self.maind = float(self.main_distance.text())
@@ -110,28 +113,42 @@ class FullGUI(dipfe.Ui_MainWindow):
         self.coater.moverelative(self.maind,self.distperpulse)
 
     def jogdownfx(self):
-        if(self.jogdown.isDown()):
-            if self.tempstate == 0:
-                self.tempstate = 1
+        if self.jogdown.isDown():
+            if self._tempstate == 0:
+                self._tempstate = 1
+                #What happens on the initial click
                 self.jogspd = float(self.jogspeed.text())
                 self.coater.setspeedacc(-1*self.jogspd,1000,self.distperpulse)
-                self.coater.timejogmove(100)
+                time.sleep(.1) #Give time to process
             else:
+                #What repeats
                 self.coater.timejogmove(100)
+        elif self._tempstate == 1:
+            self._tempstate = 0
+            #If needed what happens on release
         else:
-            self.tempstate = 0
+            #If something needed for super short click
+            pass
+
 
     def jogupfx(self):
-        if(self.jogup.isDown()):
-            if self.tempstate == 0:
-                self.tempstate = 1
+        if self.jogup.isDown():
+            if self._tempstate == 0:
+                self._tempstate = 1
+                #What happens on the initial click
                 self.jogspd = float(self.jogspeed.text())
                 self.coater.setspeedacc(self.jogspd,1000,self.distperpulse)
+                time.sleep(.1) #Give time to process
             else:
+                #What repeats
+                print('hold')
                 self.coater.timejogmove(100)
+        elif self._tempstate == 1:
+            self._tempstate = 0
+            #If needed what happens on release
         else:
-            self.tempstate = 0
-
+            #If something needed for super short click
+            pass
 
     def csvstartfx(self):
         pass

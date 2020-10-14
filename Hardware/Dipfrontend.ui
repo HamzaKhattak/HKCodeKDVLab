@@ -173,10 +173,10 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="1" column="2">
-         <widget class="QPushButton" name="jogdown">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_3">
           <property name="text">
-           <string>Down</string>
+           <string>Speed (mm/s)</string>
           </property>
          </widget>
         </item>
@@ -187,20 +187,23 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Speed (mm/s)</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLineEdit" name="jogspeed"/>
         </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="set_jog_speed">
+        <item row="1" column="2">
+         <widget class="QPushButton" name="jogdown">
           <property name="text">
-           <string>Set Jog Speed</string>
+           <string>Down</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="jogtimestep"/>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_14">
+          <property name="text">
+           <string>Time step for jog (ms)</string>
           </property>
          </widget>
         </item>
