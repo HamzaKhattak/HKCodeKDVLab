@@ -47,7 +47,7 @@ class FullGUI(fedip.Ui_MainWindow):
         pulserev = float(self.controller_pulserev.text())
         distrot = float(self.distance_per_rotation.text())
         self.distperpulse = distrot/pulserev
-        self.text_monitor.append('Setting parameters')
+        self.text_monitor.append('Set parameters')
         try:
             self.coater = bedip.motioncontol(self.controller_COMport.text())
             time.sleep(2)
