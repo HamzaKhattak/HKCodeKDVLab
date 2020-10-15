@@ -191,7 +191,7 @@ class Ui_MainWindow(object):
         self.label_6.setText(_translate("MainWindow", "This is the GUI to control the DIY dipcoater/fiber puller named Chip set up in the lab."))
         self.label_13.setText(_translate("MainWindow", "COM port"))
         self.label_10.setText(_translate("MainWindow", "Controller pulse/revolution"))
-        self.label_11.setText(_translate("MainWindow", "Distance per rotation"))
+        self.label_11.setText(_translate("MainWindow", "Distance per rotation (mm)"))
         self.param_set.setText(_translate("MainWindow", "Set"))
         self.label_8.setText(_translate("MainWindow", "Speed + acceleration + distance"))
         self.label.setText(_translate("MainWindow", "Speed (mm/s)"))

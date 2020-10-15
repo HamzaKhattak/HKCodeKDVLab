@@ -47,13 +47,14 @@ class FullGUI(fedip.Ui_MainWindow):
         pulserev = float(self.controller_pulserev.text())
         distrot = float(self.distance_per_rotation.text())
         self.distperpulse = distrot/pulserev
-        self.text_monitor.append('Setting')
+        self.text_monitor.append('Setting parameters')
         try:
             self.coater = bedip.motioncontol(self.controller_COMport.text())
             time.sleep(2)
         except SerialException:
             self.text_monitor.append('Warning: serial exception')
-
+        initialpos= self.coater.getposition(self.distperpulse)
+        self.approxpos.display(initialpos)
     def mainstartfx(self):
         self.maind = float(self.main_distance.text())
         self.mainspd = float(self.main_speed.text())
@@ -61,6 +62,8 @@ class FullGUI(fedip.Ui_MainWindow):
         self.coater.setspeedacc(self.mainspd,self.mainacc,self.distperpulse)
         time.sleep(.1) #Give time to process
         self.coater.moverelative(self.maind,self.distperpulse)
+        newpos=self.coater.getposition(self.distperpulse)
+        self.approxpos.display(newpos)
 
     def jogdownfx(self):
         if self.jogdown.isDown():
@@ -74,9 +77,12 @@ class FullGUI(fedip.Ui_MainWindow):
             else:
                 #What repeats
                 self.coater.timejogmove(self.jogtstep)
+
         elif self._tempstate == 1:
             self._tempstate = 0
             #If needed what happens on release
+            newpos=self.coater.getposition(self.distperpulse)
+            self.approxpos.display(newpos)
         else:
             #If something needed for super short click
             pass
@@ -97,6 +103,8 @@ class FullGUI(fedip.Ui_MainWindow):
         elif self._tempstate == 1:
             self._tempstate = 0
             #If needed what happens on release
+            newpos=self.coater.getposition(self.distperpulse)
+            self.approxpos.display(newpos)
         else:
             #If something needed for super short click
             pass

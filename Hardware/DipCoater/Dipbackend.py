@@ -46,6 +46,11 @@ class motioncontol:
         newlocstp = int(current_location_stp + distancestp)
         self.sendfcommand('M',newlocstp, 0) #final location should be integer since can't be at half step
 
+    def getposition(self,mmperstep):
+        self.writecommand('<G,0,0>') #Write position request
+        current_location_stp = int(self.getinfo())
+        return current_location_stp*mmperstep
+
     def timejogmove(self,t_in):
         '''
         Simply sends out a job command in a given direction, enter time in seconds

@@ -123,7 +123,7 @@ void performFunction()
         break;
         
       case 'J':
-        tempt = millis() + floatFromPC;
+        tempt = millis() + floatFromPC*1.2; //Extra 20% to prevent juddering, position report is slow
         //stepper.setSpeed(stepper.speed(floatFromPC)*intFromPC)
         while (millis() < tempt)
           {
