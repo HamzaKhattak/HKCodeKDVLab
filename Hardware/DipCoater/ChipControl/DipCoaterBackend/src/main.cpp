@@ -1,3 +1,8 @@
+/*
+Arduino code for stepper motor control
+A bit ugly with global variables etc but works
+Doesn't yet have end stops and other error catching
+*/
 #include <Arduino.h>
 #include <AccelStepper.h>
 
@@ -10,14 +15,18 @@ const byte numChars = 32;
 char receivedChars[numChars];
 char tempChars[numChars];        // temporary array for use when parsing
 
+
+
 // variables to hold the parsed data
 char messageFromPC[numChars] = {0};
 int integerFromPC = 0;
 float floatFromPC = 0.0;
+boolean newData = false;
+
+// variables to temporary time position and speed
 float tempt = 0;
 float cur_speed = 0;
 long cur_pos = 0;
-boolean newData = false;
 
 
 //Initiate the AccelStepper object
@@ -27,35 +36,44 @@ AccelStepper stepper(1,Step1Pin,Dir1Pin);
 
 void recvWithStartEndMarkers() 
 {
+  /*
+  As the main loop happens this function collects a string
+  of form <char,int,float> with the < and > as end markers 
+  */
     static boolean recvInProgress = false;
     static byte ndx = 0;
     char startMarker = '<';
     char endMarker = '>';
     char rc;
 
-    while (Serial.available() > 0 && newData == false) {
-        rc = Serial.read();
+    while (Serial.available() > 0 && newData == false) 
+      {
+          rc = Serial.read();
 
-        if (recvInProgress == true) {
-            if (rc != endMarker) {
-                receivedChars[ndx] = rc;
-                ndx++;
-                if (ndx >= numChars) {
-                    ndx = numChars - 1;
-                }
+          if (recvInProgress == true) 
+            {
+                if (rc != endMarker) 
+                  {
+                  receivedChars[ndx] = rc;
+                  ndx++;
+                  if (ndx >= numChars) 
+                    {
+                      ndx = numChars - 1;
+                    }
+                  }
+                else 
+                  {
+                    receivedChars[ndx] = '\0'; // terminate the string
+                    recvInProgress = false;
+                    ndx = 0;
+                    newData = true;
+                  }
             }
-            else {
-                receivedChars[ndx] = '\0'; // terminate the string
-                recvInProgress = false;
-                ndx = 0;
-                newData = true;
-            }
-        }
 
-        else if (rc == startMarker) {
-            recvInProgress = true;
-        }
-    }
+          else if (rc == startMarker) {
+              recvInProgress = true;
+          }
+      }
 };
 
 //============
@@ -107,7 +125,7 @@ void performFunction()
       case 'J':
         tempt = millis() + floatFromPC;
         //stepper.setSpeed(stepper.speed(floatFromPC)*intFromPC)
-        while (millis()< tempt)
+        while (millis() < tempt)
           {
           stepper.runSpeed();
           }
@@ -126,7 +144,7 @@ void setup()
 {  
     Serial.begin(9600);
     stepper.setMaxSpeed(100);
-    stepper.setAcceleration(10000);
+    stepper.setAcceleration(1000);
 
 };
 //============
