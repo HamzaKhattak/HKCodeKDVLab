@@ -2,14 +2,11 @@
 This code performs the edge location and cross correlation analysis across multiple images
 '''
 
-import sys, os, glob, pickle, re, time
+import sys, os, time
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
-from scipy.optimize import curve_fit
-import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
-from scipy.signal import savgol_filter
 from matplotlib_scalebar.scalebar import ScaleBar
 #import similaritymeasures
 
@@ -17,7 +14,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\SixthScan"
+dataDR=r"F:\DualAngles2\Exp15"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -52,7 +49,7 @@ os.chdir(dataDR)
 
 #get the folder names and a place to store the droplet properties
 folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
-#%%
+
 
 noforce=ito.imread2(dataDR+'\\base.tif') #Need a no force image to compare rest of results to
 
@@ -109,7 +106,7 @@ croppedtopchecks=[ito.cropper2(extreme1[1],croptop),ito.cropper2(extreme2[1],cro
 pixelsize=0.75e-6
 
 #Cross correlation
-cutpoint=30 # y pixel to use for cross correlation
+cutpoint=20 # y pixel to use for cross correlation
 guassfitl=20 # Number of data points to each side to use for guass fit
 
 #Side Edge detection
@@ -119,7 +116,7 @@ sidebackground=False
 sidethreshtest=ede.edgedetector(croppedsidechecks[0],sidebackground,*sideimaparam)
 
 #Top Edge detection
-topimaparam=[-1*np.max(croppedtopchecks[0])/1.8,60,.05] #[threshval,obsSize,cannysigma]
+topimaparam=[-1*np.max(croppedtopchecks[0])/1.7,60,.05] #[threshval,obsSize,cannysigma]
 topbackground=False 
 
 topthreshtest=ede.edgedetector(croppedtopchecks[0],topbackground,*topimaparam)
@@ -197,7 +194,8 @@ for i in range(len(folderpaths)):
 	#analysis
 	ttake = time.time()-t1
 	print("%s completed in %d seconds." % (folderpaths[i], ttake))
-#%%
+
+
 '''
 This code no longer involves the images and can run much faster
 Also has bits that are most commonly changed (ie fitting functions etc)

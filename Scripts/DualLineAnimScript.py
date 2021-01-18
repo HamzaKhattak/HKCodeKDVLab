@@ -13,7 +13,7 @@ import sys, os
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\FirstSpeedScan"
+dataDR=r"F:\DualAngles2\Exp8"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -40,16 +40,16 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 #%%
 springc = 0.155 #N/m
-mperpixside = 0.75e-6 #meters per pixel
-mperpixtop = 0.75e-6
+mperpixside = 0.244e-6 #meters per pixel
+mperpixtop = 0.488e-6
 #%%
-selectfolder='0p1ums0'
+selectfolder='10p0ums1'
 edgeparams = ito.openlistnp('edgedetectparams.npy')
 
 imfold = os.path.join(dataDR,selectfolder)
 #Get the image sequence imported
 
-cropside,sideimaparam,croptop,topimaparam = edgeparams
+cropside,sideimaparam,croptop,topimaparam, something = edgeparams
 
 #importimage
 impath = ito.getimpath(selectfolder)
@@ -163,7 +163,7 @@ def init():
 	#axs[0,0].set_ylim(0, 500)
 	#Use this section to plot force over time
 	axs[1,0].set_xlim(0, tVals[-1]) #convert to hrs if needed
-	axs[1,0].set_ylim(-100, 100)
+	axs[1,0].set_ylim(-10, 10)
 	axs[1,0].set_xlabel('time (s)')
 	axs[1,0].set_ylabel('Force ($\mathrm{\mu N}$)')
 	
@@ -172,7 +172,7 @@ def init():
 	#axs[0,0].set_ylim(0, 500)
 	#Use this section to plot force over time
 	axs[1,1].set_xlim(0, tVals[-1]) #convert to hrs if needed
-	axs[1,1].set_ylim(600, 700)
+	axs[1,1].set_ylim(100, 200)
 	axs[1,1].set_xlabel('time (s)')
 	axs[1,1].set_ylabel('Perimeter')
 	
@@ -202,7 +202,7 @@ def update_plot(it):
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=range(len(tVals)), interval=20,
+ani = animation.FuncAnimation(fig, update_plot, frames=range(len(tVals)), interval=100,
                     init_func=init, repeat_delay=1000, blit=True)
 
 
@@ -219,7 +219,7 @@ plt.plot(perimdat,'.')
 
 #%%
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=30,extra_args=['-vcodec'•, 'libx264'])
-file_path=r'C:\Users\WORKSTATION\Dropbox\FigTransfer\Sept14'
+writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
+file_path=r'F:\Combining'
 file_path=os.path.join(file_path,'AnimatedExperimentdualfixed.mp4')
 ani.save(file_path,writer=writer,dpi=200)
