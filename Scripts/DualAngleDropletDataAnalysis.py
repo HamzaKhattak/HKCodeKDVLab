@@ -13,7 +13,7 @@ import numpy_indexed as npi
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\DualAngles2\Exp11"
+dataDR=r"F:\DualAngles2\Exp2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -63,33 +63,40 @@ want where the indexes that are used for the averaging
 fshift = np.mean(dropProp[0][2])
 meanF = np.zeros(len(velvals))
 meanPerim = np.zeros(len(velvals))
+smoothedforces=[None]*(len(velvals))
 for i in range(len(velvals)):
 	#print(i)
 	tVals = dropProp[i][0]
 	forceDat=dropProp[i][2]-fshift
 	perimDat=dropProp[i][-2]
-	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[0,0],sdevlims=[.5,.5],outlierparam=2)	
+	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[5],sdevlims=[.1,.5],outlierparam=1)	
 	topidx, botidx = forceplateaudata[-1]
-	meanF[i] = (np.mean(forceDat[topidx])-np.mean(forceDat[botidx]))/2
+	smoothedforces[i] = forceplateaudata[1]
+	meanF[i] = (np.mean(smoothedforces[i][topidx])-np.mean(smoothedforces[i][botidx]))/2
 	indexArrs[i] = [topidx, botidx]
-	
 	comboind = np.logical_or(topidx,botidx)	
 	perimoutmask = planl.rejectoutliers(perimDat,m=1)
 	comboind = np.logical_and(comboind,perimoutmask)
 	meanPerim[i] = np.mean(perimDat[comboind])
 
 
-#%%
-testidx=6
+
+testidx=-1
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
-#topidx, botidx = indexArrs[testidx]
-plt.plot(tVals,forceDat)
+topidx, botidx = indexArrs[testidx]
+plt.plot(tVals,forceDat,'k.')
 plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
-#%%
-plt.plot(dropProp[0][-2])
-plt.ylim(660,720)
+
+testidx=0
+tVals = dropProp[testidx][0]
+forceDat=dropProp[testidx][2]-fshift
+topidx, botidx = indexArrs[testidx]
+plt.plot(tVals,forceDat,'k.')
+plt.plot(tVals[topidx],forceDat[topidx],'r.')
+plt.plot(tVals[botidx],forceDat[botidx],'r.')
+
 
 #%%
 def grouper(x,y):
@@ -101,17 +108,17 @@ def grouper(x,y):
 	return result, sdev
 
 
-forcecombo = grouper(velvals,meanF/meanPerim)
+forcecombo = grouper(velvals,meanF)
 perimcombo = grouper(velvals,meanPerim)
 normforcecombo = grouper(velvals,meanF/meanPerim)
 
-def velfit(x,B):
-	return B*x**(.25)
+def velfit(x,B,a):
+	return B*x**a
 samplex=np.linspace(0,np.max(velvals),100)
 pfit,perr = curve_fit(velfit,normforcecombo[0][0],normforcecombo[0][1],sigma=normforcecombo[1][1])
 
-print(pfit,perr)
-
+print(pfit)
+plt.figure()
 #plt.errorbar(forcecombo[0][0],forcecombo[0][1],yerr=forcecombo[1][1],color='red',marker='.',linestyle = "None",label='Divided by constant')
 plt.errorbar(normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1],color='green',marker='.',linestyle = "None",label='Divided by perimeters')
 plt.plot(samplex,velfit(samplex,*pfit))
@@ -123,7 +130,17 @@ plt.legend()
 plt.tight_layout()
 
 print(np.sqrt(np.diag(perr)))
-np.save('Thick90Sum.npy',[normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1]])
-#%%
+#np.save('Thick90Sum.npy',[normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1]])
 
+
+#%%
+xlog = np.log(normforcecombo[0][0])
+ylog = np.log(normforcecombo[0][1])
+#errlog = np.log(normforcecombo[1][1])
+
+def plaw(x,a,b):
+	return a*x+b
+plt.plot(xlog,ylog,'.')
+pfit,perr = curve_fit(plaw,xlog,ylog)
+print(pfit)
 
