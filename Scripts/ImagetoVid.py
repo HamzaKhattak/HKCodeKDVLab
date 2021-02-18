@@ -6,12 +6,12 @@ import sys, os
 import importlib
 #need to install imageio and imagio-ffmpeg
 import imageio
-
+import numpy as np
 #%%
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"E:\DualAngles\SecondSpeedScan\5p0ums1"
+dataDR=r"F:\Fiber\initialtest\stretched\10p0ums2"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -30,12 +30,12 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 
 #%%
-outFile="waittest.mp4"
-
+outFile="evapout.mp4"
+infile='10p0ums2run.ome.tif'
 
 #Import the tif files in a folder
-imageframes=ito.omestackimport(dataDR)
-
+#imageframes=ito.omestackimport(dataDR)
+imageframes=ito.fullseqimport(os.path.join(dataDR,infile))
 
 #Or just one file
 #stackimport(dataDR+'/'+inFile)
@@ -50,4 +50,9 @@ imageio.mimwrite(outFile2, imageframes2 ,quality=10, input_params=['-r','30'],  
 
 #%%
 #Write to a video using mimwrite
-imageio.mimwrite(outFile, imageframes ,quality=5, input_params=['-r','30'],  output_params=['-r', '30'])
+combo = np.concatenate((imageframes1, imageframes2), axis=1)
+imageio.mimwrite("combo.mp4", combo ,quality=5, input_params=['-r','10'],  output_params=['-r', '30'])
+#%%
+#for single axis video
+outFile1="evap.mp4"
+imageio.mimwrite(outFile1, imageframes ,quality=10, input_params=['-r','10'],  output_params=['-r', '30'])

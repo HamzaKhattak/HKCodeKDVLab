@@ -39,7 +39,9 @@ class BCamCap:
 				cam.Open()
 				cam.AcquisitionFrameRateEnable.SetValue(True)
 				cam.AcquisitionFrameRate.SetValue(1/secperframe)
-				self.dimarr[i] = [cam.Height.GetValue(),cam.Width.GetValue()]
+				cam.OffsetX.SetValue(0)
+				cam.OffsetY.SetValue(0)
+				self.dimarr[i] = [cam.Height.GetMax(),cam.Width.GetMax()]
 				self.sernum[i]=cam.GetDeviceInfo().GetSerialNumber()
 				cam.ExposureAuto.SetValue('Off')
 				cam.GainAuto.SetValue('Off')
@@ -85,6 +87,46 @@ class BCamCap:
 				imtosave=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
 				tfile.imwrite(tosave,imtosave,planarconfig='separate',append=True,bigtiff=True)
 
+		except genicam.GenericException as e:
+			# Error handling
+			print("An exception occurred.", e.GetDescription())
+			self.cameras.StopGrabbing()
+		finally:
+			self.cameras.StopGrabbing()
+			self.cameras.Close()
+
+	def grabFastSequence(self,countOfImagesToGrab,fileName):
+		
+		#Saves to RAM, good for fast short sequences
+		# Maybe work in exit codes?
+		# self.exitCode = 0
+		#500 second maximum between frames
+		tosave = fileName + '.ome.tif' #filename to save
+		try:
+			datshape = [countOfImagesToGrab,2,2048,2592] #hard coded in size, fix later, giving [0,32] for some reason
+			imtosave=np.zeros(datshape,dtype='uint8')
+			mdat={"StartTime" : time.localtime(time.time()),
+				   "IntendedDimensions": {
+									    "time": countOfImagesToGrab,
+									    "position": 1,
+									    "z": 1,
+									    "channel": 2
+										  },
+				   "Interval_ms": self.spf*1000
+				 }
+			self.cameras.StartGrabbing()
+
+			# Grab c_countOfImagesToGrab from the cameras.
+			for i in range(0,countOfImagesToGrab):
+				if not self.cameras.IsGrabbing():
+					break
+				#Grab images from cameras (could use the iterative method if more cameras end up being needed)
+				grabResult1=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
+				grabResult2=self.cameras.RetrieveResult(500000, pylon.TimeoutHandling_ThrowException)
+				#Save by appending, this is slower than just saving using the Pylon built in but is more convenient
+				imtosave[i]=np.array([grabResult1.GetArray(),grabResult2.GetArray()],dtype='uint8')
+				
+			tfile.imwrite(tosave,imtosave,planarconfig='separate',append=True,bigtiff=True,metadata=mdat)
 		except genicam.GenericException as e:
 			# Error handling
 			print("An exception occurred.", e.GetDescription())

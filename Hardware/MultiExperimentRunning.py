@@ -3,17 +3,14 @@ This code performs the edge location and cross correlation analysis across multi
 '''
 
 import sys, os, glob, pickle, re
-import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 import time
-#import similaritymeasures
-
 #%%
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"E:\DualAngles\SixthScan"
+dataDR=r"F:\Fiber\initialtest\stretched"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory

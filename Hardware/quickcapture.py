@@ -17,7 +17,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\Fiber"
+dataDR=r"F:\liquid"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -36,34 +36,14 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 #%%
-movespeed=0.02
-movedistance=1
+
 numFrames=200
-framespersec=movedistance/movespeed/numFrames
+framespersec=20
 
-cont=nwpt.SMC100('COM4')
-cont.toready()
-position=float(cont.getpos())
 
-movespeed=0.05
-movedistance=-1
-numFrames=100
-
-secperframe = np.abs(2*movedistance/movespeed/numFrames)
+secperframe = 1/framespersec
 #Open the camera and controller
 cam=cseq.BCamCap(2,secperframe)
-#Set the speed
-cont.setspeed(movespeed)
-#Move to the end points and capture frames
-#Will have extra header for second go around since no multithreading yet
-cont.goto(position+movedistance)
-cam.grabSequence(int(np.floor(numFrames/2)),"pipette2")
-time.sleep(4)
-cont.stop()
-time.sleep(2)
-cont.goto(position)
-cam.grabSequence(int(np.ceil(numFrames/2)),"pipette2")
 
+cam.grabFastSequence(int(numFrames),"dualdroplets7")
 
-cont.torest()
-cont.closeport()

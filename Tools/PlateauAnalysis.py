@@ -1,12 +1,13 @@
 import numpy as np
 from scipy.signal import savgol_filter
+from scipy.signal import medfilt
 
+'''
 def smoothingfilter(data,windowparam=4,polyorder=3,fraction=False):
-	'''
-	Simply smooths data based on a window fraction (ie what
-	fraction of total data should the window be) or by simply rounding to odd
-	'''
-	if fraction==True:
+	
+	# Simply smooths data based on a window fraction (ie what 
+	# fraction of total data should the window be) or by simply rounding to odd
+	if fraction==True:☻
 		arlen=data.size #Get size
 		windowlength=arlen/windowparam #divid
 		windowlength=np.ceil(windowlength) // 2 * 2 + 1 #make odd
@@ -16,6 +17,14 @@ def smoothingfilter(data,windowparam=4,polyorder=3,fraction=False):
 		windowlength=int(windowlength) #Make into an int
 	return savgol_filter(data,windowlength,polyorder) #filter
 
+'''
+def smoothingfilter(data,windowparam=4):
+	'''
+	Simply smooths data based on a window fraction (ie what
+	fraction of total data should the window be) or by simply rounding to odd
+	'''
+
+	return medfilt(data,windowparam) #filter
 
 def anglefilter(data,windowsize=21,polyorder=3):
 	'''
@@ -41,8 +50,10 @@ def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims
 	cutTime = timearray[cutindexl:cutindexr]
 	if smoothparams != [0,0]:
 		smootheddat=smoothingfilter(forcearray[cutindexl:cutindexr],*smoothparams)
+		uncutsmooths=smoothingfilter(forcearray,*smoothparams)
 	else:
 		smootheddat=forcearray[cutindexl:cutindexr]
+		uncutsmooths=forcearray
 	vels=np.gradient(smootheddat,dt)
 	accs=np.gradient(vels,dt)
 	
@@ -80,7 +91,7 @@ def plateaufilter(timearray,forcearray,regionofinterest,smoothparams=[],sdevlims
 	idh = np.isin(timearray, filteredtimes2[highcond], assume_unique=True)
 	
 	#Return numpy list with data
-	return [cutTime,smootheddat,vels,accs,[high,low],[idh,idl]]
+	return [cutTime,uncutsmooths,vels,accs,[high,low],[idh,idl]]
 
 
 
