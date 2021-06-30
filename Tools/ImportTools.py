@@ -11,7 +11,7 @@ Code to deal with file naming structure
 '''
 
 #First need to create the folders for saving
-def foldercreate(runspeed):
+def spfoldercreate(runspeed):
 	#Creates a unique folder in the working directory for a given runspeed in mm/s
 	#Avoid periods and special characters in numbers so 0.1um/s becomes 0p1ums etc
 	#When reading simply replace the p with a "."
@@ -24,6 +24,17 @@ def foldercreate(runspeed):
 		i+=1
 		time.sleep(0.1)
 	createdfolder = prefix+str(i)
+	os.mkdir(createdfolder)
+	return createdfolder
+
+def foldercreate(name):
+	#Creates a unique folder in the working directory
+	#Ensure that folders are not overwritten
+	i = 0
+	while os.path.exists(name+str(i)):
+		i+=1
+		time.sleep(0.1)
+	createdfolder = name+str(i)
 	os.mkdir(createdfolder)
 	return createdfolder
 

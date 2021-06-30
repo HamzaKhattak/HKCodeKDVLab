@@ -55,31 +55,42 @@ repeatnum = runparams[r"Repeats"]
 #Open the controller
 cont=nwpt.SMC100('COM4')
 cont.toready()
-for i in np.arange(len(speedarray)):
+
+timearray=np.zeros(repeatnum[0])
+
+speednames=['Speed1','Speed2']
+for i in range(len(speednames))
+if not os.path.exists(speednames[i]):
+		os.mkdir(speednames)
+
+time0=time.time()
+for i in np.arange(len(repeatnum[0]):
 	#Repeat for the number of repeats required
-	for j in np.arange(repeatnum[i]):
+	timearray[i]=time.time()-time0
+	for j in np.arange(len(speedarray)):
+		os.chdir(speednames[j])
 		#Create folder and file saving name
-		foldname = ito.spfoldercreate(speedarray[i])
+		foldname = ito.tmfoldercreate('Time')
 		folddir=os.path.join(dataDR,foldname)
 		os.chdir(folddir)
 		filesavename= foldname + 'run'
 		print(filesavename+'inst'+str(i)+'-'+str(j)+'Started')
 		#Find the seconds per frame
-		distance = np.abs(limit1Array[i]-limit2Array[i])
-		secperframe = 2*distance/speedarray[i]/numFrameArray[i]
+		distance = np.abs(limit1Array[j]-limit2Array[j])
+		secperframe = 2*distance/speedarray[j]/numFrameArray[j]
 		#Open the camera and controller
 		cam=cseq.BCamCap(2,secperframe)
 		#Set the speed
-		cont.setspeed(speedarray[i])
+		cont.setspeed(speedarray[j])
 		#Move to the end points and capture frames
 		#Will have extra header for second go around since no multithreading yet
-		cont.goto(limit2Array[i])
-		cam.grabSequence(int(np.floor(numFrameArray[i]/2)),filesavename)
+		cont.goto(limit2Array[j])
+		cam.grabSequence(int(np.floor(numFrameArray[j]/2)),filesavename)
 		time.sleep(4)
 		cont.stop()
 		time.sleep(2)
-		cont.goto(limit1Array[i])
-		cam.grabSequence(int(np.ceil(numFrameArray[i]/2)),filesavename)
+		cont.goto(limit1Array[j])
+		cam.grabSequence(int(np.ceil(numFrameArray[j]/2)),filesavename)
 		os.chdir(dataDR)
 		time.sleep(20) #Sleep for a bit before restarting
 		cont.stop()
@@ -87,3 +98,4 @@ for i in np.arange(len(speedarray)):
 		print('Run Ended')
 cont.torest()
 cont.closeport()
+np.savetxt('runtimes.csv',delimiter=',')
