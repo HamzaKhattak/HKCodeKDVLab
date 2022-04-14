@@ -14,7 +14,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ThinnerFilms\Exp2"
+dataDR=r"F:\PDMSmigration\Thickwashed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -59,14 +59,14 @@ def tsplitter(s):
 def vsplitter(s):
 	return ito.namevelfind(s, numLoc=0) 
 
-folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd(),splitfunc=vsplitter)
+folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd(),splitfunc=tsplitter)
 
 
 noforce=ito.imread2(dataDR+'\\base.tif') #Need a no force image to compare rest of results to
 
 #User cropping etc
 #Get the images that will be used
-cropselectfolder='10p0ums2'
+cropselectfolder='Time0'
 cropindices=[41,150]
 #importimage
 extremapath = ito.getimpath(cropselectfolder)
@@ -127,7 +127,7 @@ sidebackground=False
 sidethreshtest=ede.edgedetector(croppedsidechecks[0],sidebackground,*sideimaparam)
 
 #Top Edge detection
-topimaparam=[-1*np.max(croppedtopchecks[0])/1.7,40,.05] #[threshval,obsSize,cannysigma]
+topimaparam=[-1*np.max(croppedtopchecks[0])/1.7,60,.05] #[threshval,obsSize,cannysigma]
 topbackground=False 
 
 topthreshtest=ede.edgedetector(croppedtopchecks[0],topbackground,*topimaparam)
@@ -221,9 +221,9 @@ pixrange=[120,120,10] #first two are xy bounding box for fit, last is where to s
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
 runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
-runparams = np.sort(runparams,order = r"Speed_ums")
+#runparams = np.sort(runparams,order = r"Speed_ums")
 speedvals = runparams[r"Speed_ums"]/1e6 #Speed is inputted into the device
-
+index1=0
 limit1vals = runparams[r"Point_1_mm"]/1e3 
 limit2vals = runparams[r"Point_2_mm"]/1e3
 distancevals = np.abs(limit1vals-limit2vals)
@@ -234,7 +234,7 @@ secperframevals = 2*distancevals/speedvals/numFramevals
 #labels for the useful data
 labels = ['time','distance travelled','crco','langle','rangle','perimeter','area']
 #for i in range(len(folderpaths)):
-for i in range(len(speedvals)):
+for i in range(len(folderpaths)):
 	print(folderpaths[i])
 	#Side view data
 	#Get correlation positions
@@ -255,8 +255,8 @@ for i in range(len(speedvals)):
 	ito.savelistnp(folderpaths[i]+'allDropProps.npy',[sideProps,topProps])
 	#Save the useful bits
 	#All the values that go into the final array
-	tvals = np.linspace(0,secperframevals[0]*numFramevals[0],numFramevals[0])
-	dtrav = tvals*speedvals[i]
+	tvals = np.linspace(0,secperframevals*numFramevals,numFramevals)
+	dtrav = tvals*speedvals
 	
 	#Get all of the useful data into a single file
 	dropProp[i] = np.array([tvals,dtrav,PosvtArray,AnglevtArray[:,0],AnglevtArray[:,1],perims,areas])
@@ -266,7 +266,8 @@ for i in range(len(speedvals)):
 	
 	
 
-ito.savelistnp('MainDropParams.npy',[foldernames,speedvals,dropProp])
-☻#%%
+ito.savelistnp('MainDropParams.npy',[foldernames,dropProp])
+
+#%%
 sidestackedges = ito.openlistnp(folderpaths[0]+'sideedgedata.npy')
 plt.plot(sidestackedges[0][:,0],sidestackedges[0][:,1],'.')

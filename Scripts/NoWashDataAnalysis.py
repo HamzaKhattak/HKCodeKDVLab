@@ -13,7 +13,7 @@ import numpy_indexed as npi
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ThinnerFilms\Exp3"
+dataDR=r"F:\PDMSmigration\Thickwashed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -39,10 +39,14 @@ sys.path.remove('./Tools') #Remove tools from path
 #Set working directory to data location
 os.chdir(dataDR)
 
+def tsplitter(s):
+	def splt2(x):
+		return ito.split_at(x,c='e')
+	return ito.namevelfind(s, splitfunction=splt2,numLoc=-1) 
 
-folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd())
+folderpaths, foldernames, dropProp = ito.foldergen(os.getcwd(),splitfunc=tsplitter)
 
-filenam, velvals, dropProp = ito.openlistnp('MainDropParams.npy') 
+filenam, dropProp = ito.openlistnp('MainDropParams.npy') 
 
 '''
 #In case there is a big issue with one on the speeds
@@ -50,8 +54,9 @@ velvals = np.delete(velvals,6)
 filenam=np.delete(filenam,6)
 del(dropProp[6])
 '''
-indexArrs = [None]*len(velvals) #Empty list to store the plateau indices
+indexArrs = [None]*len(foldernames) #Empty list to store the plateau indices
 exparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True) 
+timevals = np.genfromtxt('runtimes.csv', dtype=float, delimiter=',') 
 
 #springc = 0.024 #N/m
 #sidemperpix = 0.224e-6 #meters per pixel
@@ -61,16 +66,16 @@ exparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
 want array of force, average angles, perimeter and area as final result
 want where the indexes that are used for the averaging
 '''
-fshift = np.mean(dropProp[0][2])-35
-meanF = np.zeros(len(velvals))
-meanPerim = np.zeros(len(velvals))
-smoothedforces=[None]*(len(velvals))
-for i in range(len(velvals)):
+fshift = np.mean(dropProp[0][2])
+meanF = np.zeros(len(foldernames))
+meanPerim = np.zeros(len(foldernames))
+smoothedforces=[None]*(len(foldernames))
+for i in range(len(foldernames)):
 	#print(i)
 	tVals = dropProp[i][0]
-	forceDat=dropProp[i][2]-np.mean(dropProp[i][2])
+	forceDat=dropProp[i][2]-fshift
 	perimDat=dropProp[i][-2]
-	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[5],sdevlims=[.1,.5],outlierparam=1)	
+	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[5],sdevlims=[.1,.3],outlierparam=1)	
 	topidx, botidx = forceplateaudata[-1]
 	smoothedforces[i] = forceplateaudata[1]
 	meanF[i] = (np.mean(smoothedforces[i][topidx])-np.mean(smoothedforces[i][botidx]))/2
@@ -80,8 +85,6 @@ for i in range(len(velvals)):
 	comboind = np.logical_and(comboind,perimoutmask)
 	meanPerim[i] = np.mean(perimDat[comboind])
 
-
-
 testidx=1
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
@@ -89,60 +92,28 @@ topidx, botidx = indexArrs[testidx]
 plt.plot(tVals,forceDat,'k.')
 plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
-'''
-testidx=0
+
+testidx=-1
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
 topidx, botidx = indexArrs[testidx]
-plt.plot(tVals,forceDat,'k.')
+plt.plot(tVals,forceDat,'g.')
 plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
-'''
-#%%
 
 #%%
-def grouper(x,y):
-	'''
-	Assumed sorted by speed
-	'''
-	result = npi.group_by(x).mean(y)
-	sdev = npi.group_by(x).std(y)
-	return result, sdev
-
-
-forcecombo = grouper(velvals,meanF)
-perimcombo = grouper(velvals,meanPerim)
-normforcecombo = grouper(velvals,meanF/meanPerim)
-
-def velfit(x,B):
-	return B*x**.26
-samplex=np.linspace(0,np.max(velvals),100)
-pfit,perr = curve_fit(velfit,normforcecombo[0][0],normforcecombo[0][1],sigma=normforcecombo[1][1])
-
-print(pfit)
-plt.figure()
-#plt.errorbar(forcecombo[0][0],forcecombo[0][1],yerr=forcecombo[1][1],color='red',marker='.',linestyle = "None",label='Divided by constant')
-plt.errorbar(normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1],color='green',marker='.',linestyle = "None",label='Divided by perimeters')
-plt.plot(samplex,velfit(samplex,*pfit))
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('speed (um/s)')
-plt.ylabel('force/perimeter (arb units)')
-plt.legend()
-plt.tight_layout()
-
-print(np.sqrt(np.diag(perr)))
-#np.save('Thick90Sum.npy',[normforcecombo[0][0],normforcecombo[0][1],normforcecombo[1][1]])
-
+perx=meanF/meanPerim
+plt.plot(timevals/60/60,perx/perx[2],'.')
+plt.xlabel('time(hrs)')
+plt.ylabel('Force (arb)')
+plt.ylim(0,1.1)
+#%%
+plt.plot(timevals/60/60,meanPerim,'.')
+plt.xlabel('time(hrs)')
+plt.ylabel('Perim (arb)')
 
 #%%
-xlog = np.log(normforcecombo[0][0])
-ylog = np.log(normforcecombo[0][1])
-#errlog = np.log(normforcecombo[1][1])
-
-def plaw(x,a,b):
-	return a*x+b
-plt.plot(xlog,ylog,'.')
-pfit,perr = curve_fit(plaw,xlog,ylog)
-print(pfit)
-
+tosave=np.array([timevals,meanF,meanPerim])
+np.save('exp5.npy',tosave)
+#%%
+plt.plot(forceDat[0])

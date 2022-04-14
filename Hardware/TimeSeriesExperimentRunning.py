@@ -10,7 +10,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\Fiber\initialtest\stretched"
+dataDR=r"F:\PDMSmigration\Thickunwashed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -47,50 +47,50 @@ speedarray = runparams[r"Speed_ums"]/1000 #Speed is inputted into the device in 
 limit1Array = runparams[r"Point_1_mm"] #Point 1 and Point 2 are locations in mm
 limit2Array = runparams[r"Point_2_mm"]
 numFrameArray = runparams[r"Number_of_frames"]
-repeatnum = runparams[r"Repeats"]
+repeatnum = runparams[r"Repeats"].astype(np.int)
 
 
 #Run the experiments, for now need to have it start and end at same points
 #Should be able to implement multi threading and a bit more complicated wait cycles later
 #Open the controller
-cont=nwpt.SMC100('COM4')
+cont=nwpt.SMC100('COM1')
 cont.toready()
 
-timearray=np.zeros(repeatnum[0])
+timearray=np.zeros(repeatnum)
 
-speednames=['Speed1','Speed2']
-for i in range(len(speednames))
-if not os.path.exists(speednames[i]):
-		os.mkdir(speednames)
+speednames=['Speed1']
+for i in range(len(speednames)):
+	if not os.path.exists(speednames[i]):
+		os.mkdir(speednames[i])
 
 time0=time.time()
-for i in np.arange(len(repeatnum[0]):
+for i in np.arange(repeatnum):
 	#Repeat for the number of repeats required
 	timearray[i]=time.time()-time0
-	for j in np.arange(len(speedarray)):
+	for j in np.arange(1):
 		os.chdir(speednames[j])
 		#Create folder and file saving name
-		foldname = ito.tmfoldercreate('Time')
-		folddir=os.path.join(dataDR,foldname)
+		foldname = ito.foldercreate('Time')
+		folddir=os.path.join(dataDR,speednames[j],foldname)
 		os.chdir(folddir)
 		filesavename= foldname + 'run'
 		print(filesavename+'inst'+str(i)+'-'+str(j)+'Started')
 		#Find the seconds per frame
-		distance = np.abs(limit1Array[j]-limit2Array[j])
-		secperframe = 2*distance/speedarray[j]/numFrameArray[j]
+		distance = np.abs(limit1Array-limit2Array)
+		secperframe = 2*distance/speedarray/numFrameArray
 		#Open the camera and controller
 		cam=cseq.BCamCap(2,secperframe)
 		#Set the speed
-		cont.setspeed(speedarray[j])
+		cont.setspeed(speedarray)
 		#Move to the end points and capture frames
 		#Will have extra header for second go around since no multithreading yet
-		cont.goto(limit2Array[j])
-		cam.grabSequence(int(np.floor(numFrameArray[j]/2)),filesavename)
+		cont.goto(limit2Array)
+		cam.grabSequence(int(np.floor(numFrameArray/2)),filesavename)
 		time.sleep(4)
 		cont.stop()
 		time.sleep(2)
-		cont.goto(limit1Array[j])
-		cam.grabSequence(int(np.ceil(numFrameArray[j]/2)),filesavename)
+		cont.goto(limit1Array)
+		cam.grabSequence(int(np.ceil(numFrameArray/2)),filesavename)
 		os.chdir(dataDR)
 		time.sleep(20) #Sleep for a bit before restarting
 		cont.stop()
@@ -98,4 +98,5 @@ for i in np.arange(len(repeatnum[0]):
 		print('Run Ended')
 cont.torest()
 cont.closeport()
-np.savetxt('runtimes.csv',delimiter=',')
+#%%
+np.savetxt('runtimes.csv',timearray,delimiter=',')

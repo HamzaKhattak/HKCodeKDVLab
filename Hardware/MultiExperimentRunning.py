@@ -10,7 +10,7 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\Fiber\initialtest\stretched"
+dataDR=r"F:\ThinnerFilms\Exp4"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -36,7 +36,7 @@ os.chdir(dataDR)
 # Speed_ums, Point_1_mm, Point_2_mm, Distance_mm, Number_of_frames, Secperframe, Distance_per_frame, Repeats
 #Best to name files with date and sample ID
 #For multiple runs at same speed simply have the run multiple times in the file
-#Experiments run in the order they are in the csv
+#Experiments run in the order they are in the csvW
 The number of frames refers to each run which goes back and forth once
 '''
 
@@ -53,7 +53,7 @@ repeatnum = runparams[r"Repeats"]
 #Run the experiments, for now need to have it start and end at same points
 #Should be able to implement multi threading and a bit more complicated wait cycles later
 #Open the controller
-cont=nwpt.SMC100('COM4')
+cont=nwpt.SMC100('COM1')
 cont.toready()
 for i in np.arange(len(speedarray)):
 	#Repeat for the number of repeats required

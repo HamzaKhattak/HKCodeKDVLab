@@ -38,12 +38,11 @@ os.chdir(dataDR)
 #%%
 
 numFrames=200
-framespersec=20
-
+framespersec=5
 
 secperframe = 1/framespersec
 #Open the camera and controller
 cam=cseq.BCamCap(2,secperframe)
 
-cam.grabFastSequence(int(numFrames),"dualdroplets7")
+cam.grabFastSequence(int(numFrames),"dualdroplets41")
 
