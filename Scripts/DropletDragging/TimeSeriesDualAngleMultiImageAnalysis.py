@@ -14,7 +14,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\PDMSmigration\Thickwashed"
+dataDR=r"F:\PDMSmigration\Unwashed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -66,7 +66,7 @@ noforce=ito.imread2(dataDR+'\\base.tif') #Need a no force image to compare rest 
 
 #User cropping etc
 #Get the images that will be used
-cropselectfolder='Time0'
+cropselectfolder='Time1'
 cropindices=[41,150]
 #importimage
 extremapath = ito.getimpath(cropselectfolder)
@@ -206,7 +206,7 @@ for i in range(len(folderpaths)):
 	ttake = time.time()-t1
 	print("%s completed in %d seconds." % (folderpaths[i], ttake))
 
-#%%
+
 '''
 This code no longer involves the images and can run much faster
 Also has bits that are most commonly changed (ie fitting functions etc)

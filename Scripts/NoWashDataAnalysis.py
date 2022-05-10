@@ -13,7 +13,7 @@ import numpy_indexed as npi
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\PDMSmigration\Thickwashed"
+dataDR=r"F:\PDMSmigration\Unwashed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -55,7 +55,7 @@ filenam=np.delete(filenam,6)
 del(dropProp[6])
 '''
 indexArrs = [None]*len(foldernames) #Empty list to store the plateau indices
-exparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True) 
+exparams = np.genfromtxt('timeruninfo.csv', dtype=float, delimiter=',', names=True) 
 timevals = np.genfromtxt('runtimes.csv', dtype=float, delimiter=',') 
 
 #springc = 0.024 #N/m
