@@ -1,17 +1,10 @@
 '''
-This code performs the edge location and cross correlation analysis across multiple images
+This code gets a quick sequence of images
 '''
 
 import sys, os, glob, pickle, re
-import matplotlib.pyplot as plt
 import numpy as np
 import importlib
-from scipy.optimize import curve_fit
-import matplotlib.colors as mcolors
-import matplotlib.gridspec as gridspec
-from scipy.signal import savgol_filter
-from matplotlib_scalebar.scalebar import ScaleBar
-#import similaritymeasures
 import time
 #%%
 #Specify the location of the Tools folder
