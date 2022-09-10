@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import imageio as imo
 import cv2
 import skimage.morphology as morph
+from scipy.signal import find_peaks
 import scipy.ndimage.morphology as morph2
 from scipy.ndimage import label as ndimlabel2
 from scipy.ndimage import sum as ndimsum2
@@ -74,7 +75,7 @@ def imagesplit(image,centerx,centery,edge):
 	return top, bottom, [leftend,rightend,rightshift,centeryint]
 
 
-def pipettesplit(pipimage):
+def pipettesplitold(pipimage):
 	'''
 	Outputs lines representing the edge of two pipettes from an image of pipettes
 	'''
@@ -96,6 +97,28 @@ def pipettesplit(pipimage):
 	botarray = np.array([xarray[botvals!=0],botvals[botvals!=0]])
 	return toparray, botarray
 
+def pipettesplit(pipimage):
+	'''
+	Outputs lines representing the edge of two pipettes from an image of pipettes
+	'''
+	topvals = np.zeros(pipimage.shape[1])
+	botvals = np.zeros(pipimage.shape[1])
+	
+	for i in range(pipimage.shape[1]):
+		flipped = np.max(pipimage[:,i])-pipimage[:,i]
+		flippedsmooth =savgol_filter(flipped, 11, 3)
+		diffs = np.abs(np.diff(flippedsmooth))
+		diffs = diffs/np.max(diffs)
+		peaklocs = find_peaks(diffs,height=.3)[0]
+		topvals[i] = peaklocs[0]
+		botvals[i] = peaklocs[-1]
+	
+
+	xarray = np.arange(pipimage.shape[1])
+		
+	toparray = np.array([xarray,topvals])
+	botarray = np.array([xarray,botvals])
+	return toparray, botarray
 
 def linedefs(topline,botline,shifts):
 	'''
@@ -136,6 +159,18 @@ plt.figure(figsize=(15,3))
 plt.imshow(raw_image,cmap='gray')
 plt.plot(testloc_edges[:,0],testloc_edges[:,1],'.')
 plt.plot(x0,y0,'ro')
+#%%
+itest = 0
+topim, botim, splitparams = imagesplit(allimages[0], xlocs[0], ylocs[0], edges[0])
+topim2, botim2, splitparams2 = imagesplit(allimages[-1], xlocs[-1], ylocs[-1], edges[-1])
+plt.plot(topim[:,0])
+plt.plot(topim2[:,0])
+plt.plot(botim[:,0])
+plt.plot(botim2[:,0])
+testsplit = pipettesplit(topim)
+
+#%%
+plt.imshow(topim-topim2[:],cmap='gray')
 #%%
 xlocs = np.zeros(len(allimages))
 ylocs = np.zeros(len(allimages))
@@ -182,51 +217,26 @@ plt.plot(smoothangles)
 
 xsmooth = smoothsep/(2*np.tan(smoothangles/2))
 speeds = np.abs(np.gradient(xsmooth))
-#%%
-meanangle = np.mean(pip_angles)
 
+
+#Single set of lines to find positions
+meanangle = np.mean(pip_angles)
 uline= np.poly1d(upper_line_params[0])
 lline= np.poly1d(lower_line_params[0])
 sep_d2 = np.abs(uline(xlocs)-lline(xlocs))
 
 xone = sep_d2/(2*np.tan(meanangle/2))
 xsmooth2 = savgol_filter(xone, 31, 3)
-plt.plot(xsmooth,speeds)
-plt.plot(xsmooth2,np.abs(np.gradient(xsmooth2)))
 
-#%%
-itest = 0
-xarray=np.arange(1600)
-topim, botim, splitparams = imagesplit(allimages[itest-1], xlocs[itest-1], ylocs[itest-1], edges[itest-1])
-plt.imshow(topim,cmap='gray')
-plt.plot(points[itest][0][0][0],points[itest][0][0][1])
-plt.plot(points[itest][0][1][0],points[itest][0][1][1])
-plt.plot(points[itest-1][0][0][0],points[itest-1][0][0][1])
-plt.plot(points[itest-1][0][1][0],points[itest-1][0][1][1])
-#%%
-plt.plot(xarray,np.poly1d(upper_line_params[0])(xarray),'r-')
-plt.plot(xarray,np.poly1d(lower_line_params[0])(xarray),'r-')
-plt.plot(xarray,np.poly1d(upper_line_params[-1])(xarray),'b-')
-plt.plot(xarray,np.poly1d(lower_line_params[-1])(xarray),'b-')
 
-#%%
-from scipy.signal import find_peaks
-flipped = np.max(topim[:,160])-topim[:,160]
-flippedsmooth =savgol_filter(flipped, 11, 3)
-diffs = np.abs(np.diff(flippedsmooth))
-diffs = diffs/np.max(diffs)
-peaklocs = find_peaks(diffs,height=.3)[0]
-print(peaklocs)
-plt.axvline(peaklocs[0],color='red')
-plt.axvline(peaklocs[-1],color='red')
-plt.plot(flipped)
-plt.plot(flippedsmooth)
+plt.plot(xsmooth,speeds,'b-')
+plt.plot(xsmooth2,np.abs(np.gradient(xsmooth2)),'r-')
 
 #%%
 plt.plot(diffs)
 #%%
-plt.imshow(allimages[0],cmap='gray')
-plt.imshow(allimages[-1],cmap='gray', alpha =.5)
+diffimage = allimages[0].astype(int)-allimages[-1].astype(int)
+plt.imshow(diffimage,cmap='gray')
 plt.plot()
 #%%
 
