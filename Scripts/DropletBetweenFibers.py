@@ -144,6 +144,8 @@ edges = [None]*(len(allimages))
 upper_line_params = np.zeros((len(allimages),2))
 lower_line_params = np.zeros((len(allimages),2))
 
+points = [None]*len(allimages)
+
 pip_angles = np.zeros(len(allimages))
 sep_distances = np.zeros(len(allimages))
 d_to_centers = np.zeros(len(allimages))
@@ -154,7 +156,7 @@ for i in range(len(allimages)):
 
 	upper_points = pipettesplit(topim)
 	lower_points = pipettesplit(botim)
-
+	points[i] = upper_points,lower_points
 	upper_line_params[i] = linedefs(upper_points[0],upper_points[1],[splitparams[2],0])
 	lower_line_params[i] = linedefs(lower_points[0], lower_points[1], [splitparams[2],splitparams[-1]])
 
@@ -193,13 +195,39 @@ plt.plot(xsmooth,speeds)
 plt.plot(xsmooth2,np.abs(np.gradient(xsmooth2)))
 
 #%%
-plt.plot(xsmooth2)
-plt.plot(xsmooth)
+itest = 0
+xarray=np.arange(1600)
+topim, botim, splitparams = imagesplit(allimages[itest-1], xlocs[itest-1], ylocs[itest-1], edges[itest-1])
+plt.imshow(topim,cmap='gray')
+plt.plot(points[itest][0][0][0],points[itest][0][0][1])
+plt.plot(points[itest][0][1][0],points[itest][0][1][1])
+plt.plot(points[itest-1][0][0][0],points[itest-1][0][0][1])
+plt.plot(points[itest-1][0][1][0],points[itest-1][0][1][1])
 #%%
-plt.plot(pip_angles*180/np.pi)
+plt.plot(xarray,np.poly1d(upper_line_params[0])(xarray),'r-')
+plt.plot(xarray,np.poly1d(lower_line_params[0])(xarray),'r-')
+plt.plot(xarray,np.poly1d(upper_line_params[-1])(xarray),'b-')
+plt.plot(xarray,np.poly1d(lower_line_params[-1])(xarray),'b-')
+
+#%%
+from scipy.signal import find_peaks
+flipped = np.max(topim[:,160])-topim[:,160]
+flippedsmooth =savgol_filter(flipped, 11, 3)
+diffs = np.abs(np.diff(flippedsmooth))
+diffs = diffs/np.max(diffs)
+peaklocs = find_peaks(diffs,height=.3)[0]
+print(peaklocs)
+plt.axvline(peaklocs[0],color='red')
+plt.axvline(peaklocs[-1],color='red')
+plt.plot(flipped)
+plt.plot(flippedsmooth)
+
+#%%
+plt.plot(diffs)
 #%%
 plt.imshow(allimages[0],cmap='gray')
 plt.imshow(allimages[-1],cmap='gray', alpha =.5)
+plt.plot()
 #%%
 
 from matplotlib import animation
