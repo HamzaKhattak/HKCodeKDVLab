@@ -63,7 +63,7 @@ def imagesplit(image,centerx,centery,edge):
 	rightend = np.int16(np.max([edge[:,0]]))+20
 	centeryint = np.int16(centery)
 	
-	if centerx<1600: #Just use left edge for now
+	if centerx<0: #Just use left edge for now
 		rightshift = rightend
 		top = image[:centeryint,rightend:]
 		bottom = image[centeryint:,rightend:]
@@ -158,155 +158,48 @@ for i in range(len(allimages)):
 	upper_line_params[i] = linedefs(upper_points[0],upper_points[1],[splitparams[2],0])
 	lower_line_params[i] = linedefs(lower_points[0], lower_points[1], [splitparams[2],splitparams[-1]])
 
-	pip_angles[i], sep_distances[i], d_to_centers[i] = paramfind(upper_line_params[i],lower_line_params[i],xlocs[ival])
+	pip_angles[i], sep_distances[i], d_to_centers[i] = paramfind(upper_line_params[i],lower_line_params[i],xlocs[i])
 
 
 #%%
 from scipy.signal import savgol_filter
-xsmooth = savgol_filter(xlocs, 31, 3) # window size 51, polynomial order 3
+smoothdist = savgol_filter(d_to_centers,51,3)
+plt.plot(d_to_centers,'.')
+plt.plot(smoothdist)
+#%%
+plt.plot(xlocs,np.gradient(xlocs))
+#%%
+plt.plot(sep_distances,'.')
+smoothsep = savgol_filter(sep_distances,51,3)
+plt.plot(smoothsep)
+
+#%%
+plt.plot(pip_angles,'.')
+smoothangles = savgol_filter(pip_angles,151,3)
+plt.plot(smoothangles)
+
+xsmooth = smoothsep/(2*np.tan(smoothangles/2))
+speeds = np.abs(np.gradient(xsmooth))
+#%%
+meanangle = np.mean(pip_angles)
+
+uline= np.poly1d(upper_line_params[0])
+lline= np.poly1d(lower_line_params[0])
+sep_d2 = np.abs(uline(xlocs)-lline(xlocs))
+
+xone = sep_d2/(2*np.tan(meanangle/2))
+xsmooth2 = savgol_filter(xone, 31, 3)
+plt.plot(xsmooth,speeds)
+plt.plot(xsmooth2,np.abs(np.gradient(xsmooth2)))
+
+#%%
+plt.plot(xsmooth2)
 plt.plot(xsmooth)
-plt.plot(xlocs,'.')
 #%%
-
-speeds = np.gradient(xsmooth)
-plt.plot(xsmooth,speeds,'.')
-#%%
-x0,y0,edgevals = findcenter(raw_image)
-
-
-plt.imshow(raw_image,cmap='gray')
-plt.plot(edgevals[:,0],edgevals[:,1],'.')
-plt.plot(x0,y0,'ro')
-#%%p
 plt.plot(pip_angles*180/np.pi)
 #%%
-ival=20
-plt.imshow(allimages[ival],cmap='gray')
-plt.plot(xlocs[ival],ylocs[ival],'ro')
-plt.plot(edges[ival][:,0],edges[ival][:,1],'.')
-#%%
-
-
-
-ival=10
-
-topim, botim, splitparams = imagesplit(allimages[ival], xlocs[ival], ylocs[ival], edges[ival])
-
-upper_points = pipettesplit(topim)
-lower_points = pipettesplit(botim)
-
-upper_line_param = linedefs(upper_points[0],upper_points[1],[splitparams[2],0])
-lower_line_param = linedefs(lower_points[0], lower_points[1], [splitparams[2],splitparams[-1]])
-
-
-testxarray=np.arange(1600)
-
-
-	
-	
-pip_angle, sep_distance, d_to_center = paramfind(upper_line_param,lower_line_param,xlocs[ival])
-print(pip_angle*180/np.pi)
-
-
-plt.imshow(allimages[ival],cmap='gray')
-
-plt.plot(testxarray,np.poly1d(upper_line_param)(testxarray))
-plt.plot(testxarray,np.poly1d(lower_line_param)(testxarray))
-
-#%%
-[None]*len(allimages)
-
-for i in range(len(allimages)):
-	top, bottom, [leftend,rightend,rightshift,centeryint]
-
-#%%
-skelim = skeletonize(test_thresh_image/255)
-#plt.imshow(testimage,cmap='gray')
-skelim2=skelim.astype('uint8')
-#plt.imshow(skelim)
-topvals = np.zeros(testimage.shape[1])
-botvals = np.zeros(testimage.shape[1])
-xarray = np.arange(testimage.shape[1])
-
-def pipettesplit(onlypipetteim):
-for i in range(testimage.shape[1]):
-	slicelocs = np.argwhere(skelim[:,i])
-	if len(slicelocs) == 2:
-		topvals[i] , botvals[i] = np.argwhere(skelim[:,i])
-
-
-
-plt.imshow(testimage,cmap='gray')
-plt.plot(xarray[topvals!=0],topvals[topvals!=0])
-plt.plot(xarray[botvals!=0],botvals[botvals!=0])
-#%%
-testogs = np.argmax(skelim,axis=0)
-testogs2 = np.argmax(skelim[::-1],axis=0)[::-1]
-
-#%%
-
-testop = np.argwhere(skelim,axis=0)
-plt.plot(testogs)
-plt.plot(testogs2)
-plt.imshow(testimage,cmap='gray')
-#%%
-pipedges = np.flip(np.argwhere(skelim),1)
-plt.imshow(testimage,cmap='gray')
-plt.plot(pipedges[:,0],pipedges[:,1],'-')
-
-#%%
-#plt.plot(np.max(testimage[:,0])-testimage[:,0])
-for i in range(100):
-	plt.plot(np.abs(np.gradient(testimage[:,i])))
-#%%
-
-from scipy.signal import find_peaks
-import time
-t1=time.time()
-topvals = np.zeros(testimage.shape[1])
-botvals = np.zeros(testimage.shape[1])
-for i in range(testimage.shape[1]):
-	inverteddat = np.max(testimage[:,i])-testimage[:,i]
-	peaks = find_peaks(inverteddat,prominence=5,height=40,distance = 4)[0]
-	if len(peaks) == 2:
-		topvals[i] , botvals[i] = peaks
-
-
-t2=time.time()
-
-plt.imshow(testimage,cmap='gray')
-plt.plot(topvals,'.')
-print(t2-t1)
-#%%
-
-points = find_peaks(np.max(testimage[:,408])-testimage[:,408],prominence=10,height=40,distance=4)[0]
-plt.plot(np.max(testimage[:,408])-testimage[:,408])
-print(points)
-#%%
-for i in range(len(allimages)):
-	plt.plot(testimage[:,i])
-#%%
-
-
-lines = cv2.HoughLinesP(skelim2,rho = 1,theta = 0.5*np.pi/180,threshold = 50,minLineLength = 300,maxLineGap = 50)
-
-testline=(lines[0,0]).reshape((2,2))
-slopeval=(testline[1,1]-testline[0,1])/(testline[1,0]-testline[0,0])
-
-plt.imshow(testimage,'gray')
-
-lines2=(lines[0,0]).reshape((2,2))
-
-plt.plot(relines[:,0],relines[:,1],'ro-')
-
-
-
-angleval= 180/np.pi*np.arctan(slopeval)
-print(angleval)
-#%%
-
-#pipetteedges = locs_edges=np.flip(np.argwhere(skelim),1)
-#plt.plot(pipetteedges[:,0],pipetteedges[:,1],'.')
+plt.imshow(allimages[0],cmap='gray')
+plt.imshow(allimages[-1],cmap='gray', alpha =.5)
 #%%
 
 from matplotlib import animation
@@ -323,15 +216,15 @@ im = ax[1].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 scalebar = ScaleBar(2.25e-6,frameon=False,location='lower right') # 1 pixel = 0.2 meter
 
 
-ax[0].plot(xsmooth,speeds)
-ax[0].set_xlabel('position')
+ax[0].plot(xsmooth*2,speeds)
+ax[0].set_xlabel('distance from center ($\mu m$)')
 ax[0].set_ylabel('speed')
 
 ax[1].axis('off')
 ax[1].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
 ax[1].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
 
-edgeline, = ax[1].plot(edges[0][:,0],edges[0][:,1],color='cyan',marker='.',linestyle='',markersize=1,animated=True)
+edgeline, = ax[1].plot(edges[0][:,0],edges[0][:,1],color='red',marker='.',linestyle='',markersize=1,animated=True)
 
 topline, = ax[1].plot(xarray,np.poly1d(upper_line_params[0])(xarray),color='cyan',marker='.',linestyle='',markersize=1,animated=True)
 botline, = ax[1].plot(xarray,np.poly1d(lower_line_params[0])(xarray),color='cyan',marker='.',linestyle='',markersize=1,animated=True)
@@ -364,7 +257,7 @@ def update_plot(it):
 	topline.set_data(xarray,np.poly1d(upper_line_params[it])(xarray))
 	botline.set_data(xarray,np.poly1d(lower_line_params[it])(xarray))
 	centerpoint.set_data(xlocs[it],ylocs[it])
-	currentspeed.set_data(xsmooth[it],speeds[it])
+	currentspeed.set_data(xsmooth[it]*2,speeds[it])
 	#Plot of image
 	im.set_data(allimages[it])
 	
