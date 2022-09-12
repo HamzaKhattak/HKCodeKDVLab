@@ -10,9 +10,9 @@ import time
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\liquid"
+dataDR=r"F:\PDMSMigration\Tinydrops"
 
-
+²
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
 
 
@@ -30,8 +30,8 @@ sys.path.remove('./Tools') #Remove tools from path
 os.chdir(dataDR)
 #%%
 
-numFrames=200
-framespersec=5
+numFrames=300
+framespersec=.005
 
 secperframe = 1/framespersec
 #Open the camera and controller

@@ -174,8 +174,8 @@ plt.tight_layout()
 #save parameters
 edparams = [cropside,sideimaparam,croptop,topimaparam,yanalysisc]
 ito.savelistnp('edgedetectparams.npy',edparams)
-
 #%%
+
 #Edge detection and save
 for i in range(len(folderpaths)):
 	#Import image
@@ -220,7 +220,7 @@ fitguess=[0,1,1]
 pixrange=[120,120,10] #first two are xy bounding box for fit, last is where to search for droplet tip
 #Specify an image to use as a background (needs same dim as images being analysed)
 #Or can set to False
-runparams = np.genfromtxt('runinfo.csv', dtype=float, delimiter=',', names=True)
+runparams = np.genfromtxt('timeruninfo.csv', dtype=float, delimiter=',', names=True)
 #runparams = np.sort(runparams,order = r"Speed_ums")
 speedvals = runparams[r"Speed_ums"]/1e6 #Speed is inputted into the device
 index1=0

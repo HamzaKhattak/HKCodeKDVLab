@@ -11,7 +11,7 @@ import numpy as np
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved, use forward slashes
-dataDR=r"F:\liquid\dualdropsondrops"
+dataDR=r"F:\PDMSMigration\Tinydrops"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -31,7 +31,7 @@ os.chdir(dataDR)
 
 #%%
 outFile="vid1.mp4"
-infile='dualdroplets41.ome.tif'
+infile='tinydrops.ome.tif'
 
 #Import the tif files in a folder
 #imageframes=ito.omestackimport(dataDR)

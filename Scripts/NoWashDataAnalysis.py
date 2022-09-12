@@ -13,7 +13,7 @@ import numpy_indexed as npi
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\PDMSmigration\Unwashed"
+dataDR=r"F:\PDMSmigration\Washed"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -75,7 +75,7 @@ for i in range(len(foldernames)):
 	tVals = dropProp[i][0]
 	forceDat=dropProp[i][2]-fshift
 	perimDat=dropProp[i][-2]
-	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[5],sdevlims=[.1,.3],outlierparam=1)	
+	forceplateaudata=planl.plateaufilter(tVals,forceDat,[0,tVals[-1]],smoothparams=[5],sdevlims=[.1,.2],outlierparam=1)	
 	topidx, botidx = forceplateaudata[-1]
 	smoothedforces[i] = forceplateaudata[1]
 	meanF[i] = (np.mean(smoothedforces[i][topidx])-np.mean(smoothedforces[i][botidx]))/2
@@ -84,16 +84,16 @@ for i in range(len(foldernames)):
 	perimoutmask = planl.rejectoutliers(perimDat,m=1)
 	comboind = np.logical_and(comboind,perimoutmask)
 	meanPerim[i] = np.mean(perimDat[comboind])
-
-testidx=1
+#%%
+testidx=0
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
 topidx, botidx = indexArrs[testidx]
 plt.plot(tVals,forceDat,'k.')
 plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
-
-testidx=-1
+#%%
+testidx=2
 tVals = dropProp[testidx][0]
 forceDat=dropProp[testidx][2]-fshift
 topidx, botidx = indexArrs[testidx]
@@ -102,11 +102,13 @@ plt.plot(tVals[topidx],forceDat[topidx],'r.')
 plt.plot(tVals[botidx],forceDat[botidx],'r.')
 
 #%%
-perx=meanF/meanPerim
-plt.plot(timevals/60/60,perx/perx[2],'.')
+perx=meanF/(meanPerim/meanPerim[0])
+noperx=meanF
+plt.plot(timevals/60/60,perx,'.')
+plt.plot(timevals/60/60,noperx,'.')
 plt.xlabel('time(hrs)')
 plt.ylabel('Force (arb)')
-plt.ylim(0,1.1)
+
 #%%
 plt.plot(timevals/60/60,meanPerim,'.')
 plt.xlabel('time(hrs)')
@@ -114,6 +116,6 @@ plt.ylabel('Perim (arb)')
 
 #%%
 tosave=np.array([timevals,meanF,meanPerim])
-np.save('exp5.npy',tosave)
+np.save('Unwashed.npy',tosave)
 #%%
-plt.plot(forceDat[0])
+plt.plot(meanF,meanPerim,'.')
