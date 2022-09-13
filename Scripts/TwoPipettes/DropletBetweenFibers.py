@@ -20,8 +20,8 @@ import pynumdiff as pynd
 #%%
 from skimage.io import imread as imread2
 
-nam = 'exp4'
-allimages = imread2(nam + '.tif')[:,600:900]
+nam = 'exp8'
+allimages = imread2(nam + '.tif')[:,600:950]
 plt.figure()
 plt.imshow(allimages[0],cmap='gray')
 #plt.imshow(raw_image,cmap='gray')
@@ -137,8 +137,9 @@ def paramfind(upperline,lowerline,centerx):
 	return angle, sep_distance, d_to_pipcenter
 
 
+
 #%%
-midpoint = 180
+midpoint = 164
 xlocs = np.zeros(len(allimages))
 ylocs = np.zeros(len(allimages))
 edges = [None]*(len(allimages))
@@ -171,13 +172,14 @@ for i in range(len(allimages)):
 	pip_angles[i], sep_distances[i], d_to_centers[i] = paramfind(upper_line_params[i],lower_line_params[i],xlocs[i])
 
 
-#%%
+
 
 
 xfinal = xlocs
 speeds = np.abs(np.gradient(xlocs))
 
 np.save(nam, [xlocs,pip_angles,sep_distances,d_to_centers])
+np.save(nam+'lin',[upper_line_params,lower_line_params])
 #%%
 
 from matplotlib import animation
@@ -195,7 +197,7 @@ scalebar = ScaleBar(2.25e-6,frameon=False,location='lower right') # 1 pixel = 0.
 
 
 ax[0].plot(xfinal*2,speeds*2,'.')
-ax[0].set_xlabel('distance from center ($\mu m$)')
+ax[0].set_xlabel('position ($\mu m$)')
 ax[0].set_ylabel('speed ($\mu s s^{-1}$)')
 
 ax[1].axis('off')
