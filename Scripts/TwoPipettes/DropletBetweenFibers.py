@@ -20,8 +20,8 @@ import pynumdiff as pynd
 #%%
 from skimage.io import imread as imread2
 
-nam = 'exp8'
-allimages = imread2(nam + '.tif')[:,600:950]
+nam = 'exp9'
+allimages = imread2(nam + '.tif')[:,600:950,:1500]
 plt.figure()
 plt.imshow(allimages[0],cmap='gray')
 #plt.imshow(raw_image,cmap='gray')
@@ -124,9 +124,7 @@ def paramfind(upperline,lowerline,centerx):
 	'''
 	m1 = upperline[0]
 	m2 = lowerline[0]
-	thet1 = np.abs(np.arctan(m1))
-	thet2 = np.abs(np.arctan(m2))
-	angle = thet1+thet2
+	angle = np.arctan(np.abs((m2-m1)/(1+m1*m2)))
 
 	uline= np.poly1d(upperline)
 	lline= np.poly1d(lowerline)
