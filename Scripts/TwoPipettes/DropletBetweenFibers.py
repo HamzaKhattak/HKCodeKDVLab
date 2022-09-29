@@ -21,7 +21,7 @@ import pynumdiff as pynd
 from skimage.io import imread as imread2
 
 nam = 'drop_1_MMStack_Pos0.ome'
-allimages = imread2(nam + '.tif')[:,400:950,:1500]
+allimages = imread2(nam + '.tif')[:40,400:950,:1500]
 plt.figure()
 plt.imshow(allimages[0],cmap='gray')
 #plt.imshow(raw_image,cmap='gray')
@@ -84,8 +84,12 @@ def pipettesplit(pipimage,avoidrange):
 	'''
 	Outputs lines representing the edge of two pipettes from an image of pipettes
 	'''
-	topvals = np.zeros(pipimage.shape[1])
-	botvals = np.zeros(pipimage.shape[1])
+	uppertopvals = np.zeros(pipimage.shape[1])
+	upperbotvals = np.zeros(pipimage.shape[1])
+	lowertopvals = np.zeros(pipimage.shape[1])
+	lowerbotvals = np.zeros(pipimage.shape[1])
+	
+
 	xarray = np.arange(pipimage.shape[1])
 	avoidarray = np.full(pipimage.shape[1],True)
 	avoidarray[avoidrange[0]:avoidrange[1]] = False
@@ -96,23 +100,27 @@ def pipettesplit(pipimage,avoidrange):
 			flippedsmooth = savgol_filter(flipped, 11, 3)
 			diffs = np.abs(np.diff(flippedsmooth))
 			maxdiff = np.max(diffs)
-			peaklocs = find_peaks(diffs,height=.3*maxdiff)[0]
-			topvals[i] = peaklocs[0]
-			botvals[i] = peaklocs[-1]
-	
+			peaklocs = find_peaks(diffs,height=.13*maxdiff,prominence=1.5)[0]
+			print(i)
+			uppertopvals[i] = peaklocs[0]
+			upperbotvals[i] = peaklocs[3]
+			lowertopvals[i] = peaklocs[4]
+			lowerbotvals[i] = peaklocs[7]
 		
-	toparray = np.array([xarray[avoidarray],topvals[avoidarray]])
-	botarray = np.array([xarray[avoidarray],botvals[avoidarray]])
-	return toparray, botarray
+	uppertoparray = np.array([xarray[avoidarray],uppertopvals[avoidarray]])
+	upperbotarray = np.array([xarray[avoidarray],upperbotvals[avoidarray]])
+	lowertoparray = np.array([xarray[avoidarray],lowertopvals[avoidarray]])
+	lowerbotarray = np.array([xarray[avoidarray],lowerbotvals[avoidarray]])
+	return [[uppertoparray, upperbotarray], [lowertoparray, lowerbotarray]]
 
-def linedefs(topline,botline,shifty):
+def linedefs(topline,botline):
 	'''
 	returns the centerline of a pipette given the location of its edges
 	the shifts put the data back into the original image form
 	'''
 
-	topfit = np.polyfit(topline[0], topline[1]+shifty, 1)
-	botfit = np.polyfit(botline[0], botline[1]+shifty, 1)
+	topfit = np.polyfit(topline[0], topline[1], 1)
+	botfit = np.polyfit(botline[0], botline[1], 1)
 	pipwdith = topfit[1]-botfit[1]
 	centerline = np.mean([topfit,botfit],axis=0)
 	return centerline
@@ -134,8 +142,15 @@ def paramfind(upperline,lowerline,centerx):
 	
 	return angle, sep_distance, d_to_pipcenter
 
-
-
+#%%
+pipimage=allimages[0]
+flipped = np.max(pipimage[:,1422])-pipimage[:,1422]
+flippedsmooth = savgol_filter(flipped, 11, 3)
+diffs = np.abs(np.diff(flippedsmooth))
+maxdiff = np.max(diffs)
+peaklocs = find_peaks(diffs,height=.3*maxdiff,prominence=2)[0]
+plt.plot(diffs)
+plt.plot(peaklocs,diffs[peaklocs],'ro')
 #%%
 midpoint = 264
 xlocs = np.zeros(len(allimages))
@@ -161,11 +176,10 @@ for i in range(len(allimages)):
 	if rightend >=1600:
 		rightend = 1600
 	
-	upper_points = pipettesplit(allimages[i][:midpoint],[leftend,rightend])
-	lower_points = pipettesplit(allimages[i][midpoint:],[leftend,rightend])
+	upper_points, lower_points = pipettesplit(allimages[i],[leftend,rightend])
 	points[i] = upper_points,lower_points
-	upper_line_params[i] = linedefs(upper_points[0],upper_points[1],0)
-	lower_line_params[i] = linedefs(lower_points[0], lower_points[1], midpoint)
+	upper_line_params[i] = linedefs(upper_points[0],upper_points[1])
+	lower_line_params[i] = linedefs(lower_points[0], lower_points[1])
 
 	pip_angles[i], sep_distances[i], d_to_centers[i] = paramfind(upper_line_params[i],lower_line_params[i],xlocs[i])
 
