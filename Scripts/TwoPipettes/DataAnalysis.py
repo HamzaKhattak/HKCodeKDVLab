@@ -57,7 +57,9 @@ plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
 plt.tight_layout()
 plt.savefig('multiangleplot.png',dpi=900)
 #%%
-
+plt.plot(np.gradient(ex6dat[0]))
+#%%
+plt.plot(np.gradient(ex6dat[1]))
 #%%
 xt, xdt = pynd.iterative_velocity(ex3dat[-1], 1e-3, [100,.2])
 xdt=xdt/1e3

@@ -20,8 +20,8 @@ import pynumdiff as pynd
 #%%
 from skimage.io import imread as imread2
 
-nam = 'exp9'
-allimages = imread2(nam + '.tif')[:,600:950,:1500]
+nam = 'drop_1_MMStack_Pos0.ome'
+allimages = imread2(nam + '.tif')[:,400:950,:1500]
 plt.figure()
 plt.imshow(allimages[0],cmap='gray')
 #plt.imshow(raw_image,cmap='gray')
@@ -137,7 +137,7 @@ def paramfind(upperline,lowerline,centerx):
 
 
 #%%
-midpoint = 164
+midpoint = 264
 xlocs = np.zeros(len(allimages))
 ylocs = np.zeros(len(allimages))
 edges = [None]*(len(allimages))
