@@ -20,10 +20,11 @@ import pynumdiff as pynd
 #%%
 from skimage.io import imread as imread2
 
-nam = 'drop_1_MMStack_Pos0.ome'
-allimages = imread2(nam + '.tif')[:,400:950,:1500]
+nam = 'run_2'
+allimages = imread2(nam + '_MMStack_Pos0.ome.tif')[:,250:800,:1350]
 plt.figure()
 plt.imshow(allimages[0],cmap='gray')
+plt.imshow(allimages[-1],cmap='gray')
 #plt.imshow(raw_image,cmap='gray')
 
 
@@ -135,9 +136,10 @@ def paramfind(upperline,lowerline,centerx):
 	return angle, sep_distance, d_to_pipcenter
 
 
-
 #%%
-midpoint = 264
+plt.imshow(allimages[0].astype('int')-allimages[-1].astype('int'),cmap='gray')
+#%%
+midpoint = 400
 xlocs = np.zeros(len(allimages))
 ylocs = np.zeros(len(allimages))
 edges = [None]*(len(allimages))
@@ -178,6 +180,11 @@ speeds = np.abs(np.gradient(xlocs))
 
 np.save(nam, [xlocs,pip_angles,sep_distances,d_to_centers])
 np.save(nam+'lin',[upper_line_params,lower_line_params])
+
+#%%
+plt.plot(pip_angles*180/np.pi)
+plt.xlabel('frame')
+plt.ylabel('angle($^\circ$)')
 #%%
 
 from matplotlib import animation
@@ -186,7 +193,7 @@ dt=13.6
 
 
 
-xarray=np.arange(1600)
+xarray=np.arange(1350)
 
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
@@ -244,7 +251,7 @@ plt.tight_layout()
 
 #Can control which parts are animated with the frames, interval is the speed of the animation
 # now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages)), interval=100,
+ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages)), interval=20,
                     init_func=init, repeat_delay=1000, blit=True)
 
 
@@ -256,4 +263,4 @@ plt.show()
 #%%
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
-ani.save('speedtracking.mp4',writer=writer,dpi=200)
+ani.save('speedtracking2.mp4',writer=writer,dpi=200)
