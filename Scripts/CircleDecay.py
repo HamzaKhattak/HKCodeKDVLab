@@ -21,7 +21,7 @@ import imageio
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\PDMSMigration\decay\decaying_1"
+dataDR=r"F:\PDMSMigration\uncured\decay"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -51,10 +51,10 @@ infile='decaying_1_MMStack_Default.ome.tif'
 imageframes = ito.folderimport(dataDR,'.tif')
 #%%
 imageframes = np.array(imageframes)
-#%%
+
 imageframes = imageframes.astype(np.int8)
 #%%
-subtractim=imageframes[400]
+subtractim=imageframes[-500]
 maxval = np.max(subtractim) 
 
 imav=np.mean(imageframes,axis=(1,2))
@@ -66,14 +66,22 @@ maxbrightdiff=np.max(brightdiff)
 normed=np.array(imageframes-subtractim+maxval,dtype='uint8')
 
 numFrames = normed.shape[0]
+
+#%%
+#If not subtracting the final image
+
+normed=np.array(imageframes,dtype='uint8')
+numFrames = normed.shape[0]
 #%%
 
 plt.imshow(normed[0],cmap='gray')
 #%%
 plt.plot(imav,'.')
 #%%
-testim = normed[0]
-centerfindarray=np.argwhere(testim>200)
+testim = imageframes[0]-imageframes[-1]
+plt.imshow(testim)
+#%%
+centerfindarray=np.argwhere(np.logical_and(testim<-50, testim>-80))
 
 eggparam = df.eggfitter(centerfindarray[:,0],centerfindarray[:,1])
 cx,cy = df.contourfinder(centerfindarray[:,0],centerfindarray[:,1],eggparam[0])
@@ -99,13 +107,69 @@ def radial_profile(data, center):
 radialarraytest = radial_profile(normed[0], [centery,centerx])
 radialarraylength = radialarraytest.shape[0]
 profilesarray = np.zeros([numFrames,radialarraylength])
+
 for i in range(numFrames):
 	profilesarray[i] = radial_profile(normed[i], [centery,centerx])
+#%%
+plt.plot(profilesarray[100]-profilesarray[-1])
+#%%
 
 #%%
-plt.plot(profilesarray[10])
-plt.plot(profilesarray[500])
+modprofiles = profilesarray[:] - profilesarray[-1]
+#%%
+plt.plot(modprofiles[10])
+plt.plot(modprofiles[-10])
+plt.axhline(0)
 
+np.save('uncuredprofiles.npy',modprofiles)
+
+#%%
+from scipy.signal import find_peaks
+plt.plot(profilesarray[10]**2)
+plt.plot(profilesarray[500]**2)
+sumarray = np.zeros(numFrames)
+maxarray = np.zeros(numFrames)
+minarray = np.zeros(numFrames)
+for i in range(numFrames):
+	squared = profilesarray[i,150:550]**2
+	sumarray[i] = np.sum(squared)
+	maxarray[i] = np.max(profilesarray[i])
+	minarray[i] = np.abs(np.min(profilesarray[i]))
+
+#%%
+plt.plot(maxarray/np.max(maxarray),'.',label = 'max')
+plt.plot(sumarray/np.max(sumarray),'.',label = 'sum')
+plt.plot(minarray/np.max(minarray),'.',label = 'min')
+plt.xlabel('time (min)')
+plt.ylabel('(arb)')
+plt.yscale('log')
+plt.legend()
+#%%
+from scipy.signal import savgol_filter
+testnum = 10
+samplepeakdata = savgol_filter(np.abs(profilesarray[testnum,150:550]),window_length=7,polyorder=3)
+testpeaks = find_peaks(samplepeakdata,prominence = .2,distance = 20,width=6,rel_height = .3)
+#plt.plot(samplepeakdata)
+plt.plot(profilesarray[testnum,150:550])
+for i in testpeaks[0]:
+	plt.axvline(i,color = 'red')
+#%%
+numeasypeaks = 300
+peakstore = np.zeros([numeasypeaks,3])
+for i in range(numeasypeaks):
+	peakzoom= savgol_filter(np.abs(profilesarray[i,150:550]),window_length=7,polyorder=3)
+	temp = find_peaks(peakzoom,prominence = .2,distance = 20,width=6,rel_height = .3)
+	print(i)
+	peakstore[i] = temp[0]
+plt.plot(peakstore[:,2]-peakstore[:,1])
+plt.xlabel('time')
+plt.ylabel('distance between dips')
+
+#%%
+fig, ax = plt.subplots()
+ax.plot(maxarray)
+#.set_xscale('log')
+ax.set_yscale('log')
 #%%
 """
 Matplotlib Animation Example
@@ -123,7 +187,7 @@ from matplotlib import animation
 
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure()
-ax = plt.axes(xlim=(0, 800), ylim=(-20, 60))
+ax = plt.axes(xlim=(0, 1700), ylim=(-70, 90))
 line, = ax.plot([], [], lw=2)
 
 # initialization function: plot the background of each frame
@@ -134,13 +198,14 @@ def init():
 # animation function.  This is called sequentially
 def animate(i):
     x = np.arange(radialarraylength)
-    y = profilesarray[i]-np.mean(profilesarray[i,600:700])
+    y = modprofiles[i]
     line.set_data(x, y)
     return line,
 
 # call the animator.  blit=True means only re-draw the parts that have changed.
 anim = animation.FuncAnimation(fig, animate, init_func=init,
-                               frames=1000, interval=20, blit=True)
+                               frames=1500, interval=20, blit=True)
+plt.show()
 #%%
 # save the animation as an mp4.  This requires ffmpeg or mencoder to be
 # installed.  The extra_args ensure that the x264 codec is used, so that
