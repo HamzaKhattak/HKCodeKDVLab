@@ -139,8 +139,11 @@ plt.imshow(allimages[0],cmap='gray')
 
 #%%
 
+
+
+
 def time_series_paramfind(input_images,midpoint):
-	
+
 	dimensions = input_images[0].shape
 	
 	xlocs = np.zeros(len(input_images))
@@ -157,6 +160,7 @@ def time_series_paramfind(input_images,midpoint):
 	d_to_centers = np.zeros(len(input_images))
 	
 	for i in range(len(allimages)):
+
 		xlocs[i] , ylocs[i], edges[i] = findcenter(allimages[i])
 	
 		leftend = np.int16(np.min([edges[i][:,0]]))-20
@@ -178,8 +182,30 @@ def time_series_paramfind(input_images,midpoint):
 
 
 
-testdat = time_series_paramfind(allimages, 514-297)
-#%%%
+#%%
+runparams = np.loadtxt('runparams.csv',skiprows=1,dtype=str,delimiter=',')
+run_names = runparams[:,0]
+run_time_steps = runparams[:,1].astype(float)
+run_crops = runparams[:,2:].astype(float)
+run_crops = run_crops.astype(int)
+#%%
+print(run_names[0].split('.')[0])
+print(run_crops[0])
+#%%
+print('start')
+for i in range(len(run_names)):
+	x0=run_crops[i][0]
+	x1=run_crops[i][2]
+	y0=run_crops[i][1]
+	y1=run_crops[i][3]
+	halfpoint = run_crops[i][4]
+	allimages = imread2(run_names[i])[:,y0:y1,x0:x1]
+	image_params = time_series_paramfind(allimages, halfpoint-y0)
+	leadtxt = run_names[i].split('.')[0]
+	np.save(leadtxt+'.npy', image_params[:4])
+	np.save(leadtxt+'lin.npy',image_params[5])
+	print('done'+ leadtxt)
+'''
 upper_line_params=testdat[5][0]
 lower_line_params=testdat[5][1]
 xfinal = testdat[0]
@@ -187,8 +213,8 @@ seps = testdat[3]
 yfinal = testdat[1]
 speeds = np.abs(np.gradient(xfinal))
 edges=testdat[6]
-np.save(nam, testdat[:4])
-np.save(nam+'lin',testdat[5])
+'''
+print('runs complete')
 #%%
 
 from matplotlib import animation
