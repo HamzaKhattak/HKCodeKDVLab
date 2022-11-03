@@ -15,7 +15,7 @@ import glob
 
 filenames=glob.glob("*.tif")
 labels = ['File name','Time Step (s)','TopCrop x','TopCrop y','BotCrop x','BotCrop y','Split y']
-imageinfos = labels
+imageinfos = [labels]
 
 for file in filenames:
 	img_fpath = pathlib.Path(file)
@@ -28,7 +28,7 @@ for file in filenames:
 	
 	if time_increment_unit =='ms':
 		tstep = time_increment/1000
-	elif timincrementunit == 's':
+	elif time_increment_unit == 's':
 		tstep = time_increment
 	
 	#Side view cropping and selections
@@ -40,13 +40,14 @@ for file in filenames:
 	crop_points = np.floor(plt.ginput(3)) #format is [[xmin,ymin],[xmax,ymax]]
 	plt.close()
 	imageinfo = [file,tstep] + crop_points[0].tolist() + crop_points[1].tolist() + [crop_points[2][1]]
-	imageinfos = imageinfos + imageinfo
+	imageinfos = imageinfos + [imageinfo]
 #%%
 
 
-np.savetxt('testsave.csv',imageinfos,delimiter=',',fmt='%s')
+np.savetxt('runsparams.csv',imageinfos,delimiter=',',fmt='%s')
 #%%
-
+print(img_array[0].shape)
+#%%
 
 print('done')
 
