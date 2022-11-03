@@ -43,19 +43,6 @@ plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$\Delta\theta (\mathrm{^\circ})$')
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 #%%
 plt.figure()
 for i in sortedangles:
