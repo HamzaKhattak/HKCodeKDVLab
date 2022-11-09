@@ -15,7 +15,7 @@ from skimage import feature
 from scipy.signal import savgol_filter
 import pynumdiff as pynd
 from skimage.io import imread as imread2
-
+import pickle
 #%%
 def findcenter(raw_image,threshtype = 0,h_edge = (40,1),v_edge = (1,25)):
 	
@@ -126,17 +126,6 @@ def paramfind(upperline,lowerline,centerx):
 
 
 
-nam = 'run_1_MMStack_Pos0.ome.tif'
-allimages = imread2(nam)[:,297:672,66:1242]
-plt.figure()
-plt.imshow(allimages[0],cmap='gray')
-#plt.imshow(raw_image,cmap='gray')
-
-
-
-
-
-
 #%%
 
 
@@ -183,17 +172,16 @@ def time_series_paramfind(input_images,midpoint):
 
 
 #%%
-runparams = np.loadtxt('runparams.csv',skiprows=1,dtype=str,delimiter=',')
+runparams = np.loadtxt('runsparams.csv',skiprows=1,dtype=str,delimiter=',')
 run_names = runparams[:,0]
 run_time_steps = runparams[:,1].astype(float)
 run_crops = runparams[:,2:].astype(float)
 run_crops = run_crops.astype(int)
-#%%
-print(run_names[0].split('.')[0])
-print(run_crops[0])
+
 #%%
 print('start')
 for i in range(len(run_names)):
+	#Get the crop points from the run parameters
 	x0=run_crops[i][0]
 	x1=run_crops[i][2]
 	y0=run_crops[i][1]
@@ -204,6 +192,9 @@ for i in range(len(run_names)):
 	leadtxt = run_names[i].split('.')[0]
 	np.save(leadtxt+'.npy', image_params[:4])
 	np.save(leadtxt+'lin.npy',image_params[5])
+	#Save the edges
+	with open(leadtxt+'edges', 'wb') as outfile:
+	   pickle.dump(image_params[6], outfile, pickle.HIGHEST_PROTOCOL)
 	print('done'+ leadtxt)
 '''
 upper_line_params=testdat[5][0]
@@ -216,7 +207,7 @@ edges=testdat[6]
 '''
 print('runs complete')
 #%%
-
+'''
 from matplotlib import animation
 from matplotlib_scalebar.scalebar import ScaleBar
 dt=13.6
@@ -294,3 +285,4 @@ plt.show()
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
 ani.save('speedtracking.mp4',writer=writer,dpi=200)
+'''
