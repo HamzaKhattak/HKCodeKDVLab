@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-
 '''
 This code is for quickly combining files for later analysis and then saving a video to make for easy playing
 '''
@@ -46,7 +40,7 @@ def fullseqimport(FilePath):
 
 #%%
 
-dualim = input('Type 1 for a single video and 2 for two videos beside each other (Exact same length/size)')
+dualim = input('Type 1 for a single video and 2 for two videos beside each other (Exact same length/size)  \n')
 if dualim == '1':
 	file_path = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')
@@ -74,3 +68,5 @@ if dualim == '2':
 	                                "libx264",
 	                                "-crf",
 	                                "20",] )
+else:
+	print('invalid input')
