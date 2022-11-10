@@ -48,12 +48,12 @@ for i in range(numRuns):
 plotorder = np.arange(11)
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]
 n = len(sortedangles)
-scaledangles = np.array(sortedangles)
+scaledangles = np.array(med_angles)
 scaledangles = (scaledangles-np.min(scaledangles))/np.max(scaledangles)
 #%%
 plt.figure()
 for i in sortedangles:
-	plt.plot(dat[i][3][20:-20]*pixsize*1e6,(dat[i][2][20:-20]-dat[i][2][20])*180/np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]))
+	plt.plot(dat[i][3][20:-20]*pixsize*1e6,(dat[i][2][20:-20]-dat[i][2][20])*180/np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$\Delta\theta (\mathrm{^\circ})$')
@@ -67,7 +67,7 @@ colors = pl.cm.inferno(np.linspace(0,1,n))
 plt.figure()
 for i in sortedangles:
 	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
-		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),pl.cm.inferno(scaledangles[i]))
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6,speeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')

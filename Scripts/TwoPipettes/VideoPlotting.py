@@ -56,7 +56,7 @@ dt=13.6
 
 
 
-xarray=np.arange(1176)
+xarray=np.arange(allimages.shape[2])
 
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
@@ -124,11 +124,11 @@ ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages
 plt.show()
 
 #%%
-
+print(allimages.shape[2])
 #%%
-'''
+
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
 ani.save('speedtracking.mp4',writer=writer,dpi=200)
-'''
+
 
