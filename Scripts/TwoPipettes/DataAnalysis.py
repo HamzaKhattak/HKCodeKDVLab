@@ -20,10 +20,19 @@ from scipy.signal import butter, filtfilt
 def quickfilter(x,y):
 	params = np.polyfit(x, y,2)
 	polytrend = np.polyval(params,x)
-	b, a = butter(2,.02)
+	b, a = butter(2,.1)
 	smoothed = filtfilt(b,a,y-polytrend)
 	smoothy = polytrend+smoothed
 	return x, smoothy
+
+def quickfilter2(x,y):
+	params = np.polyfit(x, y,2)
+	polytrend = np.polyval(params,x)
+	b, a = butter(2,.1)
+	smoothed = filtfilt(b,a,y-polytrend)
+	smoothy = polytrend+smoothed
+	return x, smoothy
+
 #%%
 runparams = np.loadtxt('runsparams.csv',skiprows=1,dtype=str,delimiter=',')
 run_names = runparams[:,0]
@@ -31,7 +40,7 @@ run_time_steps = runparams[:,1].astype(float)
 
 
 
-pixsize = 2.25e-6 #pixel size of camera in m
+pixsize = 1.25e-6 #pixel size of camera in m
 numRuns = len(run_names)
 med_angles=np.zeros(numRuns)
 dat=[None]*numRuns
@@ -67,7 +76,7 @@ colors = pl.cm.inferno(np.linspace(0,1,n))
 plt.figure()
 for i in sortedangles:
 	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
-		plt.plot(dat[i][3][20:-20]*pixsize*1e6,speeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')

@@ -46,7 +46,7 @@ def fullseqimport(FilePath):
 
 #%%
 
-dualim = input('Type 1 for a single video and 2 for two videos beside each other (Exact same length/size)')
+dualim = input('Type 1 for a single video and 2 for two videos beside each other (Exact same length/size) \n')
 if dualim == '1':
 	file_path = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')

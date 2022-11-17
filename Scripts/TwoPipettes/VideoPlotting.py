@@ -44,7 +44,7 @@ yfinal = dat[1]
 speeds = np.abs(np.gradient(xfinal))
 
 
-pixsize = 1.25e-6 #pixel size of camera in m
+pixsize = 2.25e-6 #pixel size of camera in m
 numRuns = len(run_names)
 
 
