@@ -40,7 +40,7 @@ run_time_steps = runparams[:,1].astype(float)
 
 
 
-pixsize = 1.25e-6 #pixel size of camera in m
+pixsize = 1.78e-6 #pixel size of camera in m
 numRuns = len(run_names)
 med_angles=np.zeros(numRuns)
 dat=[None]*numRuns
@@ -73,13 +73,14 @@ n = 11
 colors = pl.cm.inferno(np.linspace(0,1,n))
 
 	
-plt.figure()
+plt.figure(figsize=(5,4))
 for i in sortedangles:
 	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
 		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
+plt.savefig('smoothexampledata.png',dpi=900)
 
 
 

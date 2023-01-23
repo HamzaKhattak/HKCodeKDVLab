@@ -15,7 +15,7 @@ run_crops = runparams[:,2:].astype(float)
 run_crops = run_crops.astype(int)
 
 
-which_im = 2
+which_im = 9
 
 #Get the crop points from the run parameters
 x0=run_crops[which_im][0]
@@ -44,7 +44,7 @@ yfinal = dat[1]
 speeds = np.abs(np.gradient(xfinal))
 
 
-pixsize = 2.25e-6 #pixel size of camera in m
+pixsize = 1.78e-6 #pixel size of camera in m
 numRuns = len(run_names)
 
 
@@ -61,12 +61,12 @@ xarray=np.arange(allimages.shape[2])
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
 im = ax[1].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
-scalebar = ScaleBar(2.25e-6,frameon=False,location='lower right') # 1 pixel = 0.2 meter
+scalebar = ScaleBar(pixsize,frameon=False,location='lower right') # 1 pixel = 0.2 meter
 
 
 ax[0].plot(seps*2,speeds*2,'.')
-ax[0].set_xlabel('Seperation distance ($\mu m$)')
-ax[0].set_ylabel('speed ($\mu s s^{-1}$)')
+ax[0].set_xlabel('Seperation distance ($\mathrm{\mu m}$)')
+ax[0].set_ylabel('speed ($\mathrm{\mu m s^{-1}}$)')
 
 ax[1].axis('off')
 ax[1].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
