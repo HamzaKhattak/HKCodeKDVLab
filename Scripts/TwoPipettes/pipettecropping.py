@@ -35,9 +35,9 @@ for file in filenames:
 	fig = plt.figure('Pick top left and bottom right corner and then fit lines')
 	plt.imshow(img_array[0],cmap='gray')
 	plt.imshow(img_array[-1],cmap='gray',alpha=0.5)
-	
+	plt.grid(which='both')
 	print('Select crop points and then split line')
-	crop_points = np.floor(plt.ginput(3)) #format is [[xmin,ymin],[xmax,ymax]]
+	crop_points = np.floor(plt.ginput(3,timeout=200)) #format is [[xmin,ymin],[xmax,ymax]]
 	plt.close()
 	imageinfo = [file,tstep] + crop_points[0].tolist() + crop_points[1].tolist() + [crop_points[2][1]]
 	imageinfos = imageinfos + [imageinfo]

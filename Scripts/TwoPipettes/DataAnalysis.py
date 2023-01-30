@@ -54,7 +54,7 @@ for i in range(numRuns):
 	scratch, smoothspeeds[i] = quickfilter(dat[i][3],speeds[i])
 	#[xlocs,pip_angles,sep_distances,d_to_centers]
 #%%
-plotorder = np.arange(11)
+plotorder = np.arange(len(med_angles))
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]
 n = len(sortedangles)
 scaledangles = np.array(med_angles)
@@ -80,6 +80,24 @@ for i in sortedangles:
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
+plt.savefig('smoothexampledata.png',dpi=900)
+plt.yscale('log')
+plt.xscale('log')
+
+#%%
+n = 11
+colors = pl.cm.inferno(np.linspace(0,1,n))
+
+	
+plt.figure(figsize=(5,4))
+for i in sortedangles:
+	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6/med_angles[i],label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+plt.legend()
+plt.xlabel(r'$d \ (\mathrm{\mu m})$')
+plt.ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
+plt.yscale('log')
+plt.xscale('log')
 plt.savefig('smoothexampledata.png',dpi=900)
 
 
