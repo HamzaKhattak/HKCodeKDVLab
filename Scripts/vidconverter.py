@@ -3,13 +3,14 @@
 This code is for quickly combining files for later analysis and then saving a video to make for easy playing
 '''
 
-import os
+import os, glob
 #need to install imageio and imagio-ffmpeg and tkinter 
 import imageio
 import tifffile as tf
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
+from skimage.io import ImageCollection
 
 root = tk.Tk()
 root.withdraw()
@@ -38,17 +39,29 @@ def fullseqimport(FilePath):
 	numFrames = len(tifobj.pages)
 	return tf.imread(FilePath,key=slice(0,numFrames))
 
+
+
 #%%
 
-dualim = input('Type 1 for a single video and 2 for two videos beside each other (Exact same length/size)  \n')
+
+dualim = input('Type 1 for a single angle and 2 for two angles beside each other (Exact same length/size) \n')
+collect = input('Type 1 for a single input file and 2 for a collection (collection is only for 1 view) \n')
 if dualim == '1':
 	file_path = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')
 	inFPS = input('FPS (outputs at 30fps for device compatibility so will cut/add frames as needed) \n')
 	#Import the tif files in a folder
 	#imageframes=ito.omestackimport(dataDR)
-	imageframes=fullseqimport(os.path.join(file_path))
+	if collect == '1':
+		imageframes=fullseqimport(os.path.join(file_path))
+	if collect == '2':
+		imfilenames=sorted(glob.glob(os.path.dirname(file_path) + "/*.tif"))
+		imageframes = fullseqimport(os.path.join(imfilenames[0]))
+		for i in range(len(imfilenames)-1):
+			temp = fullseqimport(os.path.join(imfilenames[i+1]))
+			imageframes = np.append(imageframes,temp,axis=0)
 
+	
 	
 	imageio.mimwrite(outFile, imageframes , input_params=['-r',inFPS],  output_params=['-r', '30'],  ffmpeg_params=[
 	                                "-vcodec",
@@ -70,3 +83,4 @@ if dualim == '2':
 	                                "20",] )
 else:
 	print('invalid input')
+
