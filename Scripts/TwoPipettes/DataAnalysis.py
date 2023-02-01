@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
 from scipy.signal import savgol_filter
 import pynumdiff as pynd
+from scipy.optimize import curve_fit
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
@@ -66,40 +67,90 @@ for i in sortedangles:
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$\Delta\theta (\mathrm{^\circ})$')
-
+plt.savefig('angles.png',dpi=900)
 
 #%%
 n = 11
 colors = pl.cm.inferno(np.linspace(0,1,n))
-
+def powerlaw(x,a,b,c,d):
+	return a*(x-d)**b+c
 	
 plt.figure(figsize=(5,4))
 for i in sortedangles:
 	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
-		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+		cleanx = dat[i][3][20:-20]*pixsize*1e6
+		cleany = smoothspeeds[i][20:-20]*1e6
+		popt,potx = curve_fit(powerlaw, cleanx,cleany ,p0=[.0003,1.5,0,0],bounds=[[0,1,-100,-100],[0.01,3.5,200,100]],maxfev=10000)
+		print(popt)
+		xsamples = np.linspace(0,700)
+		plt.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
-plt.savefig('smoothexampledata.png',dpi=900)
-plt.yscale('log')
-plt.xscale('log')
-
+plt.xlim(0,)
+#plt.yscale('log')
+#plt.xscale('log')
+plt.savefig('vvd.png',dpi=900)
 #%%
 n = 11
 colors = pl.cm.inferno(np.linspace(0,1,n))
+
 
 	
 plt.figure(figsize=(5,4))
 for i in sortedangles:
 	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
 		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6/med_angles[i],label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+		cleanx = dat[i][3][20:-20]*pixsize*1e6
+		cleany = smoothspeeds[i][20:-20]*1e6/med_angles[i]
+		#popt,potx = curve_fit(powerlaw, cleanx,cleany ,p0=[.0003,1.5,0,0],bounds=[[0,1,-100,-100],[0.01,3.5,200,100]],maxfev=10000)
+		print(popt)
+		xsamples = np.linspace(0,700)
+		#plt.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
-plt.yscale('log')
-plt.xscale('log')
-plt.savefig('smoothexampledata.png',dpi=900)
+plt.xlim(0,)
+plt.ylim(0,)
+#plt.yscale('log')
+#plt.xscale('log')
+plt.savefig('vbtvd.png',dpi=900)
+
+
+#%%
+n = 11
+colors = pl.cm.inferno(np.linspace(0,1,n))
 
 
 
+plt.figure(figsize=(5,4))
+for i in sortedangles:
+	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.4:
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6,smoothspeeds[i][20:-20]*1e6/dat[i][2][20:-20]/180*np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+plt.legend()
+plt.xlabel(r'$d \ (\mathrm{\mu m})$')
+plt.ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
+plt.ylim(0,)
+plt.xlim(0,)
+#plt.yscale('log')
+#plt.xscale('log')
+plt.savefig('vbtvd.png',dpi=900)
 
+#%%
+n = 12
+colors = pl.cm.inferno(np.linspace(0,1,n))
+
+
+
+plt.figure(figsize=(5,4))
+for i in sortedangles:
+	if np.max(np.abs((dat[i][2][20:-20]-dat[i][2][20])*180/np.pi))<.5:
+		vwithmean = smoothspeeds[i][20:-20]*1e6/med_angles[i]
+		vwithpoint = smoothspeeds[i][20:-20]*1e6/dat[i][2][20:-20]/180*np.pi
+		plt.plot(dat[i][3][20:-20]*pixsize*1e6, vwithmean-vwithpoint,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+plt.legend()
+plt.ylim(-2,1)
+plt.xlabel(r'$d \ (\mathrm{\mu m})$')
+plt.ylabel(r'$v/\theta - v/\theta_o  (\mathrm{\mu m \ s^{-1}})$')
+plt.savefig('vbtvd.png',dpi=900)
