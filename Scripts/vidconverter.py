@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-
 '''
 This code is for quickly combining files for later analysis and then saving a video to make for easy playing
 '''
@@ -49,6 +43,7 @@ def fullseqimport(FilePath):
 
 #%%
 
+
 dualim = input('Type 1 for a single angle and 2 for two angles beside each other (Exact same length/size) \n')
 collect = input('Type 1 for a single input file and 2 for a collection (collection is only for 1 view) \n')
 if dualim == '1':
@@ -86,5 +81,6 @@ if dualim == '2':
 	                                "libx264",
 	                                "-crf",
 	                                "20",] )
-
+else:
+	print('invalid input')
 
