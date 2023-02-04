@@ -11,16 +11,19 @@ import pathlib
 import xmltodict
 from pyometiff import OMETIFFReader
 import glob
-#%%
 
+
+#Get the file names and create labels for the time steps and crop locations
 filenames=glob.glob("*.tif")
 labels = ['File name','Time Step (s)','TopCrop x','TopCrop y','BotCrop x','BotCrop y','Split y']
 imageinfos = [labels]
 
+#Loop through each of the tiff files in the folder
 for file in filenames:
 	img_fpath = pathlib.Path(file)
 	
 	reader = OMETIFFReader(fpath=img_fpath)
+	#Extract metadata
 	img_array, metadata, xml_metadata = reader.read()
 	image_metadata = xmltodict.parse(xml_metadata)['OME']['Image']["Pixels"]
 	time_increment =float(image_metadata['@TimeIncrement'])
@@ -41,13 +44,13 @@ for file in filenames:
 	plt.close()
 	imageinfo = [file,tstep] + crop_points[0].tolist() + crop_points[1].tolist() + [crop_points[2][1]]
 	imageinfos = imageinfos + [imageinfo]
-#%%
+
 
 
 np.savetxt('runsparams.csv',imageinfos,delimiter=',',fmt='%s')
-#%%
+
 print(img_array[0].shape)
-#%%
+
 
 print('done')
 

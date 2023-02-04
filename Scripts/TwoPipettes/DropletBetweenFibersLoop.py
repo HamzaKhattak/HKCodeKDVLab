@@ -6,14 +6,12 @@ Created on Wed Sep  7 16:54:11 2022
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import skimage.morphology as morph
 from scipy.signal import find_peaks
 import scipy.ndimage.morphology as morph2
 from skimage import feature
 from scipy.signal import savgol_filter
-import pynumdiff as pynd
 from skimage.io import imread as imread2
 import pickle
 #%%
