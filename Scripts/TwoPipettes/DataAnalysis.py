@@ -4,8 +4,10 @@ Created on Mon Sep 12 15:25:12 2022
 
 @author: hamza
 """
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import matplotlib.pylab as pl
 from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
@@ -14,7 +16,8 @@ from scipy.optimize import curve_fit
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
-    "font.sans-serif": ["Helvetica"]})
+    "font.sans-serif": "Helvetica",
+})
 #%%
 
 
@@ -40,7 +43,7 @@ def quickfilter2(x,y):
 def quickfilter3(x,y):
 	return x, y
 
-def peakfilter(y, prom = 0.1):
+def peakfilter(y, prom = 0.06):
 	
 	#returns false values for where peaks and troughs are located
 	
@@ -93,7 +96,6 @@ for i in range(numRuns):
 	
 
 
-tv = 7
 #test= find_peaks(smoothspeeds[tv],prominence=1)[0]
 plt.figure()
 for tv in range(len(med_angles)):
@@ -110,19 +112,46 @@ plt.legend()
 plt.yscale('log')
 
 #%%
+cleanedx = [None]*len(med_angles)
+cleanedy = [None]*len(med_angles)
+exclusions = np.loadtxt('manualkeep.csv',skiprows = 1,delimiter=',',dtype=int)
 
-testfalses = peakfilter(smoothspeeds[9]/med_angles[i])
-plt.plot(smoothspeeds[11]/med_angles[i],'.')
-plt.plot(smoothspeeds[9][testfalses]/med_angles[i],'o')
-plt.yscale('log')
+for i in range(len(med_angles)):
+	#if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.4:
+	includes = peakfilter(smoothspeeds[i]*1e6)
+	if (np.any(exclusions[:,0]==i)):
+		ind = np.argwhere(exclusions[:,0]==i)
+		val = int(exclusions[ind,1])
+		if val == 0:
+			x = np.mean(dat[i][3][includes]*pixsize*1e6)
+			y = np.mean(smoothspeeds[i])
+		elif val>0:
+			includes = peakfilter(smoothspeeds[i]*1e6)
+			includes[val:] = False
+			x = dat[i][3][includes]*pixsize*1e6
+			y = smoothspeeds[i][includes]*1e6
+	else:
+		includes = peakfilter(smoothspeeds[i]*1e6)
+		x = dat[i][3][includes]*pixsize*1e6
+		y = smoothspeeds[i][includes]*1e6
+	cleanedx[i] = x
+	cleanedy[i] = y
 
+
+def savelistnp(filepath,data):
+	'''
+	Saves lists of numpy arrays using pickle so they don't become objects
+	'''
+	with open(filepath, 'wb') as outfile:
+		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
+
+savelistnp('volume3dat',[cleanedx,cleanedy,med_angles])
 #%%
 plotorder = np.arange(len(med_angles))
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]
 n = len(sortedangles)
 scaledangles = np.array(med_angles)
 scaledangles = (scaledangles-np.min(scaledangles))/np.max(scaledangles)
-#%%
 plt.figure() 
 for i in sortedangles:
 	plt.plot(dat[i][3][40:]*pixsize*1e6,(dat[i][2][40:]-dat[i][2][20])*180/np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
@@ -132,37 +161,16 @@ plt.ylabel(r'$\Delta\theta (\mathrm{^\circ})$')
 plt.savefig('angles.png',dpi=900)
 
 
-                    #%%
-
-n=11
-colors = pl.cm.inferno(np.linspace(0,1,n))
-
-def powerlaw(x,a,b):
-	return  a*x**b
-
-	
-fig, ax = plt.subplots(figsize=(6, 5))
-for i in sortedangles:
-	if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.4:
-		ax.plot(dat[i][3][40:]*pixsize*1e6,smoothspeeds[i][40:]*1e6,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-		cleanx = dat[i][3][40:]*pixsize*1e6
-		cleany = smoothspeeds[i][40:]*1e6
-		#popt,potx = curve_fit(powerlaw2, cleanx,cleany ,p0=[.0003,1.5,0,0],bounds=[[0,1,-100,-100],[0.01,3.5,200,100]],maxfev=10000)
-		#popt,potx = curve_fit(powerlaw, cleanx,cleany ,p0=[.0003,1.5,0],bounds=[[0,1,-100],[0.01,3.5,200]],maxfev=10000)
-		#print(popt)
-		#xsamples = np.linspace(0,700)
-		#ax.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
-#ax.legend()
-ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
-ax.set_ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
-ax.set_xlim(0,)
-
-#plt.yscale('log')
-#plt.xscale('log')
-plt.savefig('vvd.png',dpi=900)
-
 #%%
-import matplotlib as mpl
+
+log = True
+fits = False
+byangle = True
+savename = 'testing.png'
+def powerlaw(x,a):
+	return  a*x**3
+
+		
 
 n = len(med_angles)
 anglediffs = [None]*n
@@ -170,113 +178,39 @@ for i in range(n):
 	anglediffs[i] = np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))
 colors = pl.cm.inferno(np.linspace(0,1,n))
 
-def powerlaw(x,a):
-	return  a*x**3
 
-	
+
 fig, ax = plt.subplots(figsize=(6, 5))
 for i in sortedangles:
-	if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.4:
-		ax.plot(dat[i][3][40:]*pixsize*1e6,smoothspeeds[i][40:]*1e6,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-		cleanx = dat[i][3][40:]*pixsize*1e6
-		cleany = smoothspeeds[i][40:]*1e6
-		popt,potx = curve_fit(powerlaw, cleanx,cleany ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
-		#print(popt)
-		#xsamples = np.linspace(0,700)
+	x = cleanedx[i]
+	y = cleanedy[i]
+	if byangle:
+		y=y/med_angles[i]
+	#y = smoothspeeds[i][includes]*1e6
+	if not (isinstance(x, float)):			
+		ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 		
-		#ax.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
-#ax.legend()
+	if fits:
+		popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
+		#print(popt)
+		xsamples = np.linspace(0,700)
+		plt.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
+ax.legend()
 ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
-ax.set_ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
-ax.set_xlim(100,1000)
 
-ax.set_ylim(.1,10)
+if byangle:
+	ax.set_ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
+else:
+	plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
+
+ax.set_xlim(200,)
+ax.set_ylim(.1,)
+if log:
+	ax.set_yscale('log')
+	ax.set_xscale('log')
+plt.savefig(savename,dpi=900)
 
 cmap = mpl.cm.inferno
 norm = mpl.colors.Normalize(vmin=np.min(med_angles), vmax=np.max(med_angles))
 
 cb1 = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),orientation='horizontal', label=r'$\theta$')
-
-plt.yscale('log')
-plt.xscale('log')
-plt.savefig('vvd.png',dpi=900)
-#%%
-
-n = len(med_angles)
-anglediffs = [None]*n
-for i in range(n):
-	anglediffs[i] = np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))
-colors = pl.cm.inferno(np.linspace(0,1,n))
-
-exclusions = np.loadtxt('manualkeep.csv',skiprows = 1,delimiter=',',dtype=int)
-
-plt.figure(figsize=(5,4))
-for i in sortedangles:
-	#if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.4:
-	if (np.any(exclusions[:,0]==i)):
-		ind = np.argwhere(exclusions[:,0]==i)
-		val = int(exclusions[ind,1])
-		if val>0:
-			includes = peakfilter(smoothspeeds[i]*1e6/med_angles[i])
-			includes[val:] = False
-			x = dat[i][3][includes]*pixsize*1e6
-			y = smoothspeeds[i][includes]*1e6/med_angles[i]
-			#y = smoothspeeds[i][includes]*1e6
-			plt.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-	else:
-		includes = peakfilter(smoothspeeds[i]*1e6/med_angles[i])
-		x = dat[i][3][includes]*pixsize*1e6
-		y = smoothspeeds[i][includes]*1e6/med_angles[i]
-		#y = smoothspeeds[i][includes]*1e6
-		plt.plot(x[20:],y[20:],'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-		cleanx = dat[i][3][:]*pixsize*1e6
-		cleany = smoothspeeds[i][:]*1e6/med_angles[i]
-		#popt,potx = curve_fit(powerlaw, cleanx,cleany ,p0=[.0003,1.5,0],bounds=[[0,1,-100],[0.01,3.5,200]],maxfev=10000)
-		#print(popt)
-		xsamples = np.linspace(0,700)
-		#plt.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
-plt.legend()
-plt.xlabel(r'$d \ (\mathrm{\mu m})$')
-plt.ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
-#plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
-plt.yscale('log')
-plt.xscale('log')
-plt.savefig('vbtvd.png',dpi=900)
-#plt.plot(x**2)
-
-#%%
-n = 11
-colors = pl.cm.inferno(np.linspace(0,1,n))
-
-
-
-plt.figure(figsize=(5,4))
-for i in sortedangles:
-	if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.4:
-		plt.plot(dat[i][3][40:]*pixsize*1e6,smoothspeeds[i][40:]*1e6/dat[i][2][40:]/180*np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-plt.legend()
-plt.xlabel(r'$d \ (\mathrm{\mu m})$')
-plt.ylabel(r'$v/\theta (\mathrm{\mu m \ s^{-1}})$')
-plt.ylim(0,)
-plt.xlim(0,)
-#plt.yscale('log')
-#plt.xscale('log')
-plt.savefig('vbtvd.png',dpi=900)
-
-#%%
-n = 12
-colors = pl.cm.inferno(np.linspace(0,1,n))
-
-
-
-plt.figure(figsize=(5,4))
-for i in sortedangles:
-	if np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))<.5:
-		vwithmean = smoothspeeds[i][40:]*1e6/med_angles[i]
-		vwithpoint = smoothspeeds[i][40:]*1e6/dat[i][2][40:]/180*np.pi
-		plt.plot(dat[i][3][40:]*pixsize*1e6, vwithmean-vwithpoint,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-plt.legend()
-plt.ylim(-2,1)
-plt.xlabel(r'$d \ (\mathrm{\mu m})$')
-plt.ylabel(r'$v/\theta - v/\theta_o  (\mathrm{\mu m \ s^{-1}})$')
-plt.savefig('vbtvd.png',dpi=900)

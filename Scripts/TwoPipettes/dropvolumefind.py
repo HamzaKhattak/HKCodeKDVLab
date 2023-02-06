@@ -10,9 +10,12 @@ import matplotlib.pyplot as plt
 
 import imageio as io
 
+from tkinter import Tk     # from tkinter import Tk for Python 3.x
+from tkinter.filedialog import askopenfilename
 
-#Import image and crop
-testim = io.imread('volumetest.tif')
+Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+testim=io.imread(filename)
 
 
 fig = plt.figure('Pick top left and bottom right corner and then fit lines')
@@ -48,10 +51,10 @@ def linefind(pipimage,x0,y0):
 	botvals = np.zeros(pipimage.shape[1])
 	for i in range(pipimage.shape[1]):
 		flipped = np.max(pipimage[:,i])-pipimage[:,i]
-		flippedsmooth = savgol_filter(flipped, 11, 3)
+		flippedsmooth = savgol_filter(flipped, 15, 3)
 		diffs = np.abs(np.diff(flippedsmooth))
 		maxdiff = np.max(diffs)
-		peaklocs = find_peaks(diffs,height=.3*maxdiff)[0]
+		peaklocs = find_peaks(diffs,height=.6*maxdiff)[0]
 		topvals[i] = peaklocs[0]+y0
 		botvals[i] = peaklocs[-1]+y0
 	
@@ -64,9 +67,6 @@ def linefind(pipimage,x0,y0):
 
 rotateparams, pipettewidth = linefind(pipim,pcrop_points[0,0],pcrop_points[0,1])
 testrotate = rotate(dropim,-np.arctan(rotateparams[0]))
-
-
-#%%
 
 def pipettedef(dropimage,x0,y0):
 	'''
@@ -83,7 +83,7 @@ def pipettedef(dropimage,x0,y0):
 		flippedsmooth = savgol_filter(flipped, 11, 3)
 		diffs = np.abs(np.diff(flippedsmooth))
 		maxdiff = np.max(diffs)
-		peaklocs = find_peaks(diffs,height=.3*maxdiff)[0]
+		peaklocs = find_peaks(diffs,height=.6*maxdiff)[0]
 		topvals[i] = peaklocs[0]+y0
 		botvals[i] = peaklocs[-1]+y0
 	

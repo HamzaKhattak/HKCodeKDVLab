@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 import skimage.morphology as morph
 from scipy.signal import find_peaks
-import scipy.ndimage.morphology as morph2
+import scipy.ndimage as morph2
 from skimage import feature
 from scipy.signal import savgol_filter
 from skimage.io import imread as imread2
