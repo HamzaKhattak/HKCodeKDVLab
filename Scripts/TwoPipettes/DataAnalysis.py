@@ -100,9 +100,9 @@ for i in range(numRuns):
 plt.figure()
 for tv in range(len(med_angles)):
 	xs=np.arange(len(smoothspeeds[tv]))
-	plt.plot(xs,smoothspeeds[tv]/med_angles[i],'-',label=tv)
 	include = peakfilter(smoothspeeds[tv]/med_angles[i])
 	plt.plot(xs[np.invert(include)],smoothspeeds[tv][np.invert(include)]/med_angles[i],'ko')
+	plt.plot(xs,smoothspeeds[tv]/med_angles[i],'-',label=tv)
 	#plt.axvline(test[0])
 	if tv == int(len(med_angles)/2):
 		plt.legend()
@@ -121,13 +121,16 @@ for i in range(len(med_angles)):
 	includes = peakfilter(smoothspeeds[i]*1e6)
 	if (np.any(exclusions[:,0]==i)):
 		ind = np.argwhere(exclusions[:,0]==i)
-		val = int(exclusions[ind,1])
-		if val == 0:
+		limL = int(exclusions[ind,1])
+		limR = int(exclusions[ind,2])
+		if limR == 0:
 			x = np.mean(dat[i][3][includes]*pixsize*1e6)
 			y = np.mean(smoothspeeds[i])
-		elif val>0:
+		elif limR>0:
 			includes = peakfilter(smoothspeeds[i]*1e6)
-			includes[val:] = False
+			includes[limR:] = False
+			if limL>0:
+				includes[:limL] = False
 			x = dat[i][3][includes]*pixsize*1e6
 			y = smoothspeeds[i][includes]*1e6
 	else:
@@ -145,7 +148,7 @@ def savelistnp(filepath,data):
 	with open(filepath, 'wb') as outfile:
 		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
 
-savelistnp('volume3dat',[cleanedx,cleanedy,med_angles])
+savelistnp('volume4dat',[cleanedx,cleanedy,med_angles])
 #%%
 plotorder = np.arange(len(med_angles))
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]

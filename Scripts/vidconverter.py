@@ -68,7 +68,7 @@ if dualim == '1':
 	                                "libx264",
 	                                "-crf",
 	                                "20",])
-if dualim == '2':
+elif dualim == '2':
 	file_path1 = filedialog.askopenfilename()
 	file_path2 = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')

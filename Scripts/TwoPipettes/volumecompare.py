@@ -6,6 +6,7 @@ Created on Sat Feb  4 19:30:06 2023
 """
 
 import pickle
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.pylab as pl
@@ -28,8 +29,8 @@ def openlistnp(filepath):
 vol1 = openlistnp('volume1dat')
 vol2 = openlistnp('volume2dat')
 vol3 = openlistnp('volume3dat')
-
-
+vol4 = openlistnp('volume4dat')
+vol5 = openlistnp('volume5dat')
 def openlistnp(filepath):
 	'''
 	Opens lists of numpy arrays using pickle
@@ -39,10 +40,11 @@ def openlistnp(filepath):
 	return result
 
 
-dats=[vol1,vol2,vol3]
-vols = [75, 146, 61]
-labels = ['75 pL', '146 pL', '61 pL']
-colours = ['b','m', 'g']
+dats=[vol1,vol2,vol3,vol4,vol5]  
+vols = np.loadtxt('volumes.csv',skiprows = 1,delimiter=',',dtype=int)
+vols=vols[:,1]
+labels = [str(i) +'pL' for i in vols]
+colours = ['b','m', 'g','k','c']
 
 for i in range(len(labels)):
 	print(i)
@@ -51,7 +53,8 @@ for i in range(len(labels)):
 		V = vols[i]
 		speeds = dats[i][1][j]
 		angles = dats[i][2][j]
-		x = d/V**(1/3)
+		#x = d/V**(1/3)
+		x = d
 		y = speeds/angles
 		if j==0:
 			plt.plot(x,y,'.',color = colours[i], label=labels[i])
@@ -60,7 +63,8 @@ for i in range(len(labels)):
 
 
 plt.ylabel(r'$v/\theta$')
-plt.xlabel(r'$d/V^{1/3}$')
+#plt.xlabel(r'$d/V^{1/3}$')
+plt.xlabel(r'$d$')
 plt.legend()
 plt.xscale('log')
 plt.yscale('log')
