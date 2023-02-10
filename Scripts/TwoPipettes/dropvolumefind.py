@@ -83,7 +83,7 @@ def pipettedef(dropimage,x0,y0):
 		flippedsmooth = savgol_filter(flipped, 11, 3)
 		diffs = np.abs(np.diff(flippedsmooth))
 		maxdiff = np.max(diffs)
-		peaklocs = find_peaks(diffs,height=.6*maxdiff)[0]
+		peaklocs = find_peaks(diffs,height=.3*maxdiff)[0]
 		topvals[i] = peaklocs[0]+y0
 		botvals[i] = peaklocs[-1]+y0
 	

@@ -13,6 +13,7 @@ from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 import pynumdiff as pynd
 from scipy.optimize import curve_fit
+from scipy.signal import butter, filtfilt
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
@@ -21,7 +22,7 @@ plt.rcParams.update({
 #%%
 
 
-from scipy.signal import butter, filtfilt
+
 def quickfilter(x,y):
 	params = np.polyfit(x, y,2)
 	polytrend = np.polyval(params,x)
@@ -112,6 +113,21 @@ plt.legend()
 plt.yscale('log')
 
 #%%
+plt.figure()
+for tv in range(len(med_angles)):
+	xs=dat[tv][3]
+	include = peakfilter(smoothspeeds[tv]/med_angles[i])
+	plt.plot(xs[np.invert(include)],smoothspeeds[tv][np.invert(include)]/med_angles[i],'ko')
+	plt.plot(xs,smoothspeeds[tv]/med_angles[i],'-',label=tv)
+	#plt.axvline(test[0])
+	if tv == int(len(med_angles)/2):
+		plt.legend()
+		plt.yscale('log')
+		plt.figure()
+plt.legend()
+plt.yscale('log')
+
+#%%
 cleanedx = [None]*len(med_angles)
 cleanedy = [None]*len(med_angles)
 exclusions = np.loadtxt('manualkeep.csv',skiprows = 1,delimiter=',',dtype=int)
@@ -148,7 +164,7 @@ def savelistnp(filepath,data):
 	with open(filepath, 'wb') as outfile:
 		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
 
-savelistnp('volume4dat',[cleanedx,cleanedy,med_angles])
+savelistnp('volume5dat',[cleanedx,cleanedy,med_angles])
 #%%
 plotorder = np.arange(len(med_angles))
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]

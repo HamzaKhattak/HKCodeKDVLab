@@ -46,6 +46,7 @@ def fullseqimport(FilePath):
 
 dualim = input('Type 1 for a single angle and 2 for two angles beside each other (Exact same length/size) \n')
 collect = input('Type 1 for a single input file and 2 for a collection (collection is only for 1 view) \n')
+
 if dualim == '1':
 	file_path = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')
