@@ -4,7 +4,7 @@ Created on Mon Sep 12 15:25:12 2022
 
 @author: hamza
 """
-import pickle
+import pickle, os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -44,7 +44,7 @@ def quickfilter2(x,y):
 def quickfilter3(x,y):
 	return x, y
 
-def peakfilter(y, prom = 0.06):
+def peakfilter(y, prom = 0.04):
 	
 	#returns false values for where peaks and troughs are located
 	
@@ -164,7 +164,9 @@ def savelistnp(filepath,data):
 	with open(filepath, 'wb') as outfile:
 		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
 
-savelistnp('volume5dat',[cleanedx,cleanedy,med_angles])
+datsavename=os.path.basename(os.getcwd())+'dat'
+savelistnp(datsavename,[cleanedx,cleanedy,med_angles])
+
 #%%
 plotorder = np.arange(len(med_angles))
 sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]
@@ -185,35 +187,54 @@ plt.savefig('angles.png',dpi=900)
 log = True
 fits = False
 byangle = True
-savename = 'testing.png'
+
+onlyselect = False
+whichtoplot = [7,12,1] #[7,1,12]
+savename = 'test.png'
+
 def powerlaw(x,a):
 	return  a*x**3
 
 		
 
+
 n = len(med_angles)
 anglediffs = [None]*n
 for i in range(n):
 	anglediffs[i] = np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))
-colors = pl.cm.inferno(np.linspace(0,1,n))
+colors = pl.cm.viridis(np.linspace(0,1,n))
 
-
-
+allfits = np.array([])
+xsamples = np.linspace(0,1000)
 fig, ax = plt.subplots(figsize=(6, 5))
 for i in sortedangles:
 	x = cleanedx[i]
 	y = cleanedy[i]
 	if byangle:
-		y=y/med_angles[i]
-	#y = smoothspeeds[i][includes]*1e6
-	if not (isinstance(x, float)):			
-		ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
-		
-	if fits:
-		popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
-		#print(popt)
-		xsamples = np.linspace(0,700)
-		plt.plot(xsamples,powerlaw(xsamples,*popt),color = pl.cm.inferno(scaledangles[i]))
+		y=y/(med_angles[i]*np.pi/180)
+	if onlyselect == False:
+		#y = smoothspeeds[i][includes]*1e6
+		if not (isinstance(x, float)):			
+			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
+			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
+			allfits = np.append(allfits,popt[0])			
+		if fits:
+			#print(popt)
+			ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = pl.cm.viridis(scaledangles[i]))
+	if onlyselect == True:
+		if any(whichtoplot==i):
+			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
+			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
+			allfits = allfits.append(popt)
+			if fits:
+
+				#print(popt)
+				ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = pl.cm.viridis(scaledangles[i]))
+			
+
+
+ax.plot(xsamples,powerlaw(xsamples,np.mean(allfits)),'--',color = 'k')
+
 ax.legend()
 ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
 
@@ -223,7 +244,7 @@ else:
 	plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
 
 ax.set_xlim(200,)
-ax.set_ylim(.1,)
+#ax.set_ylim(40,500)
 if log:
 	ax.set_yscale('log')
 	ax.set_xscale('log')
@@ -232,4 +253,4 @@ plt.savefig(savename,dpi=900)
 cmap = mpl.cm.inferno
 norm = mpl.colors.Normalize(vmin=np.min(med_angles), vmax=np.max(med_angles))
 
-cb1 = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),orientation='horizontal', label=r'$\theta$')
+#cb1 = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),orientation='horizontal', label=r'$\theta$')

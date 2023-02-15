@@ -43,11 +43,30 @@ def openlistnp(filepath):
 dats=[vol1,vol2,vol3,vol4,vol5]  
 vols = np.loadtxt('volumes.csv',skiprows = 1,delimiter=',',dtype=int)
 vols=vols[:,1]
+sphereR = (vols/10e12)**(1/3)*1e6
 labels = [str(i) +'pL' for i in vols]
-colours = ['b','m', 'g','k','c']
 
-for i in range(len(labels)):
+n = len(vols)
+plotorder = np.arange(n)
+colours = pl.cm.plasma(np.linspace(0,1,n))
+sortedcolours = [x for _, x in sorted(zip(vols, colours))]
+sortedplotorder = [x for _, x in sorted(zip(vols, plotorder))]
+
+#colours = ['r','m', 'g','b','c']
+colours = sortedcolours
+xsamples=np.linspace(10, 2000)
+def powerlaw(x,a):
+	return  a*x**3
+fig, ax = plt.subplots(figsize=(6, 5))
+allpopt = np.array([])
+
+
+
+#for i in [3,1]: #[3,1,0,2,4]
+for i in sortedplotorder:
 	print(i)
+	allx = np.array([])
+	ally = np.array([])
 	for j in  range(len(dats[i][0])):
 		d = dats[i][0][j]
 		V = vols[i]
@@ -55,17 +74,28 @@ for i in range(len(labels)):
 		angles = dats[i][2][j]
 		#x = d/V**(1/3)
 		x = d
-		y = speeds/angles
+		y = speeds/(angles*np.pi/180)
+		
+		allx = np.append(allx,x)
+		ally = np.append(ally,y)
 		if j==0:
 			plt.plot(x,y,'.',color = colours[i], label=labels[i])
 		else:
 			plt.plot(x,y,'.',color = colours[i])
+	popt,potx = curve_fit(powerlaw, allx,ally ,p0=[.003],bounds=[[0],[0.1]],maxfev=10000)
+	allpopt = np.append(allpopt, popt)
+	plt.axvline(2*sphereR[i],color=colours[i])
+	#plt.plot(xsamples,powerlaw(xsamples,*popt),'--',color=colours[i])
 
-
-plt.ylabel(r'$v/\theta$')
-#plt.xlabel(r'$d/V^{1/3}$')
-plt.xlabel(r'$d$')
-plt.legend()
-plt.xscale('log')
-plt.yscale('log')
-plt.ylim(.1,)
+plt.plot(xsamples,powerlaw(xsamples,np.mean(allpopt[allpopt!=np.min(allpopt)])),'k--')
+ax.set_ylabel(r'$v/\theta \  \mathrm{(\mu m s^{-1}})$')
+#ax.set_xlabel(r'$d/\Omega^{1/3} \ \mathrm{(\mu m/pL})$')
+ax.set_xlabel(r'$d \ \mathrm{(\mu m})$')
+ax.legend()
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_ylim(5,1000)
+ax.set_xlim(150,1000)
+#ax.set_ylim(5,1000)
+#ax.set_xlim(30,200)
+plt.savefig('im4.png',dpi=900)
