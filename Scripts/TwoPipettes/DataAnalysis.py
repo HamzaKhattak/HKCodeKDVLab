@@ -164,6 +164,7 @@ def savelistnp(filepath,data):
 	with open(filepath, 'wb') as outfile:
 		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
 
+#datsavename=os.path.basename(os.path.dirname(os.getcwd()))+'dat'
 datsavename=os.path.basename(os.getcwd())+'dat'
 savelistnp(datsavename,[cleanedx,cleanedy,med_angles])
 
@@ -184,13 +185,13 @@ plt.savefig('angles.png',dpi=900)
 
 #%%
 
-log = True
+log = False
 fits = False
 byangle = True
 
 onlyselect = False
-whichtoplot = [7,12,1] #[7,1,12]
-savename = 'test.png'
+whichtoplot = [13,10,0] #[7,1,12] #[13,10,0]
+savename = 'im6.png'
 
 def powerlaw(x,a):
 	return  a*x**3
@@ -199,9 +200,6 @@ def powerlaw(x,a):
 
 
 n = len(med_angles)
-anglediffs = [None]*n
-for i in range(n):
-	anglediffs[i] = np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))
 colors = pl.cm.viridis(np.linspace(0,1,n))
 
 allfits = np.array([])
@@ -225,7 +223,7 @@ for i in sortedangles:
 		if any(whichtoplot==i):
 			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
-			allfits = allfits.append(popt)
+			#allfits = allfits.append(popt)
 			if fits:
 
 				#print(popt)
@@ -234,7 +232,8 @@ for i in sortedangles:
 
 
 ax.plot(xsamples,powerlaw(xsamples,np.mean(allfits)),'--',color = 'k')
-
+ax.set_ylim(1,500)
+ax.set_xlim(100,800)
 ax.legend()
 ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
 
@@ -243,8 +242,7 @@ if byangle:
 else:
 	plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
 
-ax.set_xlim(200,)
-#ax.set_ylim(40,500)
+
 if log:
 	ax.set_yscale('log')
 	ax.set_xscale('log')
