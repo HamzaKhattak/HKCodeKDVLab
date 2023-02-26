@@ -188,7 +188,7 @@ plt.savefig('angles.png',dpi=900)
 log = False
 fits = False
 byangle = True
-
+transparent = True
 onlyselect = False
 whichtoplot = [13,10,0] #[7,1,12] #[13,10,0]
 savename = 'im6.png'
@@ -200,7 +200,8 @@ def powerlaw(x,a):
 
 
 n = len(med_angles)
-colors = pl.cm.viridis(np.linspace(0,1,n))
+#colours = pl.cm.viridis(np.linspace(0,1,n))
+colours = pl.cm.viridis(scaledangles)
 
 allfits = np.array([])
 xsamples = np.linspace(0,1000)
@@ -213,28 +214,33 @@ for i in sortedangles:
 	if onlyselect == False:
 		#y = smoothspeeds[i][includes]*1e6
 		if not (isinstance(x, float)):			
-			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
+			if transparent ==False:
+				ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = colours[i])
+			
+			else:
+				ax.plot([],'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = colours[i])
+				ax.plot(x,y,'-',color = colours[i],linewidth=3.5,alpha=0.7)
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
 			allfits = np.append(allfits,popt[0])			
 		if fits:
 			#print(popt)
-			ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = pl.cm.viridis(scaledangles[i]))
+			ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = colours[i])
 	if onlyselect == True:
 		if any(whichtoplot==i):
-			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
+			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = colours[i])
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
 			#allfits = allfits.append(popt)
 			if fits:
 
 				#print(popt)
-				ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = pl.cm.viridis(scaledangles[i]))
+				ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = colours[i])
 			
 
 
 ax.plot(xsamples,powerlaw(xsamples,np.mean(allfits)),'--',color = 'k')
-ax.set_ylim(1,500)
-ax.set_xlim(100,800)
-ax.legend()
+ax.set_ylim(0,500)
+ax.set_xlim(0,850)
+ax.legend(loc = 'upper left')
 ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
 
 if byangle:
