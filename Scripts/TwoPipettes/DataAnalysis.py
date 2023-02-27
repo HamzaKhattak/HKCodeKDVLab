@@ -234,10 +234,31 @@ for i in sortedangles:
 
 				#print(popt)
 				ax.plot(xsamples,powerlaw(xsamples,*popt),'--',color = colours[i])
-			
+
+sortedangles
 
 
-ax.plot(xsamples,powerlaw(xsamples,np.mean(allfits)),'--',color = 'k')
+if onlyselect==False:
+	fitdatas = sortedangles
+else:
+	fitdatas = whichtoplot
+
+allx=np.array([])
+ally=np.array([])
+for i in range(len(fitdatas)):
+	y = cleanedy[i]
+	if byangle ==True:
+		y=y/(med_angles[i]*np.pi/180)
+	allx = np.append(allx,cleanedx[i])
+	ally = np.append(ally,y)
+
+totalpopt,totalpotx = curve_fit(powerlaw, allx,ally ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
+
+#ax.plot(xsamples,powerlaw(xsamples,np.mean(allfits)),'--',color = 'k')
+ax.plot(xsamples,powerlaw(xsamples,*totalpopt),'--',color = 'k')
+
+
+
 ax.set_ylim(0,500)
 ax.set_xlim(0,850)
 ax.legend(loc = 'upper left')
