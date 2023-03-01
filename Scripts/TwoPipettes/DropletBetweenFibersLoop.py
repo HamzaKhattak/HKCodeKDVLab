@@ -147,7 +147,6 @@ def time_series_paramfind(input_images,midpoint):
 	d_to_centers = np.zeros(len(input_images))
 	
 	for i in range(len(allimages)):
-
 		xlocs[i] , ylocs[i], edges[i] = findcenter(allimages[i])
 	
 		leftend = np.int16(np.min([edges[i][:,0]]))-20
@@ -179,6 +178,7 @@ run_crops = run_crops.astype(int)
 #%%
 print('start')
 for i in range(len(run_names)):
+#for i in [10,11,12]:
 	#Get the crop points from the run parameters
 	x0=run_crops[i][0]
 	x1=run_crops[i][2]
@@ -194,93 +194,5 @@ for i in range(len(run_names)):
 	with open(leadtxt+'edges', 'wb') as outfile:
 	   pickle.dump(image_params[6], outfile, pickle.HIGHEST_PROTOCOL)
 	print('done'+ leadtxt)
-'''
-upper_line_params=testdat[5][0]
-lower_line_params=testdat[5][1]
-xfinal = testdat[0]
-seps = testdat[3]
-yfinal = testdat[1]
-speeds = np.abs(np.gradient(xfinal))
-edges=testdat[6]
-'''
+
 print('runs complete')
-#%%
-'''
-from matplotlib import animation
-from matplotlib_scalebar.scalebar import ScaleBar
-dt=13.6
-
-
-
-xarray=np.arange(1176)
-
-# ax refers to the axis propertis of the figure
-fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
-im = ax[1].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
-scalebar = ScaleBar(2.25e-6,frameon=False,location='lower right') # 1 pixel = 0.2 meter
-
-
-ax[0].plot(seps*2,speeds*2,'.')
-ax[0].set_xlabel('Seperation distance ($\mu m$)')
-ax[0].set_ylabel('speed ($\mu s s^{-1}$)')
-
-ax[1].axis('off')
-ax[1].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
-ax[1].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
-
-edgeline, = ax[1].plot(edges[0][:,0],edges[0][:,1],color='red',marker='.',linestyle='',markersize=1,animated=True)
-
-topline, = ax[1].plot(xarray,np.poly1d(upper_line_params[0])(xarray),color='cyan',marker='.',linestyle='',markersize=1,animated=True)
-botline, = ax[1].plot(xarray,np.poly1d(lower_line_params[0])(xarray),color='cyan',marker='.',linestyle='',markersize=1,animated=True)
-
-currentspeed, = ax[0].plot([], [],'ro', animated=True)
-centerpoint, =  ax[1].plot([], [],'ro', animated=True)
-
-
-
-
-
-def init():
-	"""
-	This function gets passed to FuncAnimation.
-	It initializes the plot axes
-	"""
-	#Set plot limits etc
-	ax[1].add_artist(scalebar)
-
-
-	#plt.tight_layout()
-	return centerpoint,edgeline,currentspeed,topline,botline,
-#fig.tight_layout(pad=0)
-
-def update_plot(it):
-	#global xAnim, yAnim
-	
-	#This this section plots the force over time
-	edgeline.set_data(edges[it][:,0],edges[it][:,1])
-	topline.set_data(xarray,np.poly1d(upper_line_params[it])(xarray))
-	botline.set_data(xarray,np.poly1d(lower_line_params[it])(xarray))
-	centerpoint.set_data(xfinal[it],yfinal[it])
-	currentspeed.set_data(seps[it]*2,speeds[it]*2)
-	#Plot of image
-	im.set_data(allimages[it])
-	
-	return centerpoint,im,edgeline,currentspeed,topline,botline,
-plt.tight_layout()
-
-#Can control which parts are animated with the frames, interval is the speed of the animation
-# now run the loop
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages)), interval=100,
-                    init_func=init, repeat_delay=1000, blit=True)
-
-
-#Writer = animation.writers['ffmpeg']
-#writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-
-plt.show()
-
-#%%
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
-ani.save('speedtracking.mp4',writer=writer,dpi=200)
-'''

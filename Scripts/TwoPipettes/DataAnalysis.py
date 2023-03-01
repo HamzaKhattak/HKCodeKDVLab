@@ -44,7 +44,7 @@ def quickfilter2(x,y):
 def quickfilter3(x,y):
 	return x, y
 
-def peakfilter(y, prom = 0.04):
+def peakfilter(y, prom = 0.05):
 	
 	#returns false values for where peaks and troughs are located
 	
@@ -107,10 +107,10 @@ for tv in range(len(med_angles)):
 	#plt.axvline(test[0])
 	if tv == int(len(med_angles)/2):
 		plt.legend()
-		plt.yscale('log')
+		#plt.yscale('log')
 		plt.figure()
 plt.legend()
-plt.yscale('log')
+#plt.yscale('log')
 
 #%%
 plt.figure()
@@ -122,10 +122,10 @@ for tv in range(len(med_angles)):
 	#plt.axvline(test[0])
 	if tv == int(len(med_angles)/2):
 		plt.legend()
-		plt.yscale('log')
+		#plt.yscale('log')
 		plt.figure()
 plt.legend()
-plt.yscale('log')
+#plt.yscale('log')
 
 #%%
 cleanedx = [None]*len(med_angles)
@@ -164,7 +164,7 @@ def savelistnp(filepath,data):
 	with open(filepath, 'wb') as outfile:
 		pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
 
-datsavename=os.path.basename(os.getcwd())+'dat'
+datsavename=os.path.basename(os.path.dirname(os.getcwd()))+'dat'
 savelistnp(datsavename,[cleanedx,cleanedy,med_angles])
 
 #%%
@@ -173,9 +173,11 @@ sortedangles = [x for _, x in sorted(zip(med_angles, plotorder))]
 n = len(sortedangles)
 scaledangles = np.array(med_angles)
 scaledangles = (scaledangles-np.min(scaledangles))/np.max(scaledangles)
+#%%
+
 plt.figure() 
 for i in sortedangles:
-	plt.plot(dat[i][3][40:]*pixsize*1e6,(dat[i][2][40:]-dat[i][2][20])*180/np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
+	plt.plot(dat[i][3][:]*pixsize*1e6,(dat[i][2][:]-dat[i][2][0])*180/np.pi,label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.inferno(scaledangles[i]))
 plt.legend()
 plt.xlabel(r'$d \ (\mathrm{\mu m})$')
 plt.ylabel(r'$\Delta\theta (\mathrm{^\circ})$')
@@ -184,12 +186,12 @@ plt.savefig('angles.png',dpi=900)
 
 #%%
 
-log = True
+log = False
 fits = False
 byangle = True
 
 onlyselect = False
-whichtoplot = [7,12,1] #[7,1,12]
+whichtoplot = [1] #[7,1,12]
 savename = 'test.png'
 
 def powerlaw(x,a):
@@ -199,9 +201,6 @@ def powerlaw(x,a):
 
 
 n = len(med_angles)
-anglediffs = [None]*n
-for i in range(n):
-	anglediffs[i] = np.max(np.abs((dat[i][2][40:]-dat[i][2][20])*180/np.pi))
 colors = pl.cm.viridis(np.linspace(0,1,n))
 
 allfits = np.array([])
@@ -215,7 +214,7 @@ for i in sortedangles:
 	if onlyselect == False:
 		#y = smoothspeeds[i][includes]*1e6
 		if not (isinstance(x, float)):			
-			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
+			ax.plot(x,y,'.',label = "{0:.1f}$^\circ{1}$".format(med_angles[i],i),color = pl.cm.viridis(scaledangles[i]))
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
 			allfits = np.append(allfits,popt[0])			
 		if fits:
@@ -225,7 +224,7 @@ for i in sortedangles:
 		if any(whichtoplot==i):
 			ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = pl.cm.viridis(scaledangles[i]))
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
-			allfits = allfits.append(popt)
+			#allfits = allfits.append(popt)
 			if fits:
 
 				#print(popt)
@@ -243,8 +242,8 @@ if byangle:
 else:
 	plt.ylabel(r'$v (\mathrm{\mu m \ s^{-1}})$')
 
-ax.set_xlim(200,)
-#ax.set_ylim(40,500)
+ax.set_xlim(0,1000)
+ax.set_ylim(0,500)
 if log:
 	ax.set_yscale('log')
 	ax.set_xscale('log')

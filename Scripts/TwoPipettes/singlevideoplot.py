@@ -30,16 +30,19 @@ outputFPS = inFPS*xrealtime
 
 Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
 filepath = askopenfilename() # show an "Open" dialog box and return the path to the selected file
-allimages=imread2(filepath)
-pixsize = 1.78e-6 #pixel size of camera in m
 
+allimages=imread2(filepath)
+#allimages=allimages[:,:,::-1] #for horizontal flip
+plt.imshow(allimages[0])
+#%%
+pixsize = 1.78e-6 #pixel size of camera in m
+#pixsize = 2.25e-6
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(1,1,figsize=(8,6))
 im = ax.imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 scalebar = ScaleBar(pixsize,frameon=False,location='lower right') # 1 pixel = 0.2 meter
 
-
-
+#im.set_clim(0, 256) #if want to reproduce original image rather than full scale
 
 ax.axis('off')
 ax.get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
@@ -84,7 +87,7 @@ plt.show()
 
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=outputFPS,extra_args=['-vcodec', 'libx264'])
-ani.save('plotwithscalebar3.mp4',writer=writer,dpi=200)
+ani.save('g.mp4',writer=writer,dpi=200)
 
 del ani
 del Writer

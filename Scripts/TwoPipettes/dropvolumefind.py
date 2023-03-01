@@ -33,7 +33,7 @@ pcrop_points=pcrop_points.astype(int)
 dropim= testim[crop_points[0,1]:crop_points[1,1],crop_points[0,0]:crop_points[1,0]]
 pipim = testim[pcrop_points[0,1]:pcrop_points[1,1],pcrop_points[0,0]:pcrop_points[1,0]]
 plt.close()
-
+#%%
 
 
 from scipy.signal import find_peaks
@@ -54,7 +54,7 @@ def linefind(pipimage,x0,y0):
 		flippedsmooth = savgol_filter(flipped, 15, 3)
 		diffs = np.abs(np.diff(flippedsmooth))
 		maxdiff = np.max(diffs)
-		peaklocs = find_peaks(diffs,height=.6*maxdiff)[0]
+		peaklocs = find_peaks(diffs,height=.7*maxdiff,prominence=.1)[0]
 		topvals[i] = peaklocs[0]+y0
 		botvals[i] = peaklocs[-1]+y0
 	
@@ -83,7 +83,7 @@ def pipettedef(dropimage,x0,y0):
 		flippedsmooth = savgol_filter(flipped, 11, 3)
 		diffs = np.abs(np.diff(flippedsmooth))
 		maxdiff = np.max(diffs)
-		peaklocs = find_peaks(diffs,height=.3*maxdiff)[0]
+		peaklocs = find_peaks(diffs,height=.3*maxdiff,prominence=2.5,rel_height=.9)[0]
 		topvals[i] = peaklocs[0]+y0
 		botvals[i] = peaklocs[-1]+y0
 	

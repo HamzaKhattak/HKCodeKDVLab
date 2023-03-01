@@ -20,8 +20,8 @@ plt.rcParams.update({
     "font.sans-serif": "Helvetica",
 })
 
-which_im = 2
-xmax = 180
+which_im = 1
+xmax = -1
 
 #Get the crop points from the run parameters
 x0=run_crops[which_im][0]
@@ -77,7 +77,7 @@ xarray=np.arange(allimages.shape[2])
 fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
 im = ax[1].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 scalebar = ScaleBar(pixsize,frameon=False,location='lower right') # 1 pixel = 0.2 meter
-
+#im.set_clim(0, 256) #if want to reproduce original image rather than full scale
 
 ax[0].plot(seps*2,speeds*2,'.')
 ax[0].plot(seps*2,smoothspeeds*2,'k-')
