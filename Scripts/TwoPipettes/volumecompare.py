@@ -45,7 +45,7 @@ vols = np.loadtxt('volumes.csv',skiprows = 1,delimiter=',',dtype=int)
 vols=vols[:,1]
 
 sphereR = (vols/10e12)**(1/3)*1e6
-labels = [str(i) +'pL' for i in vols]
+labels = [str(i) +' pL' for i in vols]
 
 n = len(vols)
 plotorder = np.arange(n)
@@ -69,12 +69,12 @@ def powerlaw(x,a):
 fig, ax = plt.subplots(figsize=(6, 5))
 allpopt = np.array([])
 
-byVolume = True
-savename='im4.png'
+byVolume = False
+savename='im1.png'
 x1 = 0
-x2 = 200
-#for i in [0,4]: #[3,1,0,2,4] [0,2]
-for i in sortedplotorder:
+x2 = 850
+for i in [0]: #[3,1,0,2,4] [0,4]
+#for i in sortedplotorder:
 	print(i)
 	allx = np.array([])
 	ally = np.array([])
@@ -97,13 +97,13 @@ for i in sortedplotorder:
 		allx = np.append(allx,x)
 		ally = np.append(ally,y)
 		
-		ax.plot(x,y,'-',color = colours[i],alpha=0.5,markerfacecolor="None",markersize=5,linewidth=3)
+		ax.plot(x,y,'-',color = colours[i],alpha=1,markerfacecolor="None",markersize=5,linewidth=3)
 	popt,potx = curve_fit(powerlaw, allx,ally ,p0=[.003],bounds=[[0],[0.1]],maxfev=10000)
 	allpopt = np.append(allpopt, popt)
 	#plt.axvline(2*sphereR[i],color=colours[i])
-	#plt.plot(xsamples,powerlaw(xsamples,*popt),'--',color=colours[i])
+	plt.plot(xsamples,powerlaw(xsamples,*popt),'--',color=colours[i])
 
-ax.plot(xsamples,powerlaw(xsamples,np.mean(allpopt[allpopt!=np.min(allpopt)])),'k--')
+#ax.plot(xsamples,powerlaw(xsamples,np.mean(allpopt[allpopt!=np.min(allpopt)])),'k--')
 ax.set_ylabel(r'$v/\theta \  \mathrm{(\mu m s^{-1}})$')
 
 if byVolume ==True:

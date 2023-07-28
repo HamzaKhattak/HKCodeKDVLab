@@ -117,4 +117,4 @@ totalvolume = np.sum(np.pi*averagepipettes**2)
 pipettevolume = len(averagepipettes)*np.pi*pipettewidth**2
 dropvolume=totalvolume-pipettevolume
 dropvolume = dropvolume*pixsize**3
-print(str(dropvolume*10**12) +' picoliters')
+print(str(dropvolume*10**15) +' picolitre')

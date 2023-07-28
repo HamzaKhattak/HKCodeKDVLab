@@ -87,7 +87,7 @@ ax[0].set_ylabel('speed ($\mathrm{\mu m s^{-1}}$)')
 ax[1].axis('off')
 ax[1].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
 ax[1].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
-
+#ax[1].set_clim(0, 256)
 edgeline, = ax[1].plot(edges[0][:,0],edges[0][:,1],color='red',marker='.',linestyle='',markersize=1,animated=True)
 
 topline, = ax[1].plot(xarray,np.poly1d(upper_line_params[0])(xarray),color='cyan',marker='.',linestyle='',markersize=1,animated=True)
