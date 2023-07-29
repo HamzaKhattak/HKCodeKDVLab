@@ -281,90 +281,122 @@ print(polar.shape)
 
 #%%
 from scipy.interpolate import splrep, splev
-meanint = np.mean(polar,axis=0)
 
-def rextentfind(polarimage):
+
+
+
+def rextentfind(inputpolar):
 	'''
 	Finds the extent in the radial dimension of a radial polar image of fingering
 	Works since fingering is where brigthness increase starts
 	Takes radial image as input, should be cropped to region of interest in theta
 	'''
-	
-	
-	variancedat = np.var(rightcrop,axis=0) 
+	variancedat = np.var(inputpolar,axis=0) 
 	variancedat = variancedat-np.mean(variancedat[:400])
 	variancedat = variancedat/np.max(variancedat)
 	smoothedvariance = signal.savgol_filter(variancedat,15,3)
+	#find the peaks and take the first one, pretty manual right now
+	#Generally very little variance until the fingering
 	peaks, plateau = signal.find_peaks(smoothedvariance, height=.01)
-
-	print(peaks)
 	leftend = peaks[np.where(peaks>200)][0] #Get the first peak not in the center
+	#To get the right end flip the image and choose value at shortest span
+	flipped = inputpolar[:,::-1]
+	flnonzeros = np.argmax(flipped>0,axis=1) #Get values for first non-zero elements
+	xlen = flipped.shape[1]
+	rightend = xlen - np.max(flnonzeros)
+	#plt.plot(flnonzeros)
+
+	return [leftend,rightend]
+
+
+def leadtrailfingerfind(inputpolar,halfangle):
+	'''
 	
-	meanint = np.mean(polarimage,axis=0)
 
-	meanint = signal.savgol_filter(meanint,15,3)
-	#meanint = signal.upfirdn(h, x, up=1, down=1, axis=-1, mode='constant', cval=0)
-	#meanint = signal.sosfilt(sos, x, axis=-1, zi=None)
-	x = np.linspace(0,len(meanint)-1,num=len(meanint),dtype=int)
-	f = splrep(x,meanint,k=5,s=12)
-	ydiff = splev(x,f,der=1)
-	ax2.plot(ydiff,label='spline')
+	Parameters
+	----------
+	inputpolar : polar coordinate image of the fingering, assumes 0 degrees is front and that it loops
+	halfangle: value in degrees that decides how much of the radial values will be scanned
 
-	peaks, _ = signal.find_peaks(ydiff, prominence=.4,width=10,distance=10)
+	Returns
+	-------
+	A list containing
+	-Cropped images of the fingers as well as how far they start from the center
+	'''
+	
+	anglenum = inputpolar.shape[1] #number of angle values in the image to calculate cutoff ints
+	cutoffs = int(halfangle*anglenum/360)
+	centervalue = int(anglenum/2)
+	
+	#Get the crop of the left values
+	leftcrop=polar[centervalue-cutoffs:centervalue+cutoffs]
+	startl, endl  = rextentfind(leftcrop)
+	leftcrop=leftcrop[:,startl:endl]
+	
+	#Get a crop of the right values, same method but need numpy.take to wrap around
+	indicesfront = range(i-cutoffs,i+cutoffs)
+	rightcrop=polar.take(indicesfront, axis=0,mode='wrap')
+	startr, endr = rextentfind(rightcrop)
+	rightcrop = rightcrop[:,startr:endr]
+	return [startl,leftcrop],[startr,rightcrop]
 
 
-	leftend = peaks[np.where(peaks>200)][0] #Get the first peak not in the center
-	rightend = np.argmin(meanint)
-	return meanint, ydiff, [leftend,rightend]
+fig, (ax1, ax2) = plt.subplots(1, 2)
+
+test1 = leadtrailfingerfind(polar, 35)
+
+ax1.imshow(test1[0][1])
+ax2.imshow(test1[1][1])
+#%%
+def xgenerator(initial,inputimage):
+	'''
+	initial is the starting r
+	size is the number of theta values
+	'''
+	thetalen = inputimage.shape[0]
+	rlen = inputimage.shape[1]
+	print(rlen)
+	print(thetalen)
+	basearray = np.linspace(0,thetalen-1,num=thetalen,dtype=int)
+	rvals = np.linspace(initial,initial+rlen-1,num=rlen)
+	rescalematrix = np.outer(basearray,rvals)
+	return rescalematrix
+xmat = xgenerator(test1[1][0],test1[1][1])
+plt.imshow(xmat)
 
 #%%
-print(rextentfind(rightcrop)[2])
-plt.plot(rextentfind(rightcrop)[0])
-#%%
-plt.imshow(rightcrop)
-#%%
-variancedat = np.var(rightcrop,axis=0) 
-variancedat = variancedat-np.mean(variancedat[:400])
-variancedat = variancedat/np.max(variancedat)
-smoothedvariance = signal.savgol_filter(variancedat,15,3)
-peaks, plateau = signal.find_peaks(smoothedvariance, height=.01)
-
-print(peaks)
-leftend = peaks[np.where(peaks>200)][0] #Get the first peak not in the center
-plt.imshow(rightcrop)
-plt.axvline(leftend)
-#%%
-halfangle = 36
-anglenum = polar.shape[1]
-cutoffs = int(halfangle*anglenum/360)
-
-indicesfront = range(i-cutoffs,i+cutoffs)
-rightcrop=polar.take(indicesfront, axis=0,mode='wrap')
-startr, endr = rextentfind(rightcrop)
-print(rextentfind(rightcrop))
-#rightcrop = rightcrop[:,startr:endr]
-#plt.imshow(rightcrop)
-#%%
-centervalue = int(anglenum/2)
-leftcrop=polar[centervalue-cutoffs,centervalue+cutoffs]
-startl, endl  = rextentfind(leftcrop)
-#%%
-test1=test1[:,867:1050]
-test1=test1-np.mean(test1)
-test2 = polar[560:820]
-test2=test2[:,867:1250]
-test2=test2-np.mean(test2)
-plt.imshow(test2)
-#2.pi.r/n_thetapix gives the pixel size for the cross corellation
-#%%
+plt.plot(xmat[:,0],test1[1][1][:,0],label = 'closet')
+plt.plot(xmat[:,-1],test1[1][1][:,-1],label='farthest')
+plt.legend()
 
 
 #%%
+'''
+Completing the cross correlation sample and sample of how to get it back to real lengths
+'''
+testa = test1[1][1][:,0]
+testa = testa-np.mean(testa)
 
-le, re = rextentfind(polar)
-plt.imshow(polar)
-plt.axvline(le,color='red')
-plt.axvline(re,color='red')
+testb = test1[1][1][:,-1]
+testb=testb-np.mean(testb)
+
+smallcorr1 = signal.correlate(testa,testa)
+smallcorr1 = smallcorr1/np.max(abs(smallcorr1))
+smallcorr2 = signal.correlate(testb,testb)
+smallcorr2 = smallcorr2/np.max(abs(smallcorr2))
+
+x0 = np.linspace(-len(smallcorr1)+1,len(smallcorr1)-1,num=len(smallcorr1))
+x1 = x0*test1[1][0]
+x2 = x0*(test1[1][0]+test1[1][1].shape[1])
+
+plt.plot(x1,smallcorr1,label='close')
+plt.plot(x2,smallcorr2,label='far')
+
+#%%
+testc=np.mean(test1[1][1],axis=1)
+smallcorr3 = signal.correlate(testc,testc)
+plt.plot(smallcorr3)
+
 #%%
 
 #%%
