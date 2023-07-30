@@ -350,25 +350,25 @@ ax2.imshow(test1[1][1])
 #%%
 def xgenerator(initial,inputimage):
 	'''
+	Generates the x arrays for the cross correlation (correcting for r)
 	initial is the starting r
 	size is the number of theta values
 	'''
+	
 	thetalen = inputimage.shape[0]
 	rlen = inputimage.shape[1]
-	print(rlen)
-	print(thetalen)
-	basearray = np.linspace(0,thetalen-1,num=thetalen,dtype=int)
-	rvals = np.linspace(initial,initial+rlen-1,num=rlen)
-	rescalematrix = np.outer(basearray,rvals)
-	return rescalematrix
+	
+	#cross correlation goes from negative to positive
+	x0 = np.linspace(-thetalen+1,thetalen-1,num=2*thetalen-1)
+	
+	#radius needs to be added
+	rvals = np.linspace(initial,initial+rlen-1,num = rlen)
+	
+	xall = np.outer(x0,rvals)
+
+	return xall
 xmat = xgenerator(test1[1][0],test1[1][1])
 plt.imshow(xmat)
-
-#%%
-plt.plot(xmat[:,0],test1[1][1][:,0],label = 'closet')
-plt.plot(xmat[:,-1],test1[1][1][:,-1],label='farthest')
-plt.legend()
-
 
 #%%
 '''
@@ -385,20 +385,54 @@ smallcorr1 = smallcorr1/np.max(abs(smallcorr1))
 smallcorr2 = signal.correlate(testb,testb)
 smallcorr2 = smallcorr2/np.max(abs(smallcorr2))
 
-x0 = np.linspace(-len(smallcorr1)+1,len(smallcorr1)-1,num=len(smallcorr1))
-x1 = x0*test1[1][0]
-x2 = x0*(test1[1][0]+test1[1][1].shape[1])
-
-plt.plot(x1,smallcorr1,label='close')
-plt.plot(x2,smallcorr2,label='far')
+plt.plot(xmat[:,1],smallcorr1,label='close')
+plt.plot(xmat[:,-1],smallcorr2,label='far')
 
 #%%
-testc=np.mean(test1[1][1],axis=1)
-smallcorr3 = signal.correlate(testc,testc)
-plt.plot(smallcorr3)
+from scipy import interpolate
+def averagecorr(inputimage,xmatrix):
+	#shift each line by the mean to get rid of DC shift
+	linemeans = np.mean(inputimage,axis=0)
+	shiftedim = np.subtract(inputimage,linemeans)
+	
+	allinterps = [None]*inputimage.shape[1] #Create list to store interp functions
+	
+	for i in range(inputimage.shape[1]):
+		x = xmatrix[:,i]
+		y = signal.correlate(shiftedim[:,i],shiftedim[:,i])
+		y = y/np.max(y)
+		allinterps[i] = interpolate.interp1d(x, y, kind='linear', axis=-1, assume_sorted=True)
+		
+	return allinterps
+
+allinterps = averagecorr(test1[1][1],xmat)
+plt.plot(xmat[:,0],allinterps[0](xmat[:,0]))
+plt.plot(xmat[:,-1],allinterps[-1](xmat[:,-1]))
+#%%
+x_all = np.linspace(0, 10, num=101, endpoint=True)
+# put all fits to one matrix for fast mean calculation
+data_collection = np.vstack((f1_int,f2_int,f3_int))
+
+# calculating mean value
+f_avg = np.average(data_collection, axis=0)
+
 
 #%%
+cctest = test1[1][1]
 
+
+linemeans = np.mean(cctest,axis=0)
+test = np.subtract(cctest,linemeans)
+corrtest = signal.correlate(test,test)
+
+
+plt.plot(corrtest[1])
+#%%
+teststuff = plt.imshow(signal.correlate(cctest,cctest))
+plt.imshow(teststuff)
+#%%
+
+interptest = interpolate.interp1d(xmat, y, kind='linear', axis=-1, assume_sorted=True)
 #%%
 smallcorr1 = signal.correlate(test1,test1)
 smallcorr1 = smallcorr1/np.max(abs(smallcorr1))
