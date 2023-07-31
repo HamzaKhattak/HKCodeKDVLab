@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 import cv2
 from scipy import signal
+from scipy.optimize import curve_fit
 #%%
 baseim = io.imread('baseim.tif')
 staticim = io.imread('staticunwashed.tif')
@@ -20,7 +21,6 @@ movingim = io.imread('unwashedmove.tif')
 #%%
 #leveling image
 
-from scipy.optimize import curve_fit
 
 def radial_profile(data, center):
 	'''
@@ -81,14 +81,7 @@ for i in range(3):
 	correctedimages[i]=rescale(correctedimages[i])
 
 
-#%%
 
-plt.figure()
-fig, ax = plt.subplots(1, 3)
-for i in range(3):
-	ax[i].imshow(correctedimages[i],cmap='gray')
-#%%
-plt.plot(radial_profile(correctedimages[1], center))
 
 
 
@@ -108,7 +101,7 @@ def autocorrelatefinder(inputimage,boxdeletesize = 6):
 	'''
 	Calculate 2d Fourier transform and mask center DC region
 	'''
-	th1 = signal.correlate(inputimage-np.mean(maskedpatch),inputimage,mode='full')
+	th1 = signal.correlate(inputimage-np.mean(inputimage),inputimage,mode='full')
 	DCdeletey = [int(th1.shape[0]/2-boxdeletesize),int(th1.shape[0]/2+boxdeletesize)]
 	DCdeletex = [int(th1.shape[1]/2-boxdeletesize),int(th1.shape[1]/2+boxdeletesize)]
 	th1[DCdeletey[0]:DCdeletey[1],DCdeletex[0]:DCdeletex[1]]=0.1
@@ -124,29 +117,10 @@ def centerzoomer(inputarray,size):
 	x1 , x2 , y1, y2 = [x0-diffx,x0+diffx,y0-diffy,y0+diffy]
 	return inputarray[y1:y2,x1:x2]
 
-fts=[None]*3
+
 for i in range(3):
 	blurred = cv2.GaussianBlur(correctedimages[i],(3,3),0)
 	fts[i] = fftfinder(blurred)
-
-
-fig, ax = plt.subplots(1, 3)
-for i in range(3):
-	ax[i].imshow(abs(centerzoomer(fts[i],[100,100])),cmap='gray')
-#%%
-
-#%%
-
-'''
-Using find peaks to maybe reconstruct some part of the image
-'''
-newim = correctedimages[1]
-
-x = newim[1000]
-
-peaks, _ = signal.find_peaks(x, prominence=1,width=5,distance=10)
-plt.plot(peaks, x[peaks]+1000, "xr"); plt.plot(x+1000); plt.legend(['distance'])
-#%%
 
 
 #%%
@@ -159,12 +133,12 @@ cmap_rb = colors.LinearSegmentedColormap.from_list('rb_cmap',[c_white,c_red],512
 Finding the contact patch using thresholds
 '''
 
-import scipy.ndimage as snd
+from scipy import ndimage
 def thresholdfinder(inputimage):
 	start = inputimage
 	blurred = cv2.GaussianBlur(start,(3,3),0)
 	ret, thresh1 = cv2.threshold(blurred, 80, 255, cv2.THRESH_BINARY_INV)
-	thresh2 = snd.binary_closing(thresh1, structure=np.ones((11,11)))
+	thresh2 = ndimage.binary_closing(thresh1, structure=np.ones((11,11)))
 	return thresh2
 
 
@@ -172,7 +146,7 @@ plt.imshow(correctedimages[2],cmap='gray')
 plt.imshow(thresholdfinder(correctedimages[2]),cmap=cmap_rb)
 
 #%%
-from scipy import ndimage
+
 '''
 Extract main contact patch
 '''
@@ -217,72 +191,20 @@ from skimage.morphology import convex_hull_image
 '''
 Do the FFt on convex hull of the actual image rather than the thresholding
 '''
-mainpatch1 = largestpatchfind(
-thresholdfinder(
-	correctedimages[2]))
-#test = np.ma.masked_array(x, mask=[0, 0, 0, 1, 0])
-boundingsphere = convex_hull_image(mainpatch1)
-#plt.imshow(boundingsphere)
-extents = tightcropper(boundingsphere,False)
-
-boundingsphere=boundingsphere[extents[2]:extents[3],extents[0]:extents[1]]
-cropped=correctedimages[2][extents[2]:extents[3],extents[0]:extents[1]]
-
-maskedpatch = cropped*boundingsphere
-plt.imshow(maskedpatch)
-#%%
-'''
-Get fourier of above
-'''
-tft = fftfinder(maskedpatch)
-plt.imshow(plt.imshow(np.abs(centerzoomer(tft,[100,100]))))
-#%%
-directionalfft1 = np.fft.fft(maskedpatch,axis=0)
-directionalfft2 = np.fft.fft(maskedpatch,axis=1)
-plt.plot(np.mean((abs(directionalfft1)),axis=1)[5:-5])
-plt.plot(np.mean((abs(directionalfft2)),axis=0)[5:-5])
-#%%
-
-print(maskedpatch.shape)
-mean1 = np.mean(directionalfft1,axis=1)
-mean2 = np.mean(directionalfft2,axis=0)
-
-vals1=np.linspace(.001,len(mean1),len(mean1))
-vals1=len(vals1)/vals1
-vals2=np.linspace(.001,len(mean2),len(mean2))
-vals2=len(vals1)/vals2
-
-plt.plot(vals1,np.mean((abs(directionalfft1)),axis=1),label='vertical')
-plt.plot(vals2,np.mean((abs(directionalfft2)),axis=0),label='horizontal')
-plt.legend()
-plt.xlim(3,100)
-plt.ylim(0,6000)
-print(mean1.shape)
-print(mean2.shape)
-
-#%%
-from scipy import signal
-norm = maskedpatch-np.mean(maskedpatch)
-testc = autocorrelatefinder(maskedpatch-np.mean(maskedpatch))
-plt.imshow(testc)
-#%%
-corrleft = signal.correlate(norm[:,362],norm[:,362])
-corrleft = corrleft/np.max(corrleft)
-corrright = signal.correlate(norm[:,1421],norm[:,1421])
-corrright = corrright/np.max(corrright)
-plt.plot(corrleft,label='left')
-plt.plot(corrright,label='right')
-plt.legend()
-#%%
-polar=cv2.linearPolar(maskedpatch,[842,688],900,cv2.WARP_FILL_OUTLIERS)
-plt.imshow(polar)
-print(maskedpatch.shape)
-print(polar.shape)
-
-#%%
-from scipy.interpolate import splrep, splev
-
-
+def convexhullfind(inputim):
+	mainpatch = largestpatchfind(
+	thresholdfinder(
+		inputim))
+	#test = np.ma.masked_array(x, mask=[0, 0, 0, 1, 0])
+	boundingsphere = convex_hull_image(mainpatch)
+	#plt.imshow(boundingsphere)
+	extents = tightcropper(boundingsphere,False)
+	
+	boundingsphere=boundingsphere[extents[2]:extents[3],extents[0]:extents[1]]
+	cropped=inputim[extents[2]:extents[3],extents[0]:extents[1]]
+	
+	maskedpatch = cropped*boundingsphere
+	return maskedpatch
 
 
 def rextentfind(inputpolar):
@@ -311,8 +233,6 @@ def rextentfind(inputpolar):
 
 def leadtrailfingerfind(inputpolar,halfangle):
 	'''
-	
-
 	Parameters
 	----------
 	inputpolar : polar coordinate image of the fingering, assumes 0 degrees is front and that it loops
@@ -341,18 +261,14 @@ def leadtrailfingerfind(inputpolar,halfangle):
 	return [startl,leftcrop],[startr,rightcrop]
 
 
-fig, (ax1, ax2) = plt.subplots(1, 2)
-
-test1 = leadtrailfingerfind(polar, 35)
-
-ax1.imshow(test1[0][1])
-ax2.imshow(test1[1][1])
-#%%
-def xgenerator(initial,inputimage):
+def xgenerator(initial,inputimage,thetpixsize):
 	'''
 	Generates the x arrays for the cross correlation (correcting for r)
-	initial is the starting r
-	size is the number of theta values
+	initial is the starting r in pixels
+	theta pix size is the size of a theta pixel in radians
+	shift is in theta pixels
+	
+	***Fix the shift values in this code**
 	'''
 	
 	thetalen = inputimage.shape[0]
@@ -360,37 +276,25 @@ def xgenerator(initial,inputimage):
 	
 	#cross correlation goes from negative to positive
 	x0 = np.linspace(-thetalen+1,thetalen-1,num=2*thetalen-1)
-	
+	x0 = x0*thetpixsize #convert from theta to r
 	#radius needs to be added
 	rvals = np.linspace(initial,initial+rlen-1,num = rlen)
 	
-	xall = np.outer(x0,rvals)
+	xall = np.outer(rvals,x0)
 
 	return xall
-xmat = xgenerator(test1[1][0],test1[1][1])
-plt.imshow(xmat)
 
-#%%
+
 '''
 Completing the cross correlation sample and sample of how to get it back to real lengths
 '''
-testa = test1[1][1][:,0]
-testa = testa-np.mean(testa)
 
-testb = test1[1][1][:,-1]
-testb=testb-np.mean(testb)
-
-smallcorr1 = signal.correlate(testa,testa)
-smallcorr1 = smallcorr1/np.max(abs(smallcorr1))
-smallcorr2 = signal.correlate(testb,testb)
-smallcorr2 = smallcorr2/np.max(abs(smallcorr2))
-
-plt.plot(xmat[:,1],smallcorr1,label='close')
-plt.plot(xmat[:,-1],smallcorr2,label='far')
-
-#%%
 from scipy import interpolate
-def averagecorr(inputimage,xmatrix):
+def interpolatorcorr(inputimage,xmatrix):
+	'''
+	Take an input cropped radial image and matrix of x positions and converts
+	it it a series of autocorrelation interpolation functions
+	'''
 	#shift each line by the mean to get rid of DC shift
 	linemeans = np.mean(inputimage,axis=0)
 	shiftedim = np.subtract(inputimage,linemeans)
@@ -398,156 +302,90 @@ def averagecorr(inputimage,xmatrix):
 	allinterps = [None]*inputimage.shape[1] #Create list to store interp functions
 	
 	for i in range(inputimage.shape[1]):
-		x = xmatrix[:,i]
+		x = xmatrix[i]
 		y = signal.correlate(shiftedim[:,i],shiftedim[:,i])
 		y = y/np.max(y)
 		allinterps[i] = interpolate.interp1d(x, y, kind='linear', axis=-1, assume_sorted=True)
 		
 	return allinterps
 
-allinterps = averagecorr(test1[1][1],xmat)
-plt.plot(xmat[:,0],allinterps[0](xmat[:,0]))
-plt.plot(xmat[:,-1],allinterps[-1](xmat[:,-1]))
+def interpolationaverager(interps,avrange,numvals):
+	'''
+	Averages a series of itnerpolation functions
+	'''
+	x_all = np.linspace(avrange[0], avrange[1], num=numvals)
+	ys = np.array([interps[i](x_all) for i in range(len(interps))])
+	combointer = np.mean(np.vstack(ys),axis=0)
+	combointer = combointer-np.mean(combointer)
+	return np.array([x_all,combointer])
+
+from scipy.fft import fft, fftfreq
+def FFTcorr(inputautocorr):
+	
+	#N = SAMPLE_RATE * DURATION
+	#xf = fftfreq(N, 1 / SAMPLE_RATE)
+	N = len(inputautocorr[0])
+	T = np.abs(inputautocorr[0,1]-inputautocorr[0,0])
+	yf = fft(inputautocorr[1])
+	ftransform = 2.0/N * np.abs(yf[1:N//2])
+	xf = fftfreq(N, T)[1:N//2]
+	wavelength = 1/xf
+	return [wavelength,ftransform]
+
+
+imageofinterest = correctedimages[1]
+maincenter = [988,1384]
+
+maskedpatch = convexhullfind(imageofinterest)
+halfangleuse = 35
+plt.imshow(imageofinterest)
 #%%
-x_all = np.linspace(0, 10, num=101, endpoint=True)
-# put all fits to one matrix for fast mean calculation
-data_collection = np.vstack((f1_int,f2_int,f3_int))
-
-# calculating mean value
-f_avg = np.average(data_collection, axis=0)
-
-
+plt.figure()
+plt.imshow(maskedpatch)
+#center = [842,688]
+center = [623,635]
 #%%
-cctest = test1[1][1]
+#Get a polar image
+polar=cv2.linearPolar(maskedpatch,center,900,cv2.WARP_FILL_OUTLIERS)
+plt.figure()
+plt.imshow(polar)
 
-
-linemeans = np.mean(cctest,axis=0)
-test = np.subtract(cctest,linemeans)
-corrtest = signal.correlate(test,test)
-
-
-plt.plot(corrtest[1])
-#%%
-teststuff = plt.imshow(signal.correlate(cctest,cctest))
-plt.imshow(teststuff)
-#%%
-
-interptest = interpolate.interp1d(xmat, y, kind='linear', axis=-1, assume_sorted=True)
-#%%
-smallcorr1 = signal.correlate(test1,test1)
-smallcorr1 = smallcorr1/np.max(abs(smallcorr1))
-smallcorr2 = signal.correlate(test2,test2)
-smallcorr2 = smallcorr2/np.max(abs(smallcorr2))
-plt.imshow(smallcorr2)
-#%%
-n1=smallcorr1.shape[0]
-n2=smallcorr2.shape[0]
-x1s = np.linspace(-n1/2,n1/2,num=n1)
-x2s = np.linspace(-n2/2,n2/2,num=n2)
-y1s = np.mean(smallcorr1,axis=1)
-y1s = y1s/np.max(y1s)
-y2s = np.mean(smallcorr2,axis=1)
-y2s = y2s/np.max(y2s)
-plt.plot(x1s,y1s,label='right')
-plt.plot(x2s,y2s,label='left')
-plt.legend()
-#%%
-extents = tightcropper(
-	largestpatchfind(
-	thresholdfinder(
-		correctedimages[1])),False)
-
-tftbase = fftfinder(correctedimages[0][extents[2]:extents[3],extents[0]:extents[1]])
-
-plt.imshow(np.abs(centerzoomer(tft,[100,100])))
-#%%
-fig, (ax1, ax2) = plt.subplots(1, 2)
-
-tft1 = fftfinder(mainpatches[0])
-tft2 = fftfinder(mainpatches[1])
-
-ax1.imshow(np.abs(centerzoomer(tft1,[100,100])))
-ax1.set_title('static')
-ax2.imshow(np.abs(centerzoomer(tft2,[100,100])))
-ax2.set_title('motion')
-#%%
-halftest = mainpatches[1]
-half=int(len(halftest[0,:])/2)
-tftleft = fftfinder(halftest[:,:half],3)
-tftright = fftfinder(halftest[:,half:],3)
+#Crop the images to the half angle and r extents
+croppedradialims = leadtrailfingerfind(polar, halfangleuse)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
-ax1.imshow(centerzoomer(np.abs(tftleft),[100,100]))
-ax1.set_title('left')
-ax2.imshow(centerzoomer(np.abs(tftright),[100,100]))
-ax2.set_title('right')
-#To get from pixels from center to wavelength
-'''
-Divide the length of the image axis by the distance from the DC center value
-'''
-#%%
-plt.imshow(centerzoomer(np.abs(tftleft)-np.abs(tftright),[100,100]))
-#%%
-prof = radial_profile(abs(tftleft), [int(x/2) for x in tftleft.shape])
-prof2 = radial_profile(abs(tftright), [int(x/2) for x in tftleft.shape])
-plt.plot(prof,label='left')
-plt.plot(prof2,label='right')
-plt.legend()
-#%%
-def polarimage(inputimage):
-	img = abs(inputimage)
-	ro,col=img.shape
-	cent=(int(col/2),int(ro/2))
-	max_radius = int(np.sqrt(ro**2+col**2)/2)
-	polar=cv2.linearPolar(img,cent,max_radius/5,cv2.WARP_FILL_OUTLIERS)
-	polar = (polar[:cent[1]]+polar[cent[1]:])/2
-	return polar
+ax1.imshow(croppedradialims[0][1])
+ax2.imshow(croppedradialims[1][1])
+
+#Calculate the cross correlation along each axis
+thetapix = 2*np.pi/polar.shape[0]
+xmatleft = xgenerator(croppedradialims[0][0],croppedradialims[0][1],thetapix)
+xmatright = xgenerator(croppedradialims[1][0],croppedradialims[1][1],thetapix)
+allinterpsleft = interpolatorcorr(croppedradialims[0][1],xmatleft)
+allinterpsright = interpolatorcorr(croppedradialims[1][1],xmatright)
 
 
-right = polarimage(tftright)
-left = polarimage(tftleft)
 
-fig, (ax1, ax2) = plt.subplots(2, 1)
-ax1.imshow(left)
-ax1.set_title('left')
-ax2.imshow(right)
-ax2.set_title('right')
 
-#%%
-vals=np.linspace(.001,len(right[0,:]),len(right[0,:]))
-plt.plot(vals,np.mean(right[340:400],axis=0),label='right')
-plt.plot(vals,np.mean(left[340:400],axis=0),label='left')
 
+
+#Calculate the average cross correlation
+averagecorrleft = interpolationaverager(allinterpsleft,[-np.max(xmatleft[0]),np.max(xmatleft[0])],len(xmatleft[0]))
+averagecorrright = interpolationaverager(allinterpsright,[-np.max(xmatright[0]),np.max(xmatright[0])],len(xmatright[0]))
+
+plt.figure()
+plt.plot(averagecorrleft[0],averagecorrleft[1],label='left')
+plt.plot(averagecorrright[0],averagecorrright[1],label='right')
+plt.xlabel('shift (pixels)')
+plt.ylabel('intensity')
 plt.legend()
 
-
-#%%
-
-vals=np.linspace(.001,len(right[0,:]),len(right[0,:]))
-plt.plot(len(right[0,:])/vals,np.mean(right[300:450],axis=0),label='right')
-plt.plot(len(right[0,:])/vals,np.mean(left[300:450],axis=0),label='left')
-plt.xlim(0,100)
+#Get a FFT of the cross correlation to get a wavelength associated with the feature
+rcorrfft = FFTcorr(averagecorrright)
+lcorrfft = FFTcorr(averagecorrleft)
+plt.figure()
+plt.plot(rcorrfft[0],rcorrfft[1],label = 'right')
+plt.xlabel('wavelength (pixels)')
+plt.plot(lcorrfft[0],lcorrfft[1],label = 'left')
+plt.ylabel('intensity')
 plt.legend()
-
-#%%
-
-
-#%%
-
-#%%
-leveled = movingim-fitfunc(r1,*popt)
-leveled=leveled-np.min(leveled)
-leveled=leveled.astype(np.uint8)
-
-img=leveled
-img= cv2.GaussianBlur(img,(5,5),0)
-ret,th1 = cv2.threshold(img,25,255,cv2.THRESH_BINARY)
-contours, hierarchy = cv2.findContours(th1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-  
-plt.imshow(movingim,cmap='gray')
-plt.imshow(th1,alpha=0.3)  
-#cv2.drawContours(th1, contours, -1, (0,255,0), 3)
-
-
-#%%
-plt.imshow(movingim)
