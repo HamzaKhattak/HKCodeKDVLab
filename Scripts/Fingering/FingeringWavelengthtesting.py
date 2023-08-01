@@ -13,9 +13,7 @@ import cv2
 from scipy import signal
 from scipy.optimize import curve_fit
 #%%
-baseim = io.imread('baseim.tif')
-staticim = io.imread('staticunwashed.tif')
-movingim = io.imread('unwashedmove.tif')
+
 
 
 #%%
@@ -66,19 +64,7 @@ def rescale(data):
 	newdat = 255*(data-np.min(data))/(np.max(data)-np.min(data))
 	return newdat.astype(np.uint16)
 
-center = [1383,965]
-brightnessprofile = radial_profile(baseim, [1383,965])
-fits = profilefit(brightnessprofile,fitfunc)
-plt.figure()
-plt.plot(fits[0],fits[1])
-plt.plot(fits[0],fits[2](fits[0],*fits[3]))
 
-inputimages=[baseim,staticim,movingim]
-correctedimages=[None]*3
-
-for i in range(3):
-	correctedimages[i]=subtractfit(inputimages[i],center,fitfunc,fits[3])
-	correctedimages[i]=rescale(correctedimages[i])
 
 
 
@@ -118,16 +104,10 @@ def centerzoomer(inputarray,size):
 	return inputarray[y1:y2,x1:x2]
 
 
-for i in range(3):
-	blurred = cv2.GaussianBlur(correctedimages[i],(3,3),0)
-	fts[i] = fftfinder(blurred)
-
 
 #%%
 from matplotlib import colors
-c_white = colors.colorConverter.to_rgba('red',alpha = 0)
-c_red= colors.colorConverter.to_rgba('red',alpha = .3)
-cmap_rb = colors.LinearSegmentedColormap.from_list('rb_cmap',[c_white,c_red],512)
+
 
 '''
 Finding the contact patch using thresholds
@@ -142,8 +122,7 @@ def thresholdfinder(inputimage):
 	return thresh2
 
 
-plt.imshow(correctedimages[2],cmap='gray')
-plt.imshow(thresholdfinder(correctedimages[2]),cmap=cmap_rb)
+
 
 #%%
 
@@ -156,8 +135,6 @@ def largestpatchfind(inputTFarray):
 	indexofmax = np.argmax(objectareas)+1
 	return labeled==indexofmax
 
-mainpatch = largestpatchfind(thresholdfinder(correctedimages[2]))
-#plt.imshow(mainpatch)
 
 
 
@@ -178,14 +155,9 @@ def tightcropper(inputmainpatch,imreturn = True):
 	tightcrop = inputmainpatch[extents[2]:extents[3],extents[0]:extents[1]]
 	if imreturn == False:
 		tightcrop = extents
-	return tightcrop
+	return tightcrop, extents
 
-mainpatches = [tightcropper(
-	largestpatchfind(
-	thresholdfinder(
-		correctedimages[i+1]))) for i in range(2)]
 
-plt.imshow(mainpatches[1])
 #%%
 from skimage.morphology import convex_hull_image
 '''
@@ -196,15 +168,15 @@ def convexhullfind(inputim):
 	thresholdfinder(
 		inputim))
 	#test = np.ma.masked_array(x, mask=[0, 0, 0, 1, 0])
-	boundingsphere = convex_hull_image(mainpatch)
+	boundingcircle = convex_hull_image(mainpatch)
 	#plt.imshow(boundingsphere)
-	extents = tightcropper(boundingsphere,False)
+	extents = tightcropper(boundingcircle)[1]
 	
-	boundingsphere=boundingsphere[extents[2]:extents[3],extents[0]:extents[1]]
+	boundingcircle=boundingcircle[extents[2]:extents[3],extents[0]:extents[1]]
 	cropped=inputim[extents[2]:extents[3],extents[0]:extents[1]]
 	
-	maskedpatch = cropped*boundingsphere
-	return maskedpatch
+	maskedpatch = cropped*boundingcircle
+	return maskedpatch, extents
 
 
 def rextentfind(inputpolar):
@@ -254,7 +226,7 @@ def leadtrailfingerfind(inputpolar,halfangle):
 	leftcrop=leftcrop[:,startl:endl]
 	
 	#Get a crop of the right values, same method but need numpy.take to wrap around
-	indicesfront = range(i-cutoffs,i+cutoffs)
+	indicesfront = range(-cutoffs,cutoffs)
 	rightcrop=polar.take(indicesfront, axis=0,mode='wrap')
 	startr, endr = rextentfind(rightcrop)
 	rightcrop = rightcrop[:,startr:endr]
@@ -275,7 +247,7 @@ def xgenerator(initial,inputimage,thetpixsize):
 	rlen = inputimage.shape[1]
 	
 	#cross correlation goes from negative to positive
-	x0 = np.linspace(-thetalen+1,thetalen-1,num=2*thetalen-1)
+	x0 = np.linspace(-(thetalen)//2+1,(thetalen)//2-1,num=2*thetalen-1)
 	x0 = x0*thetpixsize #convert from theta to r
 	#radius needs to be added
 	rvals = np.linspace(initial,initial+rlen-1,num = rlen)
@@ -333,22 +305,41 @@ def FFTcorr(inputautocorr):
 	return [wavelength,ftransform]
 
 
-imageofinterest = correctedimages[1]
-maincenter = [988,1384]
+baseim = io.imread('baseim.tif')
+staticim = io.imread('staticunwashed.tif')
+movingim = io.imread('unwashedmove.tif')
 
-maskedpatch = convexhullfind(imageofinterest)
+
+imageofinterest = movingim
 halfangleuse = 35
-plt.imshow(imageofinterest)
-#%%
+maincenter = [1383,965]
+
+brightnessprofile = radial_profile(baseim, maincenter)
+fits = profilefit(brightnessprofile,fitfunc)
+
+
+correctedimage=subtractfit(imageofinterest,maincenter,fitfunc,fits[3])
+correctedimage=rescale(correctedimage)
+
+
+#plt.figure()
+#plt.imshow(correctedimage,cmap='gray')
+c_white = colors.colorConverter.to_rgba('red',alpha = 0)
+c_red= colors.colorConverter.to_rgba('red',alpha = .3)
+cmap_rb = colors.LinearSegmentedColormap.from_list('rb_cmap',[c_white,c_red],512)
+#plt.imshow(thresholdfinder(correctedimage),cmap=cmap_rb)
+
+
+maskedpatch,extents = convexhullfind(correctedimage)
+
+center = [int(x) for x in [maincenter[0]-extents[0],maincenter[1]-extents[2]]]
 plt.figure()
-plt.imshow(maskedpatch)
-#center = [842,688]
-center = [623,635]
-#%%
+plt.imshow(maskedpatch,cmap='gray')
+
 #Get a polar image
 polar=cv2.linearPolar(maskedpatch,center,900,cv2.WARP_FILL_OUTLIERS)
 plt.figure()
-plt.imshow(polar)
+plt.imshow(polar,cmap='gray')
 
 #Crop the images to the half angle and r extents
 croppedradialims = leadtrailfingerfind(polar, halfangleuse)
@@ -361,11 +352,13 @@ ax2.imshow(croppedradialims[1][1])
 thetapix = 2*np.pi/polar.shape[0]
 xmatleft = xgenerator(croppedradialims[0][0],croppedradialims[0][1],thetapix)
 xmatright = xgenerator(croppedradialims[1][0],croppedradialims[1][1],thetapix)
+
 allinterpsleft = interpolatorcorr(croppedradialims[0][1],xmatleft)
 allinterpsright = interpolatorcorr(croppedradialims[1][1],xmatright)
-
-
-
+plt.figure()
+plt.plot(xmatright[0],allinterpsright[0](xmatright[0]),label='close')
+plt.plot(xmatright[0],allinterpsleft[-1](xmatright[0]),label='far')
+plt.legend()
 
 
 
@@ -383,9 +376,44 @@ plt.legend()
 #Get a FFT of the cross correlation to get a wavelength associated with the feature
 rcorrfft = FFTcorr(averagecorrright)
 lcorrfft = FFTcorr(averagecorrleft)
+
 plt.figure()
 plt.plot(rcorrfft[0],rcorrfft[1],label = 'right')
 plt.xlabel('wavelength (pixels)')
 plt.plot(lcorrfft[0],lcorrfft[1],label = 'left')
 plt.ylabel('intensity')
 plt.legend()
+#%%
+x=np.linspace(0,49,num=100)
+x2=np.linspace(-49,49,num=199)
+f = np.exp(-(x-10)**2)-np.exp(-(x-20)**2)+np.exp(-(x-30)**2)-np.exp(-(x-40)**2)
+plt.plot(x,f)
+plt.plot(x2,signal.correlate(f,f))
+
+
+#%%
+plt.imshow(polar,cmap='gray')
+
+#%%
+plt.imshow(correctedimage)
+
+#%%
+
+testimage = polar
+thetalen = polar.shape[0]
+rlen = polar.shape[1]
+
+thetapix=2*np.pi/thetalen
+#cross correlation goes from negative to positive
+x0 = np.linspace(-(thetalen)//2+1,(thetalen)//2-1,num=2*thetalen-1)
+x0 = x0*thetapix #convert from theta to r
+x02 = 2*np.sin(x0/2)
+#radius needs to be added
+initial = croppedradialims[0][0]
+rvals = np.linspace(initial,initial+rlen-1,num = rlen)
+
+print(rvals[0]*x0[len(x0)//2+1000])
+print(rvals[0]*x02[len(x0)//2+1000])
+# it doesn't seem arc length vs linear distance makes much of a difference
+	
+
