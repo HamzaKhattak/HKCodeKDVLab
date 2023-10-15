@@ -3,14 +3,14 @@
 This code is for quickly combining files for later analysis and then saving a video to make for easy playing
 '''
 
-import os, glob
+import os, glob, imageio
 #need to install imageio and imagio-ffmpeg and tkinter 
-import imageio
 import tifffile as tf
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 from skimage.io import ImageCollection
+import ndtiff as ndt
 
 root = tk.Tk()
 root.withdraw()
@@ -61,6 +61,10 @@ if dualim == '1':
 		for i in range(len(imfilenames)-1):
 			temp = fullseqimport(os.path.join(imfilenames[i+1]))
 			imageframes = np.append(imageframes,temp,axis=0)
+	if collect == '3':
+		impath=os.path.dirname(file_path)
+		ims = ndt.NDTiffDataset(impath)
+		imageframes = ims.as_array()[0,:,0,0]
 
 	
 	
@@ -85,3 +89,4 @@ elif dualim == '2':
 else:
 	print('invalid input')
 
+#ffmpeg -i input.mkv -r 16 -filter:v "setpts=0.25*PTS" output.mkv

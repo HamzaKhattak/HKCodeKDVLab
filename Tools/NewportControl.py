@@ -54,7 +54,7 @@ class SMC100:
 		'''
 		Goes to a specific position, limit to <15
 		'''
-		if position<15:
+		if position<20:
 			self.writecommand('1PA'+str(position))
 		else:
 			raise ValueError('Position too high')

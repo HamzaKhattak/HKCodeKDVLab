@@ -30,7 +30,6 @@ vol1 = openlistnp('volume1dat')
 vol2 = openlistnp('volume2dat')
 vol3 = openlistnp('volume3dat')
 vol4 = openlistnp('volume4dat')
-vol5 = openlistnp('volume5dat')
 def openlistnp(filepath):
 	'''
 	Opens lists of numpy arrays using pickle
@@ -40,7 +39,7 @@ def openlistnp(filepath):
 	return result
 
 
-dats=[vol1,vol2,vol3,vol4,vol5]  
+dats=[vol1,vol2,vol3,vol4]  
 vols = np.loadtxt('volumes.csv',skiprows = 1,delimiter=',',dtype=int)
 vols=vols[:,1]
 
@@ -116,7 +115,7 @@ ax.legend(loc='upper left')
 
 #ax.set_xscale('log')
 #ax.set_yscale('log')
-ax.set_ylim(0,500)
+ax.set_ylim(0,30000)
 ax.set_xlim(x1,x2)
 
 #ax.set_ylim(5,1000)

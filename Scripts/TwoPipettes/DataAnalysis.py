@@ -44,7 +44,7 @@ def quickfilter2(x,y):
 def quickfilter3(x,y):
 	return x, y
 
-def peakfilter(y, prom = 0.04):
+def peakfilter(y, prom = 2):
 	
 	#returns false values for where peaks and troughs are located
 	
@@ -73,12 +73,15 @@ def peakfilter(y, prom = 0.04):
 
 
 runparams = np.loadtxt('runsparams.csv',skiprows=1,dtype=str,delimiter=',')
+
 run_names = runparams[:,0]
+#run_names = [i[:-1] for i in run_names]
+
 run_time_steps = runparams[:,1].astype(float)
 
 
 
-pixsize = 1.78e-6 #pixel size of camera in m
+pixsize = 2.24e-6 #pixel size of camera in m
 numRuns = len(run_names)
 med_angles=np.zeros(numRuns)
 dat=[None]*numRuns
@@ -103,15 +106,16 @@ for tv in range(len(med_angles)):
 	xs=np.arange(len(smoothspeeds[tv]))
 	include = peakfilter(smoothspeeds[tv]/med_angles[i])
 	plt.plot(xs[np.invert(include)],smoothspeeds[tv][np.invert(include)]/med_angles[i],'ko')
-	plt.plot(xs,smoothspeeds[tv]/med_angles[i],'-',label=tv)
+	plt.plot(xs,smoothspeeds[tv]/med_angles[i],'-',label=tv,linewidth=3)
 	#plt.axvline(test[0])
 	if tv == int(len(med_angles)/2):
 		plt.legend()
-		plt.yscale('log')
+		#plt.yscale('log')
+		#plt.ylim(.00001,)
 		plt.figure()
 plt.legend()
-plt.yscale('log')
-
+#plt.yscale('log')
+#plt.ylim(.00001,)
 #%%
 plt.figure()
 for tv in range(len(med_angles)):
@@ -259,8 +263,8 @@ ax.plot(xsamples,powerlaw(xsamples,*totalpopt),'--',color = 'k')
 
 
 
-ax.set_ylim(0,500)
-ax.set_xlim(0,850)
+ax.set_ylim(0,)
+ax.set_xlim(0,)
 ax.legend(loc = 'upper left')
 ax.set_xlabel(r'$d \ (\mathrm{\mu m})$')
 

@@ -20,7 +20,7 @@ plt.rcParams.update({
     "font.sans-serif": "Helvetica",
 })
 
-which_im = 1
+which_im = 7
 xmax = -1
 
 #Get the crop points from the run parameters
@@ -76,7 +76,8 @@ xarray=np.arange(allimages.shape[2])
 # ax refers to the axis propertis of the figure
 fig, ax = plt.subplots(2,1,figsize=(8,6), gridspec_kw={'height_ratios': [1, 1]})
 im = ax[1].imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
-scalebar = ScaleBar(pixsize,frameon=False,location='lower right') # 1 pixel = 0.2 meter
+im.set_clim(0, 256) #if want to reproduce original image rather than full scale
+scalebar = ScaleBar(pixsize,frameon=False,location='lower right',font_properties={'size':26},pad=1.5) # 1 pixel = 0.2 meter
 #im.set_clim(0, 256) #if want to reproduce original image rather than full scale
 
 ax[0].plot(seps*2,speeds*2,'.')
@@ -87,6 +88,7 @@ ax[0].set_ylabel('speed ($\mathrm{\mu m s^{-1}}$)')
 ax[1].axis('off')
 ax[1].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
 ax[1].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
+
 
 edgeline, = ax[1].plot(edges[0][:,0],edges[0][:,1],color='red',marker='.',linestyle='',markersize=1,animated=True)
 
