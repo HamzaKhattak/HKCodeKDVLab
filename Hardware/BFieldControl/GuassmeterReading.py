@@ -108,7 +108,6 @@ class gaussmeter:
 					Bval = struct.unpack('>I',dat[-4:])[0]
 					Bval = (-1)**BSign*Bval/(10**BDivide)
 					print("Time: {t}, field: {B} Guass".format(t = t1-t0, B = Bval))
-					t0=t1
 					#self.finalreading = dat
 		
  
