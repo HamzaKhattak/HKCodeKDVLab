@@ -11,6 +11,8 @@ import tifffile as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv
+
+
 def preimport(FilePath):
 	'''
 	This function creates a tifffile object that can be referenced for image import operations
@@ -25,43 +27,48 @@ def fullseqimport(FilePath):
 	tifobj = preimport(FilePath)
 	numFrames = len(tifobj.pages)
 	return tf.imread(FilePath,key=slice(0,numFrames))
-testim=fullseqimport('mainmergevid.ome.tif')
 
 
+
+#%%
+
+mergeimagesequence=fullseqimport('mainmergevid.ome.tif')
+ratchetimagesequence = fullseqimport('mainzigzag.ome.tif')
 
 template = imageio.imread('crosscorr.tif')
-w, h = template.shape[::-1]
-# All the 6 methods for comparison in a list
-methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
- 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
 
 #%%
 import scipy.ndimage.morphology as morph
 from scipy import ndimage
+
+
+
+#Define a template
+
 inter = template<120
 inter2 = morph.binary_fill_holes(inter)
-
 struct2 = ndimage.generate_binary_structure(2, 2)
-
 inter2 = ndimage.binary_dilation(inter2,structure=struct2,iterations = 4)
-inter2 = np.array(inter2,dtype=np.uint8)
-plt.imshow(inter2)
-#%%
- # Apply template Matching
-locs = np.zeros((len(testim),2))
+templatemask = np.array(inter2,dtype=np.uint8)
 
-for i in range(len(testim)):
-	res = cv.matchTemplate(testim[i],template,cv.TM_CCOEFF_NORMED,mask = inter2)
+
+#%%
+imagesequence = mergeimagesequence
+ # Apply template Matching
+pipettelocs = np.zeros((len(imagesequence),2))
+
+for i in range(len(imagesequence)):
+	res = cv.matchTemplate(imagesequence[i],template,cv.TM_CCOEFF_NORMED,mask = templatemask)
 	min_val, max_val, min_loc, max_loc = cv.minMaxLoc(res)
 	top_left = max_loc
-	locs[i] = top_left
+	pipettelocs[i] = top_left
 	if i%200==0:
 		print(i)
 #%%
-np.save('ratchetpositions.npy',locs)
+np.save('ratchetpositions.npy',pipettelocs)
 #%%
-plt.plot(locs[:,0]-locs[0,0])
-plt.plot(locs[:,1]-locs[0,1])
+plt.plot(pipettelocs[:,0]-pipettelocs[0,0])
+plt.plot(pipettelocs[:,1]-pipettelocs[0,1])
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
@@ -70,23 +77,21 @@ from matplotlib.animation import FuncAnimation
 fig, ax = plt.subplots()
 xdata, ydata = [], []
 ln, = ax.plot([], [], 'ro')
-im = ax.imshow(testim[0],cmap=plt.cm.gray,aspect='equal')
+im = ax.imshow(imagesequence[0],cmap=plt.cm.gray,aspect='equal')
 
 def init():
 	return ln,
 
 def update_plot(it):
-	ln.set_data(locs[it,0], locs[it,1])
-	im.set_data(testim[it])
+	ln.set_data(pipettelocs[it,0], pipettelocs[it,1])
+	im.set_data(imagesequence[it])
 	return ln,im,
 
-ani = FuncAnimation(fig, update_plot, frames=np.arange(0,len(testim)), interval=1,
+ani = FuncAnimation(fig, update_plot, frames=np.arange(0,len(imagesequence)), interval=1,
                     init_func=init, repeat_delay=1000, blit=True)
 plt.show()
 
 #%%
-import pyometiff
-
 from pyometiff import OMETIFFReader
 
 
@@ -123,63 +128,21 @@ def findthresh(raw_image,threshtype = 0,h_edge = (40,1),v_edge = (1,25),threshol
 	#Remove specs
 	thresh_image=morph.remove_small_objects(thresh_image,500).astype('uint8')
 	
-	#Detect horizontal and vertical lines, only keep ones with sufficient vertical bits
-	# Remove horizontal lines
-	#horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40,1))
-	#detected_lines = cv2.morphologyEx(thresh_image, cv2.MORPH_OPEN, horizontal_kernel, iterations=2)
-	
 	# Add back the 
 	vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1,25))
 	result = 1 - cv2.morphologyEx(1 - thresh_image, cv2.MORPH_CLOSE, vertical_kernel, iterations=1)
-	result=result.astype(bool)
-	#edgedetect=feature.canny(result, sigma=2)
-	#locs_edges=np.flip(np.argwhere(edgedetect),1)
 	return result
 
 #%%
-raw_image = testim[-210]
-thresh_image = cv2.threshold(raw_image, 40,255, cv2.THRESH_BINARY_INV)[1]	
-plt.imshow(findthresh(testim[300],1,threshold=65))
-#%%
 
 
+ims = np.array([findthresh(i,1,threshold=60) for i in mergeimagesequence])
 
-ims = np.array([findthresh(i,1,threshold=60) for i in testim])
+imsratchet = np.array([findthresh(i,1,threshold=65) for i in ratchetimagesequence])
 
 #%%
-plt.imshow(ims[0])
-#%%
-fig, ax = plt.subplots()
-im = ax.imshow(findthresh(raw_image,1),cmap=plt.cm.gray,aspect='equal')
-xdata, ydata = [], []
-ln, = ax.plot([], [], 'ro')
-def init():
-	return ln,
 
-def update_plot(it):
-	im.set_data(ims[it])
-	return im,
-
-ani = FuncAnimation(fig, update_plot, frames=np.arange(0,len(testim)), interval=1,
-                    init_func=init, repeat_delay=1000, blit=True)
-plt.show()
-
-#%%
-ims = ims.astype('uint8')
-contours, hierarchy = cv.findContours(ims[0], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
-
-
-# compute the center of the contour
-M = cv2.moments(contours[0])
-cX = M["m10"] / M["m00"]
-cY = M["m01"] / M["m00"]
-
-print(cX,cY)
-x = np.mean(contours[0][:,0,0])
-y = np.mean(contours[0][:,0,1])
-print(x,y)
-def dropsxyfind(im):
+def twodropsxyfind(im):
 	contours, hierarchy = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 	locs = [[0,0],[0,0]]
 	
@@ -207,26 +170,56 @@ def dropsxyfind(im):
 		if locs[0][0]>locs[1][0]:
 			locs = locs[::-1]
 	return locs
-			
-			
-#%%
 
-#%%
-positions = np.zeros((len(ims),2,2))
-for i in range(len(ims)):
-	positions[i] = dropsxyfind(ims[i])
 
+def onedropxyfind(im):
+	contours, hierarchy = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+	contours = sorted(contours, key=cv2.contourArea, reverse=True)
+	contours = contours[:1]
+	M = cv2.moments(contours[0])
+	cX = M["m10"] / M["m00"]
+	cY = M["m01"] / M["m00"]
+	return cX, cY
+			
+
+			
 #%%
+positions = np.zeros((len(mergeimagesequence),2,2))
+
+for i in range(len(mergeimagesequence)):
+	positions[i] = twodropsxyfind(ims[i])
+	
+positionsratchet = np.zeros((len(ratchetimagesequence),2))
+for i in range(len(imsratchet)):
+	positionsratchet[i] = onedropxyfind(imsratchet[i])
+
 pf = positions.reshape(len(positions),-1)
 pfi = np.argwhere(pf == 0)[:,0]
 pf[pfi] = (pf[pfi+1]+pf[pfi-1])/2
 
-plt.plot(pf[:,0])
-plt.plot(pf[:,2])
 
 np.save('dropletpositions.npy',pf)
 
 
+#%%
+fig, ax = plt.subplots()
+im = ax.imshow(ratchetimagesequence[0],cmap=plt.cm.gray,aspect='equal')
+xdata, ydata = [], []
+ln, = ax.plot([], [], 'ro')
+def init():
+	return ln,
+
+def update_plot(it):
+	im.set_data(ratchetimagesequence[it])
+	ln.set_data(positionsratchet[it,0],positionsratchet[it,1])
+	return im,ln,
+
+ani = FuncAnimation(fig, update_plot, frames=np.arange(0,len(imsratchet)), interval=1,
+                    init_func=init, repeat_delay=1000, blit=True)
+plt.show()
+
+#%%
+np.save('onedroppositions.npy',positionsratchet)
 #%%
 fig, ax = plt.subplots()
 im = ax.imshow(findthresh(raw_image,1),cmap=plt.cm.gray,aspect='equal')

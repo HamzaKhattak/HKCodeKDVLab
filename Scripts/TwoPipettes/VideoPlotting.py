@@ -142,13 +142,13 @@ ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages
 plt.show()
 
 #%%
-print(allimages.shape[2])
+print(np.mean(dat[2])*180/np.pi)
 #%%
-
+'''
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=10,extra_args=['-vcodec', 'libx264'])
 ani.save('speedtracking.mp4',writer=writer,dpi=200)
-
+'''
 #%%
 
 

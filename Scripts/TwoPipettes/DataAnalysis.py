@@ -219,10 +219,10 @@ for i in sortedangles:
 		#y = smoothspeeds[i][includes]*1e6
 		if not (isinstance(x, float)):			
 			if transparent ==False:
-				ax.plot(x,y,'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = colours[i])
+				ax.plot(x,y,'.',label = "{0:.1f}$^\circ {1:.1f}$".format(med_angles[i],i),color = colours[i])
 			
 			else:
-				ax.plot([],'.',label = "{0:.1f}$^\circ$".format(med_angles[i]),color = colours[i])
+				ax.plot([],'.',label = "{0:.1f}$^\circ$ {1:.1f}".format(med_angles[i],i),color = colours[i])
 				ax.plot(x,y,'-',color = colours[i],linewidth=3.5,alpha=0.7)
 			popt,potx = curve_fit(powerlaw, x,y ,p0=[.0003],bounds=[[0],[0.01]],maxfev=10000)
 			allfits = np.append(allfits,popt[0])			
