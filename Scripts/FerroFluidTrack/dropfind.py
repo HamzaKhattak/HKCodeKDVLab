@@ -168,41 +168,45 @@ def twoD_power2(xy, a, xo, yo, offset):
     g = offset - ((x-xo)**2 +(y-yo)**2)/a**2
 	
     return g.ravel()
-def refinelocations(inputccor,intitiallocs,windowsize):
+def refinelocations(inputccor,initiallocs,windowsize):
 	#Create the meshgrid
-	locs = np.zeros([len(intitiallocs),2])
+	locs = np.zeros([len(initiallocs),2])
 	x = np.linspace(0,2*windowsize-1,2*windowsize,dtype=int)
 	y = x
 	X = np.meshgrid(x, y)
 
 	#First crop to small section around the peak
-	for i in range(len(intitiallocs)):
-		yc = intitiallocs[i,0]
-		xc = intitiallocs[i,1]
+	for i in range(len(initiallocs)):
+		yc = initiallocs[i,0]
+		xc = initiallocs[i,1]
 		cropped = inputccor[yc-windowsize:yc+windowsize , xc-windowsize:xc+windowsize]
 		#initial_guess = (cropped[windowsize,windowsize],windowsize,windowsize-1,windowsize-1,windowsize,0,cropped[0,0])
-		initial_guess = (10,windowsize,windowsize,cropped[0,0])
+		initial_guess = (1,windowsize,windowsize,cropped[0,0])
 		inputdata = np.ravel(cropped)
 		bnds=((-np.inf, windowsize-2, windowsize-2, 0), (np.inf, windowsize+2, windowsize+2, 200))
 		popt, pcov = curve_fit(twoD_power2,X,inputdata,p0=initial_guess,maxfev=5000)
 		locs[i] = popt[1]+yc-windowsize,popt[2]+xc-windowsize
 	return locs
 
-testim, w1, h1 = ccor(mainims[0],template1,mask1,meth='cv.TM_CCOEFF_NORMED')
 testim,initiallocs,w1,h1 = findpositions(mainims[0],template1,mask1,.05,meth='cv.TM_CCOEFF_NORMED')
 initiallocs = initiallocs-[w1//2,h1//2]
 test = refinelocations(testim,initiallocs,3)
 test = test+[w1//2,h1//2]
 initiallocs = initiallocs +[w1//2,h1//2]
-
+'''
 plt.imshow(mainims[0],cmap='gray')
 plt.plot(test[:,1],test[:,0],'r.')
 plt.plot(initiallocs[:,1],initiallocs[:,0],'b.')
-
+'''
 #%%
-testnums = 100
+yc = initiallocs[80,0]
+xc = initiallocs[80,1]
+plt.imshow(testim[yc-3:yc+3 , xc-3:xc+3])
+#%%
+testnums = 10
 allrefinedlocs = [None]*testnums
 for i in range(testnums):
+	print(i)
 	testim, w1, h1 = ccor(mainims[i],template1,mask1,meth='cv.TM_CCOEFF_NORMED')
 	testim,initiallocs,w1,h1 = findpositions(mainims[i],template1,mask1,.05,meth='cv.TM_CCOEFF_NORMED')
 	initiallocs = initiallocs-[w1//2,h1//2]
@@ -210,7 +214,8 @@ for i in range(testnums):
 	test = test+[w1//2,h1//2]
 	initiallocs = initiallocs +[w1//2,h1//2]
 	allrefinedlocs[i] = test
-	
+
+
 #%%
 
 import matplotlib.animation as animation
@@ -234,6 +239,6 @@ def animate_func(i):
 anim = animation.FuncAnimation(
                                fig, 
                                animate_func, 
-                               frames = 100,
+                               frames = 10,
                                interval = 1,blit=True, # in ms
                                )
