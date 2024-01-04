@@ -254,7 +254,50 @@ def openlistnp(filepath):
 	with open(filepath, 'rb') as infile:
 	    result = pickle.load(infile)
 	return result
-savelistnp('refinedlocs.npy',allrefinedlocs)
+#savelistnp('refinedlocs.npy',allrefinedlocs)
+locsreload = openlistnp('refinedlocs.npy')
+
+#%%
+from sklearn.neighbors import KDTree
+testlocs = locsreload[400]
+
+tree = KDTree(testlocs, leaf_size=2)
+all_nn_indices = tree.query_radius(testlocs, r=12) 
+
+numNeigh = np.array([len(i)-1 for i in all_nn_indices])
+
+plt.hist(numNeigh,bins=6)
+#%%
+allnns = [None]*len(locsreload)
+means = np.zeros(len(locsreload))
+fulls =  np.zeros(len(locsreload))
+zeros = np.zeros(len(locsreload))
+ald = np.zeros((len(locsreload),7))
+for i in range(len(locsreload)):
+	tree = KDTree(locsreload[i], leaf_size=2)
+	all_nn_indices = tree.query_radius(locsreload[i], r=15) 
+	numNeigh = np.array([len(i)-1 for i in all_nn_indices])
+	allnns[i] = numNeigh
+	means[i] = np.mean(numNeigh)
+	for j in np.arange(0,7,1):
+		ald[i,j] = np.count_nonzero(numNeigh==j)/len(numNeigh)
+	fulls[i] = np.count_nonzero(numNeigh==6)/len(numNeigh)
+	zeros[i] = np.count_nonzero(numNeigh==0)/len(numNeigh)
+
+#%%
+for i in np.arange(0,7,1):
+	plt.plot(ald[:,i],label=i)
+plt.legend()
+#%%
+print( np.arange(0,7,1))
+	
+#%%
+
+all_nns = [[points[idx] for idx in nn_indices] for nn_indices in all_nn_indices]
+
+
+
+
 
 #%%
 frame = np.array([],dtype=float)
