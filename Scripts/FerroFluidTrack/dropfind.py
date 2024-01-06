@@ -236,8 +236,31 @@ for i in range(testnums):
 
 
 #%%
+#Testing where radial polar can be used to better estimate center location
+tc1 = [[744,737],[768,762]] #cropping for template 1 (main)
+tc2 = [[691,628],[714,650]] #cropping for template 2 (secondary)
+test1 = templatecropper(ims[0], tc1)
+test2 = templatecropper(ims[0],tc2)
+plt.figure()
+plt.imshow(test2,cmap='gray')
+#polar=cv.linearPolar(test1,[7,7],12,cv.WARP_FILL_OUTLIERS)
+f, axarr = plt.subplots(5,5,figsize=(8,8)) 
+ar = [-2,-1,0,1,2]
+print(cycle)
+for i in range(5):
+	for j in range(5):
+		x = 10 + ar[i]
+		y = 10 + ar[j]
+		polar=cv.linearPolar(test2,[x,y],12,cv.WARP_FILL_OUTLIERS)
+		axarr[i,j].imshow(polar)
+		axarr[i,j].axis('off')
+		axarr[i,j].set_xticklabels([])
+		axarr[i,j].set_yticklabels([])
+plt.subplots_adjust(wspace=0, hspace=0)
+plt.tight_layout()
 
-
+#%%
+print(cycle[1])
 #%%
 import pickle
 def savelistnp(filepath,data):
@@ -287,7 +310,9 @@ for i in range(len(locsreload)):
 #%%
 for i in np.arange(0,7,1):
 	plt.plot(ald[:,i],label=i)
-plt.legend()
+plt.legend(title='Nearest neighbours')
+plt.xlabel('time (arb, can convert to G later)')
+plt.ylabel('fraction')
 #%%
 print( np.arange(0,7,1))
 	
