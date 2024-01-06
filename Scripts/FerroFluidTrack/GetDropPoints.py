@@ -16,6 +16,22 @@ import imageio
 import time
 from datetime import datetime
 from matplotlib import colors
+import pickle
+#%%
+def savelistnp(filepath,data):
+	'''
+	Saves lists of numpy arrays using pickle so they don't become objects
+	'''
+	with open(filepath, 'wb') as outfile:
+		   pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
+
+def openlistnp(filepath):
+	'''
+	Opens lists of numpy arrays using pickle
+	'''
+	with open(filepath, 'rb') as infile:
+	    result = pickle.load(infile)
+	return result
 #%%
 
 def rescale(data):
@@ -217,7 +233,7 @@ for i in [0,500]: #Pick a couple test images
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		
 		
-		plt.plot(positions[j][:,1],positions[j][:,0],'.')
+		plt.plot(positions[j][:,1],positions[j][:,0],'b.')
 		plt.plot(refinedpositions[j][:,1],refinedpositions[j][:,0],'r.')
 	combopositions = np.concatenate(refinedpositions[j],axis=0)
 
@@ -232,9 +248,8 @@ np.save(run_name+'metadata.npy',templatemetadata)
 
 #%%
 allpositions=[None]*len(correctedims)
-
+t0=time.time()
 for i in  range(len(correctedims)): #Full run of the above but without plotting etc
-
 	matches=[None]*len(mask_thresholds)
 	positions=[None]*len(mask_thresholds)
 	refinedpositions =[None]*len(mask_thresholds)
@@ -253,50 +268,44 @@ for i in  range(len(correctedims)): #Full run of the above but without plotting 
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		else:
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-
-	allpositions[i] = np.concatenate(refinedpositions[j],axis=0)
-#%%
-np.save(run_name+'positions.npy',allpositions)
-#%%
-plt.imshow(templates[1],cmap='gray')
-
-#%%
-
-
-#%%
-
-
-
-
-testim,initiallocs,w1,h1 = findpositions(mainims[0],templates[0],masks[0],.05,meth='cv.TM_CCOEFF_NORMED')
-initiallocs = initiallocs-[w1//2,h1//2]
-test = refinelocations(testim,initiallocs,4)
-test = test+[w1//2,h1//2]
-initiallocs = initiallocs +[w1//2,h1//2]
-
-#%%
-
-#%%
-testnums = len(mainims)
-testnums=50
-alllocs = [None]*testnums
-allrefinedlocs = [None]*testnums
-for i in range(testnums):
-	cor1,initiallocs1,w1,h1 = findpositions(mainims[i],template1,mask1,.05,meth='cv.TM_CCOEFF_NORMED')
-	cor2,initiallocs2,w2,h2 = findpositions(mainims[i],template2,mask2,.03,meth='cv.TM_CCOEFF_NORMED')
-	
-	initiallocs2 = removeduplicates(initiallocs1, initiallocs2, 8)
-	alllocs[i] = np.concatenate([initiallocs1,initiallocs2],axis=0)
-	
-	initiallocs1 = initiallocs1-[w1//2,h1//2]
-	refined1 = refinelocations(cor1,initiallocs1,4)
-	refined1 = refined1+[w1//2,h1//2]
-
-	initiallocs2 = initiallocs2-[w2//2,h2//2]
-	refined2 = refinelocations(cor2,initiallocs2,4)
-	refined2 = refined2+[w2//2,h2//2]	
-	
-	allrefinedlocs[i] = np.concatenate([refined1,refined2],axis=0)
+		
+	allpositions[i] = np.concatenate(refinedpositions,axis=0)
 	if i%100==0:
-		print(i)
+		t2 = time.time()
+		spf = (t2-t0)/50
+		print('Image {imnum}, at {speed:4.4f} sec/frame'.format(imnum=i, speed=spf))
+		t0=t2
 
+#%%
+
+savelistnp(run_name+'positions.pik',allpositions)
+
+#%%
+
+import matplotlib.animation as animation
+fig,ax = plt.subplots()
+#line, = ax.plot([], [], lw=2)
+im=ax.imshow(correctedims[0],cmap='gray')
+#points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
+points, = ax.plot(allpositions[0][:,1],allpositions[0][:,0],'.')
+# initialization function: plot the background of each frame
+# initialization function: plot the background of each frame
+def init():
+    im.set_data(correctedims[0])
+	
+    return im,points,
+
+# animation function.  This is called sequentially
+def animate_func(i):
+	im.set_array(correctedims[i])
+	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
+	points.set_data(allpositions[i][:,1],allpositions[i][:,0])
+	#points.set_data(test2.y[i],test2.x[i])
+	return im,points,
+
+anim = animation.FuncAnimation(
+                               fig, 
+                               animate_func, 
+                               frames = len(correctedims),
+                               interval = 1,blit=True, # in ms
+                               )
