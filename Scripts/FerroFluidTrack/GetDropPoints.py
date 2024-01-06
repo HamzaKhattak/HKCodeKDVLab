@@ -17,6 +17,13 @@ import time
 from datetime import datetime
 from matplotlib import colors
 import pickle
+
+
+import pandas as pd
+from pandas import DataFrame, Series  # for convenience
+
+import pims
+import trackpy as tp
 #%%
 def savelistnp(filepath,data):
 	'''
@@ -121,7 +128,7 @@ def ccor(im,template,mask,meth='cv.TM_CCOEFF_NORMED'):
 	match = initialmatch**3/np.max(initialmatch**3) #^3 to emphasize the peaks, could change if needed
 	return match, w, h
 
-def findpositions(im,template,mask,threshold,minD, meth='cv.TM_CCOEFF_NORMED'):
+def findpositions(im,template,mask,threshold,minD, meth='cv.TM_CCOEFF_NORMED',removethresh = 150):
 	'''
 	This code uses the scipy peak_local_max to find the locations of peaks in 
 	the droplet images. It first runs the cross-correlation to get the input
@@ -134,7 +141,7 @@ def findpositions(im,template,mask,threshold,minD, meth='cv.TM_CCOEFF_NORMED'):
 	match, w, h = ccor(im,template,mask,meth)
 	peaks = peak_local_max(match, min_distance=minD,threshold_abs=threshold) #find peaks
 	peakbrightness = im[peaks[:,0]+w//2,peaks[:,1]+h//2] #find brightness at peak locations
-	peaks = peaks[peakbrightness<150] #Only keep peaks where image is dark
+	peaks = peaks[peakbrightness<removethresh] #Only keep peaks where image is dark
 	peaks = peaks + [w//2,h//2] #shift to correct location
 	return match, peaks, w, h
 
@@ -278,8 +285,29 @@ for i in  range(len(correctedims)): #Full run of the above but without plotting 
 
 #%%
 
+
 savelistnp(run_name+'positions.pik',allpositions)
 
+#%%
+testmatch, positionst, wst,hst = findpositions(correctedims[-1],
+												templates[0],masks[0],
+												ccorr_thresholds[0],
+												ccminsep,
+												meth='cv.TM_CCOEFF_NORMED')
+#%%
+testmatch2 = np.clip(testmatch,0,np.inf)
+plt.figure()
+plt.imshow(testmatch2,cmap='gray')
+testtp = tp.locate(testmatch2,3,minmass=.003,separation=7,percentile=.01,invert=True)
+plt.plot(testtp.x,testtp.y,'.')
+plt.figure()
+plt.imshow(correctedims[-1],cmap='gray')
+newlocs = np.transpose([testtp.x+hst//2,testtp.y+wst//2])
+inlocs = newlocs.astype(int)
+peakbrightness = correctedims[-1][inlocs[:,1],inlocs[:,0]] #find brightness at peak locations
+newlocs = newlocs[peakbrightness<150] #Only keep peaks where image is dark
+
+plt.plot(newlocs[:,0],newlocs[:,1],'.')
 #%%
 
 import matplotlib.animation as animation

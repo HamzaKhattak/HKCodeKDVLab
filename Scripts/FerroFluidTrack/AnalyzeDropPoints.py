@@ -85,3 +85,9 @@ for i in np.arange(0,7,1):
 plt.legend(title='Nearest neighbours')
 plt.xlabel('time (arb, can convert to G later)')
 plt.ylabel('fraction')
+
+#%%
+
+'''
+This is the section of code to track individual droplets if needed
+'''
