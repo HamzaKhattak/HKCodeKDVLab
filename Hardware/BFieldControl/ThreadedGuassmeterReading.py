@@ -7,14 +7,15 @@ Created on Wed Nov  1 13:36:22 2023
 
 import serial.tools.list_ports
 import numpy as np
-
+import msvcrt, os, keyboard
+saveloc = 'testrec3.csv'
 #ports = serial.tools.list_ports.comports()
 
 #for port, desc, hwid in sorted(ports):
-#        print("{}: {} [{}]".format(port, desc, hwid))
-		
-porttouse = 4
-import serial, time, threading, struct
+#       print("{}: {} [{}]".format(port, desc, hwid))
+	
+porttouse = 8
+import serial, time, threading, struct, csv
 from bitstring import BitArray
 def stb(x):
 	#Shortening serial to bytes
@@ -140,18 +141,42 @@ class gaussmeter:
 
 
 
-# Send command to device and save its return
-meter = gaussmeter('COM4')
 
+
+
+# Send command to device and save its return
+meter = gaussmeter('COM8')
+  
 meter.getIdentification()
 
+saveloc = input('Input file name to without a .csv, no number ending \n')
+while os.path.isfile(os.path.abspath(saveloc+'.csv')):
+	saveloc = saveloc+'1'
+saveloc = saveloc + '.csv'
+	
+
+
+deltaT = input('Enter recording time in minutes')
+deltaT = float(deltaT)*60
+
+csv_file = open(saveloc, "w")
+
+writer = csv.writer(csv_file, delimiter=',', lineterminator="\n")
+
 t0 = time.time()
-for i in range(10):
+t1 = t0
+print('starting')
+runcheck = True
+while ((t1-t0)<deltaT and runcheck):
 	bs = meter.getDatum()
-	print("Time: {t}, field: {B} Guass".format(t = bs[0]-t0, B = bs[1]))
-
-meter.getData(10)
-
-meter.ser.close()
+	#print("Time: {t}, field: {B} Guass".format(t = bs[0]-t0, B = bs[1]))
+	writer.writerow([bs[0],bs[1]])
+	t1=time.time()
+	if keyboard.is_pressed('esc'):
+		runcheck = False
 
 #%%
+meter.ser.close()
+
+
+csv_file.close()

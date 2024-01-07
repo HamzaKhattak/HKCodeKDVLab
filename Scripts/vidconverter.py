@@ -48,9 +48,9 @@ dualim = input('Type 1 for a single angle and 2 for two angles beside each other
 collect = input('Type 1 for a single input file and 2 for a collection (collection is only for 1 view) \n')
 
 if dualim == '1':
-	file_path = filedialog.askopenfilename()
 	outFile = input('Output file name (include .mp4 extension) \n')
 	inFPS = input('FPS (outputs at 30fps for device compatibility so will cut/add frames as needed) \n')
+	file_path = filedialog.askopenfilename(parent=root)
 	#Import the tif files in a folder
 	#imageframes=ito.omestackimport(dataDR)
 	if collect == '1':
@@ -74,10 +74,11 @@ if dualim == '1':
 	                                "-crf",
 	                                "20",])
 elif dualim == '2':
-	file_path1 = filedialog.askopenfilename()
-	file_path2 = filedialog.askopenfilename()
+
 	outFile = input('Output file name (include .mp4 extension) \n')
 	inFPS = input('FPS (outputs at 30fps for device compatibility so will cut/add frames as needed) \n')
+	file_path1 = filedialog.askopenfilename(parent=root)
+	file_path2 = filedialog.askopenfilename(parent=root)
 	imageframes1=fullseqimport(os.path.join(file_path1))
 	imageframes2=fullseqimport(os.path.join(file_path2))
 	combo = np.concatenate((imageframes1, imageframes2), axis=1)
