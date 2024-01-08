@@ -145,6 +145,26 @@ def findpositions(im,template,mask,threshold,minD, meth='cv.TM_CCOEFF_NORMED',re
 	peaks = peaks + [w//2,h//2] #shift to correct location
 	return match, peaks, w, h
 
+def findpositionstp(im,template,mask,threshold,minD, peaksize = 3, peaksizecut = 0.003, percentilecut = 0.01, meth='cv.TM_CCOEFF_NORMED', removethresh = 150):
+	'''
+	This code uses trackpy locate  to find the locations of peaks in 
+	the droplet images. It first runs the cross-correlation to get the input
+	for find peaks.  Need a minimum theshold cutoff to define what is a peak 
+	and a minimum distance so as not to overcount peaks
+	The function returns  the cross correlation image, peaks and w and height of
+	the inputted tempate
+
+	'''
+	match, w, h = ccor(im,template,mask,meth)
+	match = np.clip(match,0,np.inf) #Better to just clip out any negatives
+	positions = tp.locate(match,peaksize,minmass=peaksizecut,separation=minD,percentile=percentilecut,invert=True)
+	positions = positions.loc[positions['size']>0]
+	positions = np.transpose([positions.y+w//2,positions.x+h//2])
+	intlocs = positions.astype(int)
+	peakbrightness = im[intlocs[:,0],intlocs[:,1]] #find brightness at peak locations
+	positions = positions[peakbrightness<removethresh] #Only keep peaks where image is dark
+	return match, positions, w, h
+
 def distances(xy1, xy2):
 	'''
 	Finds distance between points in two arrays Nx2 arrays of points
@@ -191,8 +211,8 @@ def refinelocations(inputccor,initiallocs,windowsize):
 
 	#First crop to small section around the peak
 	for i in range(len(initiallocs)):
-		yc = initiallocs[i,0]
-		xc = initiallocs[i,1]
+		yc = int(initiallocs[i,0])
+		xc = int(initiallocs[i,1])
 		cropped = inputccor[yc-windowsize:yc+windowsize+1 , xc-windowsize:xc+windowsize+1]
 		#initial_guess = (cropped[windowsize,windowsize],windowsize,windowsize-1,windowsize-1,windowsize,0,cropped[0,0])
 		initial_guess = (10,0,0,cropped[0,0])
@@ -223,26 +243,35 @@ for i in [0,500]: #Pick a couple test images
 	
 	#Loop over the templates
 	for j in range(len(mask_thresholds)):
-		matches[j], positions[j], ws,hs = findpositions(correctedims[i],
+		#matches[j], positions[j], ws,hs = findpositions(correctedims[i],
+		#												templates[j],masks[j],
+		#												ccorr_thresholds[j],
+		#												ccminsep,
+		#
+		#										meth='cv.TM_CCOEFF_NORMED')
+		
+		matches[j], positions[j], ws,hs = findpositionstp(correctedims[i],
 														templates[j],masks[j],
 														ccorr_thresholds[j],
 														ccminsep,
-														meth='cv.TM_CCOEFF_NORMED')
+		
+												meth='cv.TM_CCOEFF_NORMED')		
+		
 		shift[j] = [ws//2,hs//2]
 		
 		#Remove duplicates, strating from the laste template
 		if j!=0:			
 			for k in range(j):
 				positions[j] = removeduplicates(positions[k], positions[j], compareminsep)
-				#Currently just delete in order of number, could maybe do intensity comparison
+				#Currently just delete in order of npumber, could maybe do intensity comparison
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		else:
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		
 		
-		plt.plot(positions[j][:,1],positions[j][:,0],'b.')
+		plt.plot(positions[j][:,1],positions[j][:,0],'.')
 		plt.plot(refinedpositions[j][:,1],refinedpositions[j][:,0],'r.')
-	combopositions = np.concatenate(refinedpositions[j],axis=0)
+	combopositions = np.concatenate(refinedpositions,axis=0)
 
 
 
@@ -254,7 +283,8 @@ np.save(run_name+'metadata.npy',templatemetadata)
 
 
 #%%
-allpositions=[None]*len(correctedims)
+allpositions = [None]*len(correctedims)
+allrefinedpositions = [None]*len(correctedims)
 t0=time.time()
 for i in  range(len(correctedims)): #Full run of the above but without plotting etc
 	matches=[None]*len(mask_thresholds)
@@ -275,11 +305,12 @@ for i in  range(len(correctedims)): #Full run of the above but without plotting 
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		else:
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-		
-	allpositions[i] = np.concatenate(refinedpositions,axis=0)
+			
+	allpositions[i] = np.concatenate(positions,axis=0)	
+	allrefinedpositions[i] = np.concatenate(refinedpositions,axis=0)
 	if i%100==0:
 		t2 = time.time()
-		spf = (t2-t0)/50
+		spf = (t2-t0)/100
 		print('Image {imnum}, at {speed:4.4f} sec/frame'.format(imnum=i, speed=spf))
 		t0=t2
 
@@ -289,25 +320,14 @@ for i in  range(len(correctedims)): #Full run of the above but without plotting 
 savelistnp(run_name+'positions.pik',allpositions)
 
 #%%
-testmatch, positionst, wst,hst = findpositions(correctedims[-1],
+testimage = correctedims[0]
+testmatch, positionst, wst,hst = findpositions(testimage,
 												templates[0],masks[0],
 												ccorr_thresholds[0],
 												ccminsep,
 												meth='cv.TM_CCOEFF_NORMED')
 #%%
-testmatch2 = np.clip(testmatch,0,np.inf)
-plt.figure()
-plt.imshow(testmatch2,cmap='gray')
-testtp = tp.locate(testmatch2,3,minmass=.003,separation=7,percentile=.01,invert=True)
-plt.plot(testtp.x,testtp.y,'.')
-plt.figure()
-plt.imshow(correctedims[-1],cmap='gray')
-newlocs = np.transpose([testtp.x+hst//2,testtp.y+wst//2])
-inlocs = newlocs.astype(int)
-peakbrightness = correctedims[-1][inlocs[:,1],inlocs[:,0]] #find brightness at peak locations
-newlocs = newlocs[peakbrightness<150] #Only keep peaks where image is dark
 
-plt.plot(newlocs[:,0],newlocs[:,1],'.')
 #%%
 
 import matplotlib.animation as animation
@@ -315,7 +335,7 @@ fig,ax = plt.subplots()
 #line, = ax.plot([], [], lw=2)
 im=ax.imshow(correctedims[0],cmap='gray')
 #points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
-points, = ax.plot(allpositions[0][:,1],allpositions[0][:,0],'.')
+points, = ax.plot(allrefinedpositions[0][:,1],allpositions[0][:,0],'.')
 # initialization function: plot the background of each frame
 # initialization function: plot the background of each frame
 def init():
@@ -327,7 +347,7 @@ def init():
 def animate_func(i):
 	im.set_array(correctedims[i])
 	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
-	points.set_data(allpositions[i][:,1],allpositions[i][:,0])
+	points.set_data(allrefinedpositions[i][:,1],allrefinedpositions[i][:,0])
 	#points.set_data(test2.y[i],test2.x[i])
 	return im,points,
 
@@ -335,5 +355,5 @@ anim = animation.FuncAnimation(
                                fig, 
                                animate_func, 
                                frames = len(correctedims),
-                               interval = 1,blit=True, # in ms
+                               interval = 200,blit=True, # in ms
                                )

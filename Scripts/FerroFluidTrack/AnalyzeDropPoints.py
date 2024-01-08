@@ -91,3 +91,112 @@ plt.ylabel('fraction')
 '''
 This is the section of code to track individual droplets if needed
 '''
+def converttoDataFrame(inputlocationarray):
+	'''
+	Trackpy likes the input to be a Pandas dataframe ()
+	'''
+	frame = np.array([],dtype=float)
+	x= np.array([],dtype=float)
+	y=np.array([],dtype=float)
+	#convert to dataframe:
+	for i in range(len(inputlocationarray)):
+		frame = np.append(frame, i*np.ones(len(inputlocationarray[i])))
+		x = np.append(x,inputlocationarray[i][:,0])
+		y = np.append(y,inputlocationarray[i][:,1])
+	
+	
+	pddat = pd.DataFrame({'frame': frame, 'x': x, 'y': y})
+	return pddat
+
+posdataframe = converttoDataFrame(locations)
+
+#%%
+
+t1 = tp.link(posdataframe, 10,memory=50)
+#%%
+
+t2 = tp.filter_stubs(t1,50)
+print('Before:', t1['particle'].nunique())
+print('After:', t2['particle'].nunique())
+d = tp.compute_drift(t2)
+
+tm = tp.subtract_drift(t2.copy(), d)
+tp.plot_traj(t2)
+ax = tp.plot_traj(tm)
+plt.show()
+#%%
+t4 = t2.loc[t2['particle'] == 15]
+print(len(t4))
+plt.plot(t4.x,'.')
+#%%
+
+plt.imshow(correctedims[0],cmap='gray')
+
+ind = [None]*460
+
+for i in np.arange(0,460,1):
+	ind[i] = t2.loc[t2['particle'] == i]
+	print(i,':',len(ind))
+	if len(ind[i])<700:
+		print('test')
+		plt.plot(ind[i].y,ind[i].x)
+
+
+#%%
+mask = np.logical_and(my_array[:, 1] >= 55, my_array[:, 1] <= 65)
+testfilt = t2.iloc[np.where(np.count_nonzero(t2['particle'] == np.arange())<700)]
+
+#%%
+import matplotlib.animation as animation
+fig,ax = plt.subplots()
+#line, = ax.plot([], [], lw=2)
+im=ax.imshow(correctedims[0],cmap='gray')
+#points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
+points, = ax.plot(allrefinedpositions[0][:,1],allpositions[0][:,0],'.')
+# initialization function: plot the background of each frame
+# initialization function: plot the background of each frame
+def init():
+    im.set_data(correctedims[0])
+	
+    return im,points,
+
+# animation function.  This is called sequentially
+def animate_func(i):
+	for j in np.arange(0,460,1):
+		if len(ind[j])<700:
+			plt.plot(ind.y.iloc[i],ind.x.iloc[j])
+
+	im.set_array(correctedims[i])
+	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
+	points.set_data(allrefinedpositions[i][:,1],allrefinedpositions[i][:,0])
+	#points.set_data(test2.y[i],test2.x[i])
+	return im,points,
+
+anim = animation.FuncAnimation(
+                               fig, 
+                               animate_func, 
+                               frames = len(correctedims),
+                               interval = 200,blit=True, # in ms
+                               )
+
+
+#%%
+indices= np.where(len(t2[['frame','x','y']].iloc[np.where(t2['particle']==i)]))
+
+#%%
+test = t2[['x', 'y','particle']].iloc[np.where(t2['frame']==0)]
+
+
+test2 = t2[['frame','x','y']].iloc[np.where(t2['particle']==100)]
+
+plt.plot(np.array(test2.x))
+
+plt.plot(test2.frame,test2.x)
+print(len(test2))
+
+#%%
+test3 = np.array(test2)
+#%%
+for i in range(t2['particle'].nunique()):
+	print(i,':',len(t2[['frame','x','y']].iloc[np.where(t2['particle']==i)]))
+
