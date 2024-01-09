@@ -16,6 +16,7 @@ import imageio, os, importlib, sys, time
 from datetime import datetime
 from matplotlib import colors
 
+from win11toast import notify
 
 
 
@@ -41,20 +42,23 @@ os.chdir(dataDR)
 
 #%%
 
-
 #Import the images of interest and a base image for background subtraction
 ims = imageio.imread('multimages.tif')
 background = cv.imread('base.tif',0)
 
 #%%
+
+#Run the image correction to flatten the brighness
 correctedims = imagepreprocess(ims, background)
 
-
-plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template locations
+plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
 
 
 #%%
 
+'''
+This section  of code is for getting the masks used in cross correlation
+'''
 run_name = 'initialrun'
 
 
@@ -72,7 +76,7 @@ ccminsep = 7
 compareminsep = 8
 
 
-
+templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
 
 
 c_white = colors.colorConverter.to_rgba('red',alpha = 0)
@@ -90,146 +94,35 @@ for i in range(len(mask_thresholds)):
 	plt.imshow(templates[i],cmap='gray')
 	plt.imshow(masks[i],cmap=cmap_rb)
 #%%
-# All the 6 methods for comparison in a list
-methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
-            'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
+'''
+Run the analysis on some test images to make sure it works
+'''
 
+inims = correctedims[[0,500]]
 
+testpos,testrpos = fullpositionfind(inims, templates, masks, templatemetadata)
 
-for i in [0,500]: #Pick a couple test images
-	plt.figure()
-	plt.imshow(correctedims[i],cmap='gray')
-	
-	#Initialize empty arrays for the data
-	matches=[None]*len(mask_thresholds)
-	positions=[None]*len(mask_thresholds)
-	refinedpositions =[None]*len(mask_thresholds)
-	shift = [None]*len(mask_thresholds)
-	
-	#Loop over the templates
-	for j in range(len(mask_thresholds)):
-		#matches[j], positions[j], ws,hs = findpositions(correctedims[i],
-		#												templates[j],masks[j],
-		#												ccorr_thresholds[j],
-		#												ccminsep,
-		#
-		#										meth='cv.TM_CCOEFF_NORMED')
-		
-		matches[j], positions[j], ws,hs = findpositionstp(correctedims[i],
-														templates[j],masks[j],
-														ccorr_thresholds[j],
-														ccminsep,
-		
-												meth='cv.TM_CCOEFF_NORMED')		
-		
-		shift[j] = [ws//2,hs//2]
-		
-		#Remove duplicates, strating from the laste template
-		if j!=0:			
-			for k in range(j):
-				positions[j] = removeduplicates(positions[k], positions[j], compareminsep)
-				#Currently just delete in order of npumber, could maybe do intensity comparison
-			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-		else:
-			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-		
-		
-		plt.plot(positions[j][:,1],positions[j][:,0],'.')
-		plt.plot(refinedpositions[j][:,1],refinedpositions[j][:,0],'r.')
-	combopositions = np.concatenate(refinedpositions,axis=0)
-
-
+plt.figure()
+plt.plot(testrpos[0][:,1],testrpos[0][:,0],'.')
+plt.imshow(correctedims[0],cmap='gray')
+plt.figure()
+plt.plot(testrpos[1][:,1],testrpos[1][:,0],'.')
+plt.imshow(correctedims[500],cmap='gray')
 
 #%%
 
-templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
-
-np.save(run_name+'metadata.npy',templatemetadata)
-
-
 #%%
-allpositions = [None]*len(correctedims)
-allrefinedpositions = [None]*len(correctedims)
-#%%
-
-from win11toast import notify
-
-
-def findoneframepositions(im,templates,masks,ccorr_thresholds,ccminsep,compareminsep):
-	matches=[None]*len(mask_thresholds)
-	positions=[None]*len(mask_thresholds)
-	refinedpositions =[None]*len(mask_thresholds)
-	shift = [None]*len(mask_thresholds)
-	for j in range(len(mask_thresholds)):
-		matches[j], positions[j], ws,hs =  findpositionstp(allims[i],
-														templates[j],masks[j],
-														ccorr_thresholds[j],
-														ccminsep,
-		
-												meth='cv.TM_CCOEFF_NORMED')	
-		shift[j] = [ws//2,hs//2]
-		if j!=0:			
-			for k in range(j):
-				positions[j] = removeduplicates(positions[k], positions[j], compareminsep)
-				#Currently just delete in order of number, could maybe do intensity comparison
-			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-		else:
-			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-	positions = np.concatenate(positions,axis=0)	
-	refinedpositions = np.concatenate(refinedpositions,axis=0)
-	return positions,refinedpositions			
-				
-def fullpositionfind(allims,templates,masks,analysisparams,report =True, reportfreq =100):
-	t0=time.time()
-	
-	
-	mask_thresholds = analysisparams['maskthresholds']
-	ccorr_thresholds = analysisparams['ccorthresh']
-	ccminsep, compareminsep = analysisparams['minD']
-	
-	allpositions=[None]*len(allims)
-	allpositions=[None]*len(allims)
-	
-	for i in  range(len(allims)): #Full run of the above but without plotting etc
-		matches=[None]*len(mask_thresholds)
-		positions=[None]*len(mask_thresholds)
-		refinedpositions =[None]*len(mask_thresholds)
-		shift = [None]*len(mask_thresholds)
-		for j in range(len(mask_thresholds)):
-			matches[j], positions[j], ws,hs =  findpositionstp(allims[i],
-															templates[j],masks[j],
-															ccorr_thresholds[j],
-															ccminsep,
-			
-													meth='cv.TM_CCOEFF_NORMED')	
-			shift[j] = [ws//2,hs//2]
-			if j!=0:			
-				for k in range(j):
-					positions[j] = removeduplicates(positions[k], positions[j], compareminsep)
-					#Currently just delete in order of number, could maybe do intensity comparison
-				refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-			else:
-				refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-				
-		allpositions[i], allrefinedpositions[i] = np.concatenate(positions,axis=0)	
-		allrefinedpositions[i] = np.concatenate(refinedpositions,axis=0)
-		
-		if reportfreq ==True:
-			if i%reportfreq==0:
-				t2 = time.time()
-				spf = (t2-t0)/reportfreq
-				print('Image {imnum}, at {speed:4.4f} sec/frame'.format(imnum=i, speed=spf))
-				t0=t2
-		return allpositions, allrefinedpositions
+'''
+Run the analysis and save the relevant metadata
+'''
+np.save(run_name+'locfindmetadata.npy',templatemetadata)
+allpositions, allrefinedpositions = fullpositionfind(correctedims, templates, masks, templatemetadata)
 
 
-#%%
-test1,test2 = fullpositionfind(correctedims[:4], templates, masks, templatemetadata)
-#%%
 savelistnp(run_name+'positions.pik',allpositions)
 
-
-#%%
+notifytext = run_name + ' is done.'
+notify(notifytext)
 
 #%%
 

@@ -147,37 +147,6 @@ mask = np.logical_and(my_array[:, 1] >= 55, my_array[:, 1] <= 65)
 testfilt = t2.iloc[np.where(np.count_nonzero(t2['particle'] == np.arange())<700)]
 
 #%%
-import matplotlib.animation as animation
-fig,ax = plt.subplots()
-#line, = ax.plot([], [], lw=2)
-im=ax.imshow(correctedims[0],cmap='gray')
-#points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
-points, = ax.plot(allrefinedpositions[0][:,1],allpositions[0][:,0],'.')
-# initialization function: plot the background of each frame
-# initialization function: plot the background of each frame
-def init():
-    im.set_data(correctedims[0])
-	
-    return im,points,
-
-# animation function.  This is called sequentially
-def animate_func(i):
-	for j in np.arange(0,460,1):
-		if len(ind[j])<700:
-			plt.plot(ind.y.iloc[i],ind.x.iloc[j])
-
-	im.set_array(correctedims[i])
-	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
-	points.set_data(allrefinedpositions[i][:,1],allrefinedpositions[i][:,0])
-	#points.set_data(test2.y[i],test2.x[i])
-	return im,points,
-
-anim = animation.FuncAnimation(
-                               fig, 
-                               animate_func, 
-                               frames = len(correctedims),
-                               interval = 200,blit=True, # in ms
-                               )
 
 
 #%%

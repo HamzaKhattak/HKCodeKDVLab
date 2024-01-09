@@ -193,3 +193,49 @@ def refinelocations(inputccor,initiallocs,windowsize):
 		else:
 			locs[i] = [yc,xc]
 	return locs
+
+
+def findoneframepositions(im,templates,masks,ccorr_thresholds,ccminsep,compareminsep):
+	matches=[None]*len(ccorr_thresholds)
+	positions=[None]*len(ccorr_thresholds)
+	refinedpositions =[None]*len(ccorr_thresholds)
+	shift = [None]*len(ccorr_thresholds)
+	for j in range(len(ccorr_thresholds)):
+		matches[j], positions[j], ws,hs =  findpositionstp(im,
+														templates[j],masks[j],
+														ccorr_thresholds[j],
+														ccminsep,
+		
+												meth='cv.TM_CCOEFF_NORMED')	
+		shift[j] = [ws//2,hs//2]
+		if j!=0:			
+			for k in range(j):
+				positions[j] = removeduplicates(positions[k], positions[j], compareminsep)
+				#Currently just delete in order of number, could maybe do intensity comparison
+			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
+		else:
+			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
+	positions = np.concatenate(positions,axis=0)	
+	refinedpositions = np.concatenate(refinedpositions,axis=0)
+	return positions,refinedpositions			
+				
+def fullpositionfind(allims,templates,masks,analysisparams,report =True, reportfreq =100):
+	t0=time.time()
+	
+	ccorr_thresholds = analysisparams['ccorthresh']
+	ccminsep, compareminsep = analysisparams['minD']
+	
+	allpositions=[None]*len(allims)
+	allrefinedpositions=[None]*len(allims)
+	
+	for i in  range(len(allims)): #Full run of the above but without plotting etc
+				
+		allpositions[i], allrefinedpositions[i] = findoneframepositions(allims[i],templates,masks,ccorr_thresholds,ccminsep,compareminsep)
+		
+		if reportfreq ==True:
+			if i%reportfreq==0:
+				t2 = time.time()
+				spf = (t2-t0)/reportfreq
+				print('Image {imnum}, at {speed:4.4f} sec/frame'.format(imnum=i, speed=spf))
+				t0=t2
+	return allpositions, allrefinedpositions
