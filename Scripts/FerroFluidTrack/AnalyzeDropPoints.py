@@ -16,7 +16,7 @@ import pims
 import trackpy as tp
 
 from sklearn.neighbors import KDTree
-
+from win11toast import notify
 #%%
 def savelistnp(filepath,data):
 	'''
@@ -34,7 +34,7 @@ def openlistnp(filepath):
 	return result
 
 #%%
-
+#Import the data
 locations = openlistnp('initialrunpositions.pik')
 #%%
 
@@ -78,7 +78,7 @@ def findNNforsequence(seqofpoints,rad):
 
 #%%
 
-test,test,fractions = findNNforsequence(locations, 15)
+test,test,fractions = findNNforsequence(locations, 12)
 
 for i in np.arange(0,7,1):
 	plt.plot(fractions[:,i],label=i)
@@ -195,8 +195,17 @@ plt.plot(test2.frame,test2.x)
 print(len(test2))
 
 #%%
-test3 = np.array(test2)
+import nest_asyncio
+import asyncio
+
+from threading import Thread
+
+notify('Done')
+
+
 #%%
 for i in range(t2['particle'].nunique()):
 	print(i,':',len(t2[['frame','x','y']].iloc[np.where(t2['particle']==i)]))
+	
+
 

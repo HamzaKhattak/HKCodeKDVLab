@@ -96,7 +96,9 @@ Uses the perframetimes since likely a bit more accurate
 
 fieldsarray = fieldf(perframetimes)
 start0time = perframetimes-perframetimes[0]
-
+plt.figure()
+plt.plot(fieldsarray)
+plt.figure()
 plt.plot(start0time,fieldsarray,label='gaussmeter')
 
 tosave = np.transpose([perframetimes,start0time,fieldsarray])
