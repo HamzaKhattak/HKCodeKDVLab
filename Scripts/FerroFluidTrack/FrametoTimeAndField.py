@@ -27,7 +27,7 @@ This section of code simply imports the fields from the Gaussmeter capture code
 and creates an interp1d function that allows you to get a field for a given time
 '''
 
-def findGuassVals(fields_path, ims_path):
+def findGuassVals(fields_path, ims_path,savename):
 	
 	fields = np.loadtxt(fields_path,delimiter=',') #gives field by epoch time
 	
@@ -101,5 +101,5 @@ def findGuassVals(fields_path, ims_path):
 	fieldsarray = fieldf(perframetimes)
 	start0time = perframetimes-perframetimes[0]
 	tosave = np.transpose([perframetimes,start0time,fieldsarray])	
-	np.savetxt('GuassVals.csv',tosave,delimiter=',')
+	np.savetxt(savename+'.csv',tosave,delimiter=',')
 	return tosave
