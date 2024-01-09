@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 from matplotlib import colors
 import pickle
-
+import ast
 
 import pandas as pd
 from pandas import DataFrame, Series  # for convenience
@@ -41,6 +41,42 @@ def openlistnp(filepath):
 	with open(filepath, 'rb') as infile:
 	    result = pickle.load(infile)
 	return result
+
+def checknum(s):
+	try:
+	    value = int(s)
+	except ValueError:
+		try:
+			float(s)
+			value = float(s)
+		except ValueError:
+			value = s.strip()
+	return value
+
+def openparams(fileloc):
+	'''
+	Opens a list of parameters, use python list notation to input lists
+	will convert to lines to lists, ints and floats
+	'''
+	params = {}
+	with open(fileloc) as f:
+		for line in f:
+			if len(line)>1:
+				(key, val) = line.split(':')
+				key = key.replace(" ", "")
+				val = val.replace(" ", "")
+				#remove any comments
+				i = val.find('#')
+				if i >= 0:
+					val = val[:i]
+				#Evaluate any lists
+				if '[' in val:
+					params[key] = ast.literal_eval(val)
+				#Evaluate anything else
+				else:
+					params[key] = checknum(val)
+	return params
+
 
 def rescale(data):
 	'''
@@ -102,7 +138,7 @@ def findpositions(im,template,mask,threshold,minD, meth='cv.TM_CCOEFF_NORMED',re
 	peaks = peaks + [w//2,h//2] #shift to correct location
 	return match, peaks, w, h
 
-def findpositionstp(im,template,mask,threshold,minD, peaksize = 3, peaksizecut = 0.003, percentilecut = 0.01, meth='cv.TM_CCOEFF_NORMED', removethresh = 150):
+def findpositionstp(im,template,mask, tpparams, removethresh, meth='cv.TM_CCOEFF_NORMED'):
 	'''
 	This code uses trackpy locate  to find the locations of peaks in 
 	the droplet images. It first runs the cross-correlation to get the input
@@ -112,9 +148,10 @@ def findpositionstp(im,template,mask,threshold,minD, peaksize = 3, peaksizecut =
 	the inputted tempate
 
 	'''
+	
 	match, w, h = ccor(im,template,mask,meth)
 	match = np.clip(match,0,np.inf) #Better to just clip out any negatives
-	positions = tp.locate(match,peaksize,minmass=peaksizecut,separation=minD,percentile=percentilecut,invert=True)
+	positions = tp.locate(match,**tpparams,invert=True)
 	positions = positions.loc[positions['size']>0]
 	positions = np.transpose([positions.y+w//2,positions.x+h//2])
 	intlocs = positions.astype(int)
@@ -195,18 +232,17 @@ def refinelocations(inputccor,initiallocs,windowsize):
 	return locs
 
 
-def findoneframepositions(im,templates,masks,ccorr_thresholds,ccminsep,compareminsep):
-	matches=[None]*len(ccorr_thresholds)
-	positions=[None]*len(ccorr_thresholds)
-	refinedpositions =[None]*len(ccorr_thresholds)
-	shift = [None]*len(ccorr_thresholds)
-	for j in range(len(ccorr_thresholds)):
+def findoneframepositions(im,templates,masks,removethresh,compareminsep,tpparams,meth = 'cv.TM_CCOEFF_NORMED',combinebytemplate =True):
+	
+	numTemplates = len(templates)
+	matches=[None]*numTemplates
+	positions=[None]*numTemplates
+	refinedpositions =[None]*numTemplates
+	shift = [None]*numTemplates
+	for j in range(numTemplates):
 		matches[j], positions[j], ws,hs =  findpositionstp(im,
-														templates[j],masks[j],
-														ccorr_thresholds[j],
-														ccminsep,
-		
-												meth='cv.TM_CCOEFF_NORMED')	
+														templates[j],masks[j],tpparams,
+														removethresh,meth=meth)	
 		shift[j] = [ws//2,hs//2]
 		if j!=0:			
 			for k in range(j):
@@ -215,24 +251,30 @@ def findoneframepositions(im,templates,masks,ccorr_thresholds,ccminsep,comparemi
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
 		else:
 			refinedpositions[j] = refinelocations(matches[j],positions[j]-shift[j],4)+shift[j]
-	positions = np.concatenate(positions,axis=0)	
-	refinedpositions = np.concatenate(refinedpositions,axis=0)
+	if combinebytemplate:
+		positions = np.concatenate(positions,axis=0)	
+		refinedpositions = np.concatenate(refinedpositions,axis=0)
 	return positions,refinedpositions			
 				
-def fullpositionfind(allims,templates,masks,analysisparams,report =True, reportfreq =100):
+def fullpositionfind(allims,templates,masks,analysisparams,combinebytemplate = True, report =True, reportfreq =100):
 	t0=time.time()
 	
-	ccorr_thresholds = analysisparams['ccorthresh']
-	ccminsep, compareminsep = analysisparams['minD']
+	tp_keys = ['diameter', 'minmass', 'separation','percentile'] # The keys you want
+	tpparams = dict((k, analysisparams[k]) for k in tp_keys if k in analysisparams)
+
+	compareminsep = analysisparams['templatecompareD']
+	removethresh = analysisparams['removethresh']
 	
+	
+	#peaksize = 3, peaksizecut = 0.003, percentilecut = 0.01, meth='cv.TM_CCOEFF_NORMED', removethresh = 150
 	allpositions=[None]*len(allims)
 	allrefinedpositions=[None]*len(allims)
 	
 	for i in  range(len(allims)): #Full run of the above but without plotting etc
 				
-		allpositions[i], allrefinedpositions[i] = findoneframepositions(allims[i],templates,masks,ccorr_thresholds,ccminsep,compareminsep)
+		allpositions[i], allrefinedpositions[i] = findoneframepositions(allims[i],templates,masks,removethresh,compareminsep,tpparams,combinebytemplate = combinebytemplate)
 		
-		if reportfreq ==True:
+		if report ==True:
 			if i%reportfreq==0:
 				t2 = time.time()
 				spf = (t2-t0)/reportfreq

@@ -18,7 +18,7 @@ from matplotlib import colors
 
 from win11toast import notify
 
-
+import ast
 
 #%%
 #Specify the location of the Tools folder
@@ -33,12 +33,14 @@ os.chdir(CodeDR) #Set  current working direcotry to the code directory
 sys.path.append('./Scripts/FerroFluidTrack') #Add the tools to the system path so modules can be imported
 
 #Import required modules
-from PointFindFunctions import *
+import PointFindFunctions as pff
+importlib.reload(pff)
 #Remove to avoid cluttering path
 sys.path.remove('./Scripts/FerroFluidTrack') #Remove tools from path
 
 #Set working directory to data location
 os.chdir(dataDR)
+
 
 #%%
 
@@ -49,34 +51,25 @@ background = cv.imread('base.tif',0)
 #%%
 
 #Run the image correction to flatten the brighness
-correctedims = imagepreprocess(ims, background)
+correctedims = pff.imagepreprocess(ims, background)
 
 plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
-
 
 #%%
 
 '''
-This section  of code is for getting the masks used in cross correlation
+Get the masks used in cross correlation
 '''
-run_name = 'initialrun'
 
 
-cropframes = [0,0,500]
-xyct1 = [[749,742],[763,757]] #cropping for template 1 (main)
-xyct2 = [[644,627],[656,640]] #cropping for template 2 (secondary)
-xyct3 = [[539,491],[549,502]] #cropping for template 2 (secondary)
+params = pff.openparams('InputRunParams.txt')
 
-crops = [xyct1,xyct2,xyct3]
+run_name = params['run_name']
+numTemplates = 3
 
-#Thresholds for the masks used in cross correlation input
-mask_thresholds = [150,90,80]
-ccorr_thresholds = [.1,.1,0.1]
-ccminsep = 7    
-compareminsep = 8
+testframes = params['testframes']
 
-
-templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
+#templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
 
 
 c_white = colors.colorConverter.to_rgba('red',alpha = 0)
@@ -84,11 +77,11 @@ c_red= colors.colorConverter.to_rgba('red',alpha = .1)
 cmap_rb = colors.LinearSegmentedColormap.from_list('rb_cmap',[c_white,c_red],512)
 #plt.imshow(thresholdfinder(correctedimage),cmap=cmap_rb)
 
-templates = [None]*len(mask_thresholds)
-masks = [None] * len(mask_thresholds)
-for i in range(len(mask_thresholds)):
-	templates[i] = templatecropper(correctedims[cropframes[i]],crops[i])
-	masks[i] = templates[i] < mask_thresholds[i]
+templates = [None]*numTemplates
+masks = [None] * numTemplates
+for i in range(numTemplates):
+	templates[i] = pff.templatecropper(correctedims[params['cropframes'][i]],params['crops'][i])
+	masks[i] = templates[i] < params['mask_thresholds'][i]
 	masks[i]=masks[i].astype(np.float32)
 	plt.figure()	
 	plt.imshow(templates[i],cmap='gray')
@@ -98,34 +91,40 @@ for i in range(len(mask_thresholds)):
 Run the analysis on some test images to make sure it works
 '''
 
-inims = correctedims[[0,500]]
+inims = correctedims[testframes]
 
-testpos,testrpos = fullpositionfind(inims, templates, masks, templatemetadata)
+testpos,testrpos = pff.fullpositionfind(inims, templates, masks, params,combinebytemplate=False)
 
 plt.figure()
-plt.plot(testrpos[0][:,1],testrpos[0][:,0],'.')
-plt.imshow(correctedims[0],cmap='gray')
-plt.figure()
-plt.plot(testrpos[1][:,1],testrpos[1][:,0],'.')
-plt.imshow(correctedims[500],cmap='gray')
+for j in testrpos[0]:
+	plt.plot(j[:,1],j[:,0],'.')
+plt.imshow(correctedims[testframes[0]],cmap='gray')
 
-#%%
+
+plt.figure()
+for j in testrpos[1]:
+	plt.plot(j[:,1],j[:,0],'.')
+plt.imshow(correctedims[testframes[1]],cmap='gray')
+
+
 
 #%%
 '''
 Run the analysis and save the relevant metadata
 '''
-np.save(run_name+'locfindmetadata.npy',templatemetadata)
-allpositions, allrefinedpositions = fullpositionfind(correctedims, templates, masks, templatemetadata)
+allpositions, allrefinedpositions = pff.fullpositionfind(correctedims, templates, masks, params, reportfreq=10)
 
 
-savelistnp(run_name+'positions.pik',allpositions)
+pff.savelistnp(run_name+'positions.pik',allpositions)
 
 notifytext = run_name + ' is done.'
 notify(notifytext)
 
 #%%
 
+'''
+Check to make sure it works
+'''
 import matplotlib.animation as animation
 fig,ax = plt.subplots()
 #line, = ax.plot([], [], lw=2)
