@@ -35,6 +35,10 @@ sys.path.append('./Scripts/FerroFluidTrack') #Add the tools to the system path s
 #Import required modules
 import PointFindFunctions as pff
 importlib.reload(pff)
+
+import FrametoTimeAndField as fieldfind
+importlib.reload(fieldfind)
+
 #Remove to avoid cluttering path
 sys.path.remove('./Scripts/FerroFluidTrack') #Remove tools from path
 
@@ -44,7 +48,7 @@ os.chdir(dataDR)
 
 #%%
 params = pff.openparams('InputRunParams.txt')
-
+fieldfind.findGuassVals(params['fieldspath'], params['inputimage'])
 
 #Import the images of interest and a base image for background subtraction
 ims = imageio.imread(params['inputimage'])
