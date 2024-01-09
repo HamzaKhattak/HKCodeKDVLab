@@ -43,10 +43,12 @@ os.chdir(dataDR)
 
 
 #%%
+params = pff.openparams('InputRunParams.txt')
+
 
 #Import the images of interest and a base image for background subtraction
-ims = imageio.imread('multimages.tif')
-background = cv.imread('base.tif',0)
+ims = imageio.imread(params['inputimage'])
+background = cv.imread(params['backgroundim'],0)
 
 #%%
 
@@ -62,11 +64,9 @@ Get the masks used in cross correlation
 '''
 
 
-params = pff.openparams('InputRunParams.txt')
+numTemplates = params['numtemplates']
 
 run_name = params['run_name']
-numTemplates = 3
-
 testframes = params['testframes']
 
 #templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
