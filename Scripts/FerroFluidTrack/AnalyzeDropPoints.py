@@ -36,15 +36,15 @@ def openlistnp(filepath):
 #%%
 #Import the data
 locations = openlistnp('initialrunpositions.pik')
-#%%
 
+gaussvals = np.loadtxt('FrametoGauss.csv',delimiter=',')[:,2]
 
-
+finalframe = 721
 #%%
 '''
 Code that finds nearest neighbours without doing any tracking, smoothing etc. 
 '''
-testlocs = locations[400]
+testlocs = locations[10]
 
 def findNN(points,rad):
 	'''
@@ -72,18 +72,18 @@ def findNNforsequence(seqofpoints,rad):
 	all_nns = [None]*len(seqofpoints)
 	fractionNN = np.zeros((len(seqofpoints),7))
 	for i in range(len(seqofpoints)):
-		all_nn_indices[i] , all_nns[i],fractionNN[i] = findNN(seqofpoints[i],15) 
+		all_nn_indices[i] , all_nns[i],fractionNN[i] = findNN(seqofpoints[i],rad) 
 
 	return all_nn_indices,all_nns,fractionNN
 
 #%%
 
-test,test,fractions = findNNforsequence(locations, 12)
+test,test,fractions = findNNforsequence(locations, 13)
 
 for i in np.arange(0,7,1):
-	plt.plot(fractions[:,i],label=i)
+	plt.plot(gaussvals[gaussvals>1],fractions[:,i][gaussvals>1],label=i)
 plt.legend(title='Nearest neighbours')
-plt.xlabel('time (arb, can convert to G later)')
+plt.xlabel('B (Gauss)')
 plt.ylabel('fraction')
 
 #%%
@@ -111,7 +111,8 @@ def converttoDataFrame(inputlocationarray):
 posdataframe = converttoDataFrame(locations)
 
 #%%
-
+'''
+#This section of code is for trackpy if it is needed
 t1 = tp.link(posdataframe, 10,memory=50)
 #%%
 
@@ -177,4 +178,4 @@ for i in range(t2['particle'].nunique()):
 	print(i,':',len(t2[['frame','x','y']].iloc[np.where(t2['particle']==i)]))
 	
 
-
+'''

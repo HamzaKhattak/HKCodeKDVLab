@@ -7,24 +7,24 @@ This code is meant to run in Spyder so you can zoom in to
 import numpy as np
 import matplotlib.pyplot as plt
 
-import cv2 as cv
-from scipy.optimize import curve_fit
+
 
 import imageio, os, importlib, sys, time
 
 
-from datetime import datetime
 from matplotlib import colors
-
 from win11toast import notify
+import tifffile as tf
 
-import ast
-
+import requests
 #%%
 #Specify the location of the Tools folder
-CodeDR=r"C:\Users\hamza\Documents\GitHub\HKCodeKDVLab"
+CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"C:\Users\hamza\OneDrive\Research\FerroFluids\MagnetInitialAnalysis"
+dataDR=r"F:\ferro\Experiments\Concentration2\PipetteA3Concentration2\multidrop3_1"
+
+#Use telegram to notify
+tokenloc = r"F:\ferro\token.txt"
 
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
@@ -48,21 +48,25 @@ os.chdir(dataDR)
 
 #%%
 params = pff.openparams('InputRunParams.txt')
-fieldfind.findGuassVals(params['fieldspath'], params['inputimage'])
-
+fieldfind.findGuassVals(params['fieldspath'], params['inputimage'],params['GaussSave'])
+#%%
 #Import the images of interest and a base image for background subtraction
-ims = imageio.imread(params['inputimage'])
-background = cv.imread(params['backgroundim'],0)
+tifobj = tf.TiffFile(params['inputimage'])
+numFrames = len(tifobj.pages)
+ims =  tf.imread(params['inputimage'],key=slice(0,numFrames))
+background = tf.imread(params['backgroundim'])
 
 #%%
 
 #Run the image correction to flatten the brighness
 correctedims = pff.imagepreprocess(ims, background)
-
-plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
-
 #%%
-
+plt.figure()
+plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
+plt.figure()
+plt.imshow(correctedims[300],cmap='gray')
+#%%
+params = pff.openparams('InputRunParams.txt')
 '''
 Get the masks used in cross correlation
 '''
@@ -71,7 +75,7 @@ Get the masks used in cross correlation
 numTemplates = params['numtemplates']
 
 run_name = params['run_name']
-testframes = params['testframes']
+
 
 #templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
 
@@ -94,21 +98,21 @@ for i in range(numTemplates):
 '''
 Run the analysis on some test images to make sure it works
 '''
-
-inims = correctedims[testframes]
+params = pff.openparams('InputRunParams.txt')
+inims = correctedims[params['testframes']]
 
 testpos,testrpos = pff.fullpositionfind(inims, templates, masks, params,combinebytemplate=False)
 
 plt.figure()
 for j in testrpos[0]:
 	plt.plot(j[:,1],j[:,0],'.')
-plt.imshow(correctedims[testframes[0]],cmap='gray')
+plt.imshow(inims[0],cmap='gray')
 
 
 plt.figure()
 for j in testrpos[1]:
 	plt.plot(j[:,1],j[:,0],'.')
-plt.imshow(correctedims[testframes[1]],cmap='gray')
+plt.imshow(inims[1],cmap='gray')
 
 
 
@@ -116,14 +120,22 @@ plt.imshow(correctedims[testframes[1]],cmap='gray')
 '''
 Run the analysis and save the relevant metadata
 '''
-allpositions, allrefinedpositions = pff.fullpositionfind(correctedims, templates, masks, params, reportfreq=10)
+allpositions, allrefinedpositions = pff.fullpositionfind(correctedims, templates, masks, params, reportfreq=50)
 
 
 pff.savelistnp(run_name+'positions.pik',allpositions)
 
 notifytext = run_name + ' is done.'
 notify(notifytext)
-
+#also notify through telegram
+#send notification through telegram
+with open(tokenloc) as f:
+	tegnot = f.read()
+	
+token, chatid = tegnot.split('\n')
+url = f"https://api.telegram.org/bot{token}"
+params = {"chat_id": chatid, "text": "It be working"}
+r = requests.get(url + "/sendMessage", params=params)
 #%%
 
 '''
