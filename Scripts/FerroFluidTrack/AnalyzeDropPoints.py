@@ -39,7 +39,7 @@ locations = openlistnp('initialrunpositions.pik')
 
 gaussvals = np.loadtxt('FrametoGauss.csv',delimiter=',')[:,2]
 
-finalframe = 721
+
 #%%
 '''
 Code that finds nearest neighbours without doing any tracking, smoothing etc. 
@@ -78,10 +78,11 @@ def findNNforsequence(seqofpoints,rad):
 
 #%%
 
-test,test,fractions = findNNforsequence(locations, 13)
-
+test,test,fractions = findNNforsequence(locations, 27)
+finalframe = 750
 for i in np.arange(0,7,1):
-	plt.plot(gaussvals[gaussvals>1],fractions[:,i][gaussvals>1],label=i)
+	plt.plot(gaussvals[:finalframe],fractions[:,i][:finalframe],label=i)
+plt.xlim(0,100)
 plt.legend(title='Nearest neighbours')
 plt.xlabel('B (Gauss)')
 plt.ylabel('fraction')

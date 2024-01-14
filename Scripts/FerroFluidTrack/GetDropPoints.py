@@ -21,7 +21,7 @@ import requests
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ferro\Experiments\Concentration2\PipetteA3Concentration2\multidrop3_1"
+dataDR=r"F:\ferro\Experiments\Concentration05\PipA1REplace\MultiDrop_2"
 
 #Use telegram to notify
 tokenloc = r"F:\ferro\token.txt"
@@ -48,6 +48,7 @@ os.chdir(dataDR)
 
 #%%
 params = pff.openparams('InputRunParams.txt')
+run_name = params['run_name']
 fieldfind.findGuassVals(params['fieldspath'], params['inputimage'],params['GaussSave'])
 #%%
 #Import the images of interest and a base image for background subtraction
@@ -64,7 +65,7 @@ correctedims = pff.imagepreprocess(ims, background)
 plt.figure()
 plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
 plt.figure()
-plt.imshow(correctedims[300],cmap='gray')
+plt.imshow(correctedims[600],cmap='gray')
 #%%
 params = pff.openparams('InputRunParams.txt')
 '''
@@ -74,7 +75,7 @@ Get the masks used in cross correlation
 
 numTemplates = params['numtemplates']
 
-run_name = params['run_name']
+
 
 
 #templatemetadata = {'crops': crops,'maskthresholds': mask_thresholds,'ccorthresh': ccorr_thresholds,'minD': [ccminsep,compareminsep]}
@@ -134,33 +135,50 @@ with open(tokenloc) as f:
 	
 token, chatid = tegnot.split('\n')
 url = f"https://api.telegram.org/bot{token}"
-params = {"chat_id": chatid, "text": "It be working"}
+params = {"chat_id": chatid, "text": "The run be complete"}
 r = requests.get(url + "/sendMessage", params=params)
 #%%
-
-'''
-Check to make sure it works
-'''
 import matplotlib.animation as animation
-fig,ax = plt.subplots()
+
+gaussvals = np.loadtxt('FrametoGauss.csv',delimiter=',')[:,2]
+pixsize = 2.25e-6
+from matplotlib_scalebar.scalebar import ScaleBar
+allpositions = pff.openlistnp(run_name+'positions.pik')
+
+
+
+
+
+fig,ax = plt.subplots(figsize=(8,8))
 #line, = ax.plot([], [], lw=2)
 im=ax.imshow(correctedims[0],cmap='gray')
+
 #points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
-points, = ax.plot(allrefinedpositions[0][:,1],allpositions[0][:,0],'.')
-# initialization function: plot the background of each frame
-# initialization function: plot the background of each frame
+points, = ax.plot(allpositions[0][:,1],allpositions[0][:,0],'r.',markersize=2)
+
+
+
+ax.axis('off')
+ax.get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
+ax.get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
+
+txt = ax.text(.90, .95, 'B={x:.2f}G'.format(x=gaussvals[0]),fontsize=12, ha='center',transform=plt.gca().transAxes)
+scalebar = ScaleBar(pixsize,frameon=False,location='lower right',font_properties={'size':12},pad=1.5) # 1 pixel = 0.2 meter
+ax.add_artist(scalebar)
+
 def init():
-    im.set_data(correctedims[0])
-	
-    return im,points,
+	im.set_data(correctedims[0])
+	ax.add_artist(scalebar)
+	return im,points,
 
 # animation function.  This is called sequentially
 def animate_func(i):
 	im.set_array(correctedims[i])
 	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
-	points.set_data(allrefinedpositions[i][:,1],allrefinedpositions[i][:,0])
+	points.set_data(allpositions[i][:,1],allpositions[i][:,0])
 	#points.set_data(test2.y[i],test2.x[i])
-	return im,points,
+	txt.set_text('B={x:.2f}G'.format(x=gaussvals[i]))
+	return im,points,txt,
 
 anim = animation.FuncAnimation(
                                fig, 
@@ -168,3 +186,7 @@ anim = animation.FuncAnimation(
                                frames = len(correctedims),
                                interval = 1,blit=True, # in ms
                                )
+#%%
+Writer = animation.writers['ffmpeg']
+writer = Writer(fps=30,extra_args=['-vcodec', 'libx264'])
+anim.save('samplevid.mp4',writer=writer,dpi=200)
