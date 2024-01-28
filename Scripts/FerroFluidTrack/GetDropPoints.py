@@ -65,7 +65,7 @@ correctedims = pff.imagepreprocess(ims, background)
 plt.figure()
 plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
 plt.figure()
-plt.imshow(correctedims[600],cmap='gray')
+plt.imshow(correctedims[100],cmap='gray')
 #%%
 params = pff.openparams('InputRunParams.txt')
 '''

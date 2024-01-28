@@ -77,14 +77,18 @@ def findNNforsequence(seqofpoints,rad):
 	return all_nn_indices,all_nns,fractionNN
 
 #%%
-
-test,test,fractions = findNNforsequence(locations, 27)
-finalframe = 750
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": "Helvetica",'font.size': 9,
+})
+test,test,fractions = findNNforsequence(locations, 52)
+finalframe = 200
 for i in np.arange(0,7,1):
 	plt.plot(gaussvals[:finalframe],fractions[:,i][:finalframe],label=i)
-plt.xlim(0,100)
+plt.xlim(0,40)
 plt.legend(title='Nearest neighbours')
-plt.xlabel('B (Gauss)')
+plt.xlabel(r'$B$ (G)')
 plt.ylabel('fraction')
 
 #%%
