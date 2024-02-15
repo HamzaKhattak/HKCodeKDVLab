@@ -178,10 +178,10 @@ def refinelocations(inputccor,windowsize):
 	
 	cropped = inputccor[yc-windowsize:yc+windowsize+1 , xc-windowsize:xc+windowsize+1]
 	#initial_guess = (cropped[windowsize,windowsize],windowsize,windowsize-1,windowsize-1,windowsize,0,cropped[0,0])
-	initial_guess = (1,0,0,10,100,0,0.05)
+	initial_guess = (1,0,0,10,50,0,0.05)
 	inputdata = np.ravel(cropped)
 	
-	popt, pcov = curve_fit(twoD_Gaussian,X,inputdata,p0=initial_guess,maxfev=1000)
+	popt, pcov = curve_fit(twoD_Gaussian,X,inputdata,p0=initial_guess,maxfev=2000)
 
 	locs = popt[2]+yc,popt[1]+xc
 	return locs

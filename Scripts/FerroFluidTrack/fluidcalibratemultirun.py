@@ -152,5 +152,5 @@ for i, fold in enumerate(folderpaths):
 	
 	tosave = np.transpose([t,gauss,leftx,rightx])
 
-	np.save('run3locs.npy',tosave)
+	np.save('run'+str(i)+'locs.npy',tosave)
 	print('run ' + str(i)+ 'done')

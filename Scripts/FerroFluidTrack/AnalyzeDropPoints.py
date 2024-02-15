@@ -82,14 +82,37 @@ plt.rcParams.update({
     "font.family": "sans-serif",
     "font.sans-serif": "Helvetica",'font.size': 9,
 })
-test,test,fractions = findNNforsequence(locations, 52)
-finalframe = 200
+
+test,test,fractions = findNNforsequence(locations, 14)
+'''
+finalframe = 1400
 for i in np.arange(0,7,1):
 	plt.plot(gaussvals[:finalframe],fractions[:,i][:finalframe],label=i)
-plt.xlim(0,40)
+plt.xlim(0,90)
 plt.legend(title='Nearest neighbours')
 plt.xlabel(r'$B$ (G)')
 plt.ylabel('fraction')
+#%%
+'''
+
+finalframe = 673
+
+gVals = gaussvals[:finalframe]
+disperse = fractions[:,0][:finalframe]
+packed = np.sum(fractions[:,-2:],axis=1)[:finalframe]
+string = 1-packed-disperse
+
+plt.plot(gVals,packed,label = '5,6')
+plt.plot(gVals,string,label = '1-4')
+plt.plot(gVals,disperse,label = '0')
+
+plt.xlim(0,90)
+plt.legend(title='Nearest neighbours')
+plt.xlabel(r'$B$ (G)')
+plt.ylabel('fraction')
+
+tosave = np.transpose([gVals,packed,string,disperse])
+np.save('fractiondataC2R24.npy',tosave)
 
 #%%
 

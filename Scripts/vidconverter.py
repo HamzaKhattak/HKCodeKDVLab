@@ -50,6 +50,7 @@ collect = input('Type 1 for a single input file and 2 for a collection (collecti
 if dualim == '1':
 	outFile = input('Output file name (include .mp4 extension) \n')
 	inFPS = input('FPS (outputs at 30fps for device compatibility so will cut/add frames as needed) \n')
+	print('Go to file dialog to select file')
 	file_path = filedialog.askopenfilename(parent=root)
 	#Import the tif files in a folder
 	#imageframes=ito.omestackimport(dataDR)

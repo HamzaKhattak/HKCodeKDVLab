@@ -21,7 +21,7 @@ import requests
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ferro\Experiments\Concentration05\PipA1REplace\MultiDrop_2"
+dataDR=r"F:\ferro\Experiments\Concentration05\Pip3\multidrop4_1"
 
 #Use telegram to notify
 tokenloc = r"F:\ferro\token.txt"
@@ -39,6 +39,9 @@ importlib.reload(pff)
 import FrametoTimeAndField as fieldfind
 importlib.reload(fieldfind)
 
+import NNfindFunctions as nnfind
+importlib.reload(nnfind)
+
 #Remove to avoid cluttering path
 sys.path.remove('./Scripts/FerroFluidTrack') #Remove tools from path
 
@@ -50,14 +53,14 @@ os.chdir(dataDR)
 params = pff.openparams('InputRunParams.txt')
 run_name = params['run_name']
 fieldfind.findGuassVals(params['fieldspath'], params['inputimage'],params['GaussSave'])
-#%%
+
 #Import the images of interest and a base image for background subtraction
 tifobj = tf.TiffFile(params['inputimage'])
 numFrames = len(tifobj.pages)
 ims =  tf.imread(params['inputimage'],key=slice(0,numFrames))
 background = tf.imread(params['backgroundim'])
 
-#%%
+
 
 #Run the image correction to flatten the brighness
 correctedims = pff.imagepreprocess(ims, background)
@@ -65,7 +68,7 @@ correctedims = pff.imagepreprocess(ims, background)
 plt.figure()
 plt.imshow(correctedims[0],cmap='gray') #Imshow to allow cropping to find template crop locations
 plt.figure()
-plt.imshow(correctedims[100],cmap='gray')
+plt.imshow(correctedims[1300],cmap='gray')
 #%%
 params = pff.openparams('InputRunParams.txt')
 '''
@@ -137,56 +140,151 @@ token, chatid = tegnot.split('\n')
 url = f"https://api.telegram.org/bot{token}"
 params = {"chat_id": chatid, "text": "The run be complete"}
 r = requests.get(url + "/sendMessage", params=params)
-#%%
+#%% This cell is for running the video with the images and nearest neightbours
+
 import matplotlib.animation as animation
+from matplotlib_scalebar.scalebar import ScaleBar
+
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": "Helvetica",'font.size': 9,
+})
 
 gaussvals = np.loadtxt('FrametoGauss.csv',delimiter=',')[:,2]
 pixsize = 2.25e-6
-from matplotlib_scalebar.scalebar import ScaleBar
+
 allpositions = pff.openlistnp(run_name+'positions.pik')
+nns = nnfind.findstrings(allpositions,params['dropletradius'])
+
+finalframe = params['endframe']
 
 
 
-
-
-fig,ax = plt.subplots(figsize=(8,8))
+fig,ax = plt.subplots(2,1,figsize=(8,8),gridspec_kw={'height_ratios': [1.5, 1]})
 #line, = ax.plot([], [], lw=2)
-im=ax.imshow(correctedims[0],cmap='gray')
+im=ax[0].imshow(correctedims[0],cmap='gray',aspect='equal')
 
 #points, = ax.plot(allrefinedlocs[0][:,1],allrefinedlocs[0][:,0],'.')
-points, = ax.plot(allpositions[0][:,1],allpositions[0][:,0],'r.',markersize=2)
+points, = ax[0].plot(allpositions[0][:,1],allpositions[0][:,0],'r.',markersize=2)
 
 
 
-ax.axis('off')
-ax.get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
-ax.get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
+ax[0].axis('off')
+ax[0].get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
+ax[0].get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
 
-txt = ax.text(.90, .95, 'B={x:.2f}G'.format(x=gaussvals[0]),fontsize=12, ha='center',transform=plt.gca().transAxes)
+#txt = ax[0].text(.90, .95, 'B={x:.2f}G'.format(x=gaussvals[0]),fontsize=12, ha='center',transform=plt.gca().transAxes)
 scalebar = ScaleBar(pixsize,frameon=False,location='lower right',font_properties={'size':12},pad=1.5) # 1 pixel = 0.2 meter
-ax.add_artist(scalebar)
+ax[0].add_artist(scalebar)
 
+
+clust, = ax[1].plot(gaussvals[0],nns[0,0],'.',label = '5,6')
+string, = ax[1].plot(gaussvals[0],nns[0,1],'.',label = '4-1')
+disp, = ax[1].plot(gaussvals[0],nns[0,2],'.',label = '0')
+
+ax[1].set_xlim(0,45)
+ax[1].set_ylim(-.1,1.1)
+ax[1].set_xlabel(r'$B \ \mathrm{(G)}$')
+ax[1].set_ylabel(r'$f$')
+
+
+
+asp = (np.diff(ax[1].get_xlim())[0] / np.diff(ax[1].get_ylim())[0])*.5
+ax[1].set_aspect(asp)
+
+ax[1].legend(title ='NN',loc = 'center right')
+fig.subplots_adjust(hspace=.05)
 def init():
 	im.set_data(correctedims[0])
-	ax.add_artist(scalebar)
+	ax[0].add_artist(scalebar)
 	return im,points,
-
+#plt.tight_layout(pad=-4)
 # animation function.  This is called sequentially
 def animate_func(i):
 	im.set_array(correctedims[i])
 	#points.set_data(allrefinedlocs[i][:,1],allrefinedlocs[i][:,0])
 	points.set_data(allpositions[i][:,1],allpositions[i][:,0])
 	#points.set_data(test2.y[i],test2.x[i])
-	txt.set_text('B={x:.2f}G'.format(x=gaussvals[i]))
-	return im,points,txt,
+	#txt.set_text('B={x:.2f}G'.format(x=gaussvals[i]))
+	clust.set_data(gaussvals[:i],nns[:i,0])
+	string.set_data(gaussvals[:i],nns[:i,1])
+	disp.set_data(gaussvals[:i],nns[:i,2])
+	
+	return im,points,clust,string,disp,
 
 anim = animation.FuncAnimation(
                                fig, 
                                animate_func, 
-                               frames = len(correctedims),
+                               frames = np.arange(0,finalframe,1),
                                interval = 1,blit=True, # in ms
                                )
-#%%
+
+#%% This cell is for only the video
+import matplotlib.animation as animation
+from matplotlib_scalebar.scalebar import ScaleBar
+
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": "Helvetica",'font.size': 9,
+})
+
+pixsize = 2.25e-6
+insecperframe = .25
+xrealtime = 5
+inFPS = 1/insecperframe
+outputFPS = inFPS*xrealtime
+
+
+allpositions = pff.openlistnp(run_name+'positions.pik')
+nns = nnfind.findstrings(allpositions,params['dropletradius'])
+
+finalframe = params['endframe']
+
+
+
+dim = ims.shape[1:]
+dimr = dim[1]/dim[0]
+# ax refers to the axis propertis of the figure
+fig, ax = plt.subplots(1,1,figsize=(8,8/dimr))
+
+#line, = ax.plot([], [], lw=2)
+im=ax.imshow(correctedims[0],cmap='gray',aspect='equal')
+
+ax.axis('off')
+ax.get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
+ax.get_yaxis().set_visible(False) # this removes the ticks and numbers for y axis
+
+#txt = ax[0].text(.90, .95, 'B={x:.2f}G'.format(x=gaussvals[0]),fontsize=12, ha='center',transform=plt.gca().transAxes)
+scalebar = ScaleBar(pixsize,frameon=False,location='lower right',font_properties={'size':12},pad=1.5) # 1 pixel = 0.2 meter
+ax.add_artist(scalebar)
+
+txt = ax.text(.90, .95, '$B={x:.2f}\mathrm{G}$'.format(x=gaussvals[0]),fontsize=12, ha='center',transform=plt.gca().transAxes)
+
+
+def init():
+	im.set_data(correctedims[0])
+	ax.add_artist(scalebar)
+	return im,
+#plt.tight_layout(pad=-4)
+# animation function.  This is called sequentially
+def animate_func(i):
+	im.set_array(correctedims[i])
+	txt.set_text('$B={x:.2f}\mathrm{G}$'.format(x=gaussvals[i]))
+	return im,txt,
+plt.tight_layout()
+fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
+anim = animation.FuncAnimation(
+                               fig, 
+                               animate_func, 
+                               frames = np.arange(0,finalframe,1),
+                               interval = insecperframe/1000/xrealtime,blit=True, # in ms
+                               )
+
+#%% This section of code is for saving the video
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=30,extra_args=['-vcodec', 'libx264'])
-anim.save('samplevid.mp4',writer=writer,dpi=200)
+writer = Writer(fps=outputFPS,extra_args=['-vcodec', 'libx264'])
+anim.save('mainrampvid.mp4',writer=writer,dpi=200)
