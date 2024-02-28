@@ -24,15 +24,18 @@ plt.rcParams.update({
 imdir = r'F:\ferro\Experiments\Concentration05\Pip3\multidrop4_1'
 imname = 'multidrop4_MMStack_Pos0.ome.tif'
 savedir = r'G:\My Drive\LabShare\2024\APStransfer'
-savename = 'mainvidc05r23.mp4'
+savename = 'initialdrops.mp4'
 os.chdir(imdir)
 
 tifobj = tf.TiffFile(imname)
 numFrames = len(tifobj.pages)
 allimages =  tf.imread(imname,key=slice(0,numFrames))
 
-pixsize = 2.24e-6
-insecperframe = .5
+#allimages=allimages[:,300:-300,300:-300] #crop as needed
+
+pixsize = 2.24e-6 #pixel size for pulse and 2x
+#pixsize = .24e-6 #pixsize for 20x objective on ace python 5000 camera
+insecperframe = .25
 xrealtime = 10
 
 
@@ -42,11 +45,12 @@ outputFPS = inFPS*xrealtime
 dim = allimages.shape[1:]
 dimr = dim[1]/dim[0]
 # ax refers to the axis propertis of the figure
-fig, ax = plt.subplots(1,1,figsize=(8,8/dimr))
+fig, ax = plt.subplots(1,1,figsize=(4,4/dimr))
 im = ax.imshow(allimages[0],cmap=plt.cm.gray,aspect='equal')
 im.set_clim(0, 256) #if want to reproduce original image rather than full scale
-scalebar = ScaleBar(pixsize,frameon=False,location='upper right',font_properties={'size':26},pad=1.5) # 1 pixel = 0.2 meter
-
+#scalebar = ScaleBar(pixsize,frameon=False,location='upper left',font_properties={'size':24},pad=1.5)
+scalebar = ScaleBar(pixsize,frameon=False,location='upper left',font_properties={'size':24},pad=1.5,label_formatter = lambda x, y:'') 
+ax.add_artist(scalebar)
 
 ax.axis('off')
 ax.get_xaxis().set_visible(False) # this removes the ticks and numbers for x axis
@@ -64,7 +68,7 @@ def init():
 	It initializes the plot axes
 	"""
 	#Set plot limits etc
-	ax.add_artist(scalebar)
+	
 
 
 	#plt.tight_layout()
@@ -78,9 +82,10 @@ def update_plot(it):
 	
 	return im,
 plt.tight_layout()
+
 fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
-ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages)), interval=insecperframe/1000/xrealtime,
-                    init_func=init, repeat_delay=1000, blit=True)
+
+ani = animation.FuncAnimation(fig, update_plot, frames=np.arange(0,len(allimages)), interval=insecperframe/1000/xrealtime, repeat_delay=1000, blit=True)
 
 
 #Writer = animation.writers['ffmpeg']
