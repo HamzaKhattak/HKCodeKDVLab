@@ -120,15 +120,15 @@ ind = [None]*nunique
 t3 = t2.copy()
 for i in np.arange(0,nunique,1):
 	ind[i] = t3.loc[t3['particle'] == i]
-	xsmooth = savgol_filter(ind[i].x, 31, 3)
-	ysmooth = savgol_filter(ind[i].y, 31, 3)
+	xsmooth = savgol_filter(ind[i].x, 21, 3)
+	ysmooth = savgol_filter(ind[i].y, 21, 3)
 	t3.loc[t3['particle'] == i,'x']=xsmooth
 	t3.loc[t3['particle'] == i,'y']=ysmooth
 
 #%%
 
-t4 = t2.loc[t2['particle'] == 22].x
-t5= t3.loc[t2['particle'] == 22].x
+t4 = t2.loc[t2['particle'] == 400].x
+t5= t3.loc[t2['particle'] == 400].x
 plt.plot(t4)
 plt.plot(t5)
 #%%

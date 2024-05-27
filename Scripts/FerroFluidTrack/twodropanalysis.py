@@ -93,10 +93,9 @@ fig, ax = plt.subplots(1,1,figsize=(8,8/dimr))
 
 im = ax.imshow(ims[0],cmap='gray')
 im.set_clim(0,180)
-txt = ax.text(.9, .95, '$B={x:.1f} \, \mathrm{{G}}$'.format(x=gaussvals[0]), ha='center',transform=plt.gca().transAxes)
-#txt = ax.text(.4, .067, r'$B:$ ', ha='center',transform=plt.gca().transAxes)
-#rect = patches.Rectangle((260, 453), 100*gaussvals[0]/maxgauss, 20, linewidth=1, edgecolor='r', facecolor='red')
-#ax.add_patch(rect)
+txt = ax.text(.8, .95, '$B={x:.1f} \, \mathrm{{G}}$'.format(x=gaussvals[0]), ha='center',transform=plt.gca().transAxes)
+rect = patches.Rectangle((409, 25), 100*gaussvals[0]/maxgauss, 12, linewidth=1, edgecolor='r', facecolor='red')
+ax.add_patch(rect)
 scalebar = ScaleBar(pixsize,frameon=False,location='upper left',pad=0.5) 
 ax.add_artist(scalebar)
 ax.axis('off')
@@ -110,9 +109,10 @@ fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
 
 def animate(i):
 	im.set_data(ims[i])
-	#rect.set_width(100*gaussvals[i]/maxgauss)
+	rect.set_width(100*gaussvals[i]/maxgauss)
+	#rect.set_width(100)
 	txt.set_text('$B={x:.1f} \, \mathrm{{G}}$'.format(x=gaussvals[i]))
-	return im,txt,
+	return im,txt,rect,
 
 ani = animation.FuncAnimation(fig, animate, frames=np.arange(0,len(ims),skipframe), interval=skipframe*insecperframe/1000/xrealtime,
                      repeat_delay=1000, blit=True)
