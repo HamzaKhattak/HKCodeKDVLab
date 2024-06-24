@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ferro\air\waterdropcalib\pip1_4"
+dataDR=r"F:\ferro\air\waterdropcalib\pip3_4"
 
 #Use telegram to notify
 tokenloc = r"F:\ferro\token.txt"
@@ -44,7 +44,7 @@ sys.path.remove('./Scripts/FerroFluidTrack') #Remove tools from path
 os.chdir(dataDR)
 #%%
 pixsize = 2.24e-6
-imname = 'pip1_MMStack_Pos0.ome.tif'
+imname = 'pip3_MMStack_Pos0.ome.tif'
 tifobj = tf.TiffFile(imname)
 numFrames = len(tifobj.pages)
 ims =  tf.imread(imname,key=slice(0,numFrames))
@@ -254,9 +254,6 @@ locs = [i[1] for i in allparams]
 plt.plot(widths) 
 
 #%%
-for i in np.arange(0,len(ims),10):
-	plt.plot(locs[i])
-#%%
 
 
 import matplotlib.animation as animation
@@ -268,7 +265,7 @@ from matplotlib_scalebar.scalebar import ScaleBar
 fig, ax = plt.subplots(1,1)
 
 im = ax.imshow(ims[0],cmap='gray')
-ax.set_ylim(900,200)
+ax.set_ylim(1100,200)
 ax.set_xlim(300,1300)
 line, = ax.plot(locs[0][0],locs[0][1],'r.')
 line2, = ax.plot(locs[0][0],locs[0][2],'r.')
@@ -315,7 +312,7 @@ plt.show()
 #%%
 
 
-#%%
+
 correctedvolumes = volumes-np.mean(volumes[-50:]) #Subtract off final volume
 masses = correctedvolumes*1000 #SI units for masses
 forces = masses*9.81 #Convert mass to force

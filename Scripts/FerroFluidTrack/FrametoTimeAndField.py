@@ -31,7 +31,7 @@ def findGuassVals(fields_path, ims_path,savename):
 	
 	fields = np.loadtxt(fields_path,delimiter=',') #gives field by epoch time
 	
-	fieldf = interp1d(fields[:,0], fields[:,1]) #Create interp
+	fieldf = interp1d(fields[:,0], fields[:,1],fill_value="extrapolate") #Create interp
 	
 	
 	

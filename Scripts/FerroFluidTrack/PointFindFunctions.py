@@ -281,3 +281,49 @@ def fullpositionfind(allims,templates,masks,analysisparams,combinebytemplate = T
 				print('Image {imnum}, at {speed:4.4f} sec/frame'.format(imnum=i, speed=spf))
 				t0=t2
 	return allpositions, allrefinedpositions
+
+
+
+'''
+This is the section of code to track individual droplets if needed
+'''
+def converttoDataFrame(inputlocationarray):
+	'''
+	Trackpy likes the input to be a Pandas dataframe ()
+	'''
+	frame = np.array([],dtype=float)
+	x= np.array([],dtype=float)
+	y=np.array([],dtype=float)
+	#convert to dataframe:
+	for i in range(len(inputlocationarray)):
+		frame = np.append(frame, i*np.ones(len(inputlocationarray[i])))
+		x = np.append(x,inputlocationarray[i][:,0])
+		y = np.append(y,inputlocationarray[i][:,1])
+	
+	
+	pddat = pd.DataFrame({'frame': frame, 'x': x, 'y': y})
+	return pddat
+
+
+from scipy.signal import savgol_filter 
+def smoothframes(inputlocationsarray,smoothparam=21):
+	posdataframe = converttoDataFrame(inputlocationsarray)
+	#Track the positions and remove and stubs
+	t1 = tp.link(posdataframe, 10,memory=50)
+	t2 = tp.filter_stubs(t1,50)
+	
+	#For every unique trajectory, smooth the motion	
+	nunique = t1['particle'].nunique()
+	ind = [None]*nunique
+	t3 = t2.copy()
+	for i in np.arange(0,nunique,1):
+		ind[i] = t3.loc[t3['particle'] == i]
+		xsmooth = savgol_filter(ind[i].x, smoothparam, 3)
+		ysmooth = savgol_filter(ind[i].y, smoothparam, 3)
+		t3.loc[t3['particle'] == i,'x']=xsmooth
+		t3.loc[t3['particle'] == i,'y']=ysmooth
+
+	
+	newlist = [t3.loc[t3['frame'] == i,['x','y']].to_numpy() for i in range(len(inputlocationsarray))]
+	
+	return newlist
