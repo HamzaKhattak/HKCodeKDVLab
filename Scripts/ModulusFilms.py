@@ -19,8 +19,9 @@ import tifffile as tf
 #Specify the location of the Tools folder
 CodeDR=r"C:\Users\WORKSTATION\Desktop\HamzaCode\HKCodeKDVLab"
 #Specify where the data is and where plots will be saved
-dataDR=r"F:\ShaganaFilms\InitialSample0k\0-1umsSrun1"
+dataDR=r"F:\ShaganaFilms\MainRun10k1\Run1stretch_1"
 
+filepath = r"F:\ShaganaFilms\MainRun10k1\Run1stretch_1\Run1stretch_MMStack_Pos0.ome.tif"
 
 os.chdir(CodeDR) #Set  current working direcotry to the code directory
 
@@ -69,7 +70,7 @@ preim = tf.TiffFile(r'F:\ShaganaFilms\InitialSample0k\0-1umsSrun1\run_MMStack_Po
 numFrames = len(preim.pages)
 #%%
 from pyometiff import OMETIFFReader
-reader = OMETIFFReader(fpath=r'F:\ShaganaFilms\InitialSample0k\0-1umsSrun1\run_MMStack_Pos0.ome.tif')
+reader = OMETIFFReader(fpath=filepath)
 
 img_array, metadata, xml_metadata = reader.read()
 #%%
@@ -77,14 +78,16 @@ img_array, metadata, xml_metadata = reader.read()
 #%%
 points =img_array[:,0,0]
 plt.plot(points)
-endpoint=1650
+#%%
+endpoint=879
 #%%
 plt.imshow(img_array[0])
+
 #%%
-dats = img_array[:endpoint,400,:1279]
+dats = img_array[:endpoint,41]
 
 plt.plot(dats[0])
-plt.plot(dats[100])
+plt.plot(dats[-1])
 #%%
 #Get the image path names
 
@@ -133,7 +136,7 @@ def centerfinder(vecx,vecy,buff):
 	return popt, perr
 
 
-xytest = crosscorrelator(dats[900], dats[0])
+xytest = crosscorrelator(dats[600], dats[0])
 loctest= centerfinder(xytest[:,0],xytest[:,1],6)[0][1]
 plt.plot(xytest[:,0],xytest[:,1],'.')
 plt.axvline(loctest)
@@ -150,14 +153,14 @@ for i,dat in enumerate(dats):
 #%%
 k0=2.58 #N/m for the calibration pipette
 mppix = .4504e-6 
-width = 5.89e-3
-length = 5.54e-3
-thickness = 11e-6
+width = 3.22e-3
+length = 15.53e-3
+thickness = 9e-6
 
 xs=np.linspace(0, len(locs),num=len(locs))
 ys = locs*mppix
 
-machinerange = 100e-6
+machinerange = 600e-6
 ysmachine = np.linspace(0, machinerange,num=len(locs))
 
 plt.plot(xs,ys,label='measured')
@@ -167,41 +170,17 @@ plt.plot(xs,ysmachine,label='machine')
 stress=(ys-ys[0])*k0/(width*thickness)
 strain = (ysmachine-ys)/length
 
-cstress = stress[100:]
-cstrain = strain[100:]
-
+cstress = stress[100:-100]
+cstrain = strain[100:-100]
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Helvetica"]})
 plt.plot(cstrain,cstress,'.')
-plt.xlabel('strain')
-plt.ylabel('stress (Pa)')
+plt.xlabel('$e$')
+plt.ylabel('$\sigma$ (Pa)')
 def linfx(x,a,b):
 	return a*x+b
 
 popt,perr = curve_fit(linfx,cstrain,cstress)
 print(popt/1e6)
-#%%
-samplex2 = np.abs(np.array([arr[0][0] for arr in samplex])*metersperpixel)
-calibx2 = np.abs(np.array([arr[0][0] for arr in calibx])*metersperpixel)
-
-positiondeltas = np.abs(np.abs(positions[:]-positions[0])-np.abs((calibx2[:]-calibx2[0])))
-force=k0*positiondeltas
-
-plt.figure(figsize=(4,3))
-plt.plot(force*1e6,samplex2*1e6,'.')
-plt.ylabel('Deflection ($\mathrm{\mu m}$)')
-plt.xlabel('Force $(\mathrm{\mu N})$')
-
-def linefx(x,a):
-	return a*x
-
-poptcalib, pcovcalib = curve_fit(linefx,force,samplex2)
-poptcalibf, pcovcalibf = curve_fit(linefx,samplex2,force)
-
-xlin=np.linspace(0,np.max(force),100)
-plt.plot(xlin*1e6,linefx(xlin,*poptcalib)*1e6,label='Spring constant: %.0f $\mathrm{nN / \mu m}$' %(poptcalibf[0]*1000))
-plt.legend()
-plt.tight_layout()
-file_path=r'E:\Calibration'
-file_path=os.path.join(file_path,'PipetteCalibrationv2.png')
-plt.savefig(file_path,dpi=900)
-#%%
-plt.plot(positiondeltas*1e6,calibx2*1e6)
